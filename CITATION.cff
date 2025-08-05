@@ -1,0 +1,22 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  Unified Ducted Fan Design and Analysis Code and
+  Optimisation Algorithm
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Thomas Stephan
+    family-names: Vermeulen
+    affiliation: Delft University of Technology
+repository-code: >-
+  https://github.com/TSVermeulen/Conceptual-Investigation-of-Alternative-Electric-Ducted-Fan-Architectures
+abstract: >-
+  Code repository of the developed UDFDAC and implementation
+  into the U-NSGA-III genetic algorithm, as done during this
+  thesis. 
+license: MIT
