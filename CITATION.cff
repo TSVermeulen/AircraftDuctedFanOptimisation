@@ -14,7 +14,7 @@ authors:
     family-names: Vermeulen
     affiliation: Delft University of Technology
 repository-code: >-
-  https://github.com/TSVermeulen/Conceptual-Investigation-of-Alternative-Electric-Ducted-Fan-Architectures
+  https://github.com/TSVermeulen/AircraftDuctedFanOptimisation
 abstract: >-
   Code repository of the developed UDFDAC and implementation
   into the U-NSGA-III genetic algorithm, as done during this
