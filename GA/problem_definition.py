@@ -19,13 +19,13 @@ Examples
 
 Notes
 -----
-This module integrates with the UDFDAC for aerodynamic analysis. Ensure that the executable and required
+This module integrates with the UDC for aerodynamic analysis. Ensure that the executable and required
 input files are present in the appropriate directories. The module is designed to handle mixed-variable optimization
 problems, including real and integer variables.
 
 References
 ----------
-For more details on the MTFLOW solver integrated in the UDFDAC and its input/output requirements, refer to the MTFLOW user manual:
+For more details on the MTFLOW solver integrated in the UDC and its input/output requirements, refer to the MTFLOW user manual:
 https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 
 Versioning
@@ -44,7 +44,7 @@ Changelog:
 - V1.3: Removed troublesome cache implementation. Cleaned up _evaluate method. Created default crash output dictionary to avoid repeated reading of crash_outputs forces file. Adjusted GenerateAnalysisName method to use 8-char uuid.
         Updated ComputeOmega method to write omega to the blading lists rather than to the oper dictionary.
 - V1.4: Improved robustness of crash handling in MTFLOW. Added conditional dump folder generation to avoid unnecessary folder creation.
-- V2.0: Renamed MTFLOW_caller to UDFDAC for consistency with written thesis. Updated imports to reflect new structure.
+- V2.0: Renamed MTFLOW_caller to UDC for consistency with written thesis. Updated imports to reflect new structure.
 """
 
 # Import standard libraries
@@ -77,7 +77,7 @@ class OptimizationProblem(ElementwiseProblem):
     Inherits from the ElementwiseProblem class from pymoo.core.problem.
     """
 
-    # Define the file names relevant for UDFDAC
+    # Define the file names relevant for UDC
     FILE_TEMPLATES = {"walls": "walls.{}",
                       "tflow": "tflow.{}",
                       "forces": "forces.{}",
@@ -180,10 +180,10 @@ class OptimizationProblem(ElementwiseProblem):
         # Use lazy-loaded modules (initialized at first use)
         # Prevents circular imports and speeds up initial loading time.
         if not hasattr(self, "_lazy_modules_loaded"):
-            from UDFDAC import UDFDAC  # type: ignore
+            from UDC import UDC  # type: ignore
             from Submodels.output_handling import output_processing  # type: ignore
             from Submodels.file_handling import fileHandlingMTSET, fileHandlingMTFLO  # type: ignore
-            self._UDFDAC = UDFDAC
+            self._UDC = UDC
             self._output_processing = output_processing
             self._fileHandlingMTSET = fileHandlingMTSET
             self._fileHandlingMTFLO = fileHandlingMTFLO
@@ -194,7 +194,7 @@ class OptimizationProblem(ElementwiseProblem):
         """
         Generate a unique analysis name and write it to self.
         This is required to enable multi-threading of the optimization problem, and log each state file,
-        since each evaluation of UDFDAC requires a unique set of files.
+        since each evaluation of UDC requires a unique set of files.
 
         Returns
         -------
@@ -213,7 +213,7 @@ class OptimizationProblem(ElementwiseProblem):
         process_id = os.getpid() % 10000  # 4 chars max
 
         # The analysis name is formatted as: <MMDDHHMMSS>_<process_ID>_<unique_id>.
-        # Analysis name has a length of 28 characters, satisfying the maximum length of 32 characters accepted by UDFDAC.
+        # Analysis name has a length of 28 characters, satisfying the maximum length of 32 characters accepted by UDC.
         self.analysis_name = self.analysis_name_template.format(timestamp, process_id, unique_id)
 
 
@@ -234,7 +234,7 @@ class OptimizationProblem(ElementwiseProblem):
 
     def ComputeOmega(self) -> None:
         """
-        A simple function to compute the non-dimensional UDFDAC rotational rate Omega,
+        A simple function to compute the non-dimensional UDC rotational rate Omega,
         and write it to the blading parameters.
         """
 
@@ -250,11 +250,11 @@ class OptimizationProblem(ElementwiseProblem):
 
     def CleanUpFiles(self) -> None:
         """
-        Archive the UDFDAC statefile to a separate folder and clean up temporary files.
+        Archive the UDC statefile to a separate folder and clean up temporary files.
 
         This method:
         1. Moves the tdat statefile to a persistent archive folder.
-        2. Removes all temporary UDFDAC input/output files, including the original statefile.
+        2. Removes all temporary UDC input/output files, including the original statefile.
 
         Note that the output files can always be regenerated from the statefile.
 
@@ -285,11 +285,11 @@ class OptimizationProblem(ElementwiseProblem):
                     file_path.unlink(missing_ok=True)
 
 
-    def GenerateUDFDACInputs(self,
+    def GenerateUDCInputs(self,
                              x: dict[str, float | int]) -> bool:
         """
-        Generates the input files required for the UDFDAC simulation.
-        This method creates the necessary input files for the UDFDAC simulation by utilizing the
+        Generates the input files required for the UDC simulation.
+        This method creates the necessary input files for the UDC simulation by utilizing the
         `fileHandling` class from the `Submodels.file_handling` module. It generates two input files:
         - walls.analysis_name: The MTSET input file, which contains the axisymmetric geometries.
         - tflow.analysis_name: The MTFLO blading input file, which contains the blading and design parameters.
@@ -390,46 +390,46 @@ class OptimizationProblem(ElementwiseProblem):
         # Copy the operational conditions
         self.oper = copy.deepcopy(self._base_oper)
 
-        # Generate the UDFDAC input files.
+        # Generate the UDC input files.
         # If design_okay is false, this indicates an error in the input file generation caused by an infeasible design vector.
-        design_okay = self.GenerateUDFDACInputs(x)
+        design_okay = self.GenerateUDCInputs(x)
 
-        # Initialize the UDFDAC caller class
+        # Initialize the UDC caller class
         if design_okay:
             self.ComputeReynolds()  # Compute the Reynolds number
 
-            UDFDAC_interface = self._UDFDAC(operating_conditions=self.oper,
-                                            ref_length=self.Lref,
-                                            analysis_name=self.analysis_name,
-                                            run_viscous=True,
-                                            **kwargs)
+            UDC_interface = self._UDC(operating_conditions=self.oper,
+                                      ref_length=self.Lref,
+                                      analysis_name=self.analysis_name,
+                                      run_viscous=True,
+                                      **kwargs)
 
             try:
-                # Run UDFDAC
-                exit_flag = UDFDAC_interface.caller(external_inputs=True,
-                                                    output_type=OutputType.FORCES_ONLY)
+                # Run UDC
+                exit_flag = UDC_interface.caller(external_inputs=True,
+                                                 output_type=OutputType.FORCES_ONLY)
 
                 # Extract outputs
                 if exit_flag != ExitFlag.CRASH:
                     output_handler = self._output_processing(analysis_name=self.analysis_name)
-                    UDFDAC_outputs = output_handler.GetAllVariables(output_type=0)
+                    UDC_outputs = output_handler.GetAllVariables(output_type=0)
                 else:
-                    UDFDAC_outputs = self.CRASH_OUTPUTS
+                    UDC_outputs = self.CRASH_OUTPUTS
 
             except Exception as e:
                 if self.verbose:
-                    print(f"[UDFDAC_ERROR] case={self.analysis_name}: {e}")
-                UDFDAC_outputs = self.CRASH_OUTPUTS
+                    print(f"[UDC_ERROR] case={self.analysis_name}: {e}")
+                UDC_outputs = self.CRASH_OUTPUTS
         else:
             # If the design is infeasible, we load the crash outputs
             # This is a predefined dictionary with all outputs set to 0.
-            UDFDAC_outputs = self.CRASH_OUTPUTS
+            UDC_outputs = self.CRASH_OUTPUTS
 
         # Obtain objective(s)
         # The out dictionary is updated in-place
         Objectives(duct_variables=self.duct_variables,
                    oper=self.oper,
-                   Lref=self.Lref).ComputeObjective(analysis_outputs=UDFDAC_outputs,
+                   Lref=self.Lref).ComputeObjective(analysis_outputs=UDC_outputs,
                                                     objective_IDs=config.objective_IDs,
                                                     out=out)
 
@@ -438,7 +438,7 @@ class OptimizationProblem(ElementwiseProblem):
         Constraints(self.centerbody_variables,
                     self.duct_variables,
                     self.blade_blading_parameters,
-                    design_okay).ComputeConstraints(analysis_outputs=UDFDAC_outputs,
+                    design_okay).ComputeConstraints(analysis_outputs=UDC_outputs,
                                                     Lref=self.Lref,
                                                     oper=self.oper,
                                                     out=out)

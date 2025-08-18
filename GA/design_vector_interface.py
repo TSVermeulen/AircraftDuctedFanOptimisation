@@ -33,7 +33,7 @@ Changelog:
 - V1.1: Updated documentation and added examples for clarity.
 - V1.2: Rework of design vector access. Inclusion of utils.ensure_repo_paths.
 - V1.3: Added type hints for better code clarity and maintainability. Added reconstruct_design_vector method.
-- V2.0: Renamed MTFLOW to UDFDAC for consistency with written thesis.
+- V2.0: Renamed MTFLOW to UDC for consistency with written thesis.
 """
 
 # Import standard libraries
@@ -55,7 +55,7 @@ _PARAMETERISATION = AirfoilParameterisation()
 class DesignVectorInterface:
     """
     Simple class to provide efficient access to design vector elements without repeated string formatting,
-    and to deconstruct the design vector dictionary x into the expected "sub"-dictionaries required to use the UDFDAC interface """
+    and to deconstruct the design vector dictionary x into the expected "sub"-dictionaries required to use the UDC interface """
 
 
     def __init__(self) -> None:
@@ -218,7 +218,7 @@ class DesignVectorInterface:
                                 compute_duct: bool = True) -> tuple:
         """
         Decompose the design vector x into dictionaries of all the design variables to match the expected input formats for
-        the UDFDAC code interface.
+        the UDC code interface.
 
         Parameters
         ----------
@@ -359,7 +359,7 @@ class DesignVectorInterface:
                 stage_blading_parameters["blade_count"] = int(next(it))
                 stage_blading_parameters["RPS_lst"] = [next(it) if self.rotating[stage] else 0 for _ in range(num_operating_conditions)]
                 stage_blading_parameters["RPS"] = 0  # Initialize the RPS at zero - this will be overwritten later by the appropriate RPS for the operating condition.
-                stage_blading_parameters["rotation_rate"] = 0  # Initialize the UDFDAC non-dimensional rotational rate to zero - this will be overwritten later by the appropriate Omega within the problem definition.
+                stage_blading_parameters["rotation_rate"] = 0  # Initialize the UDC non-dimensional rotational rate to zero - this will be overwritten later by the appropriate Omega within the problem definition.
                 stage_blading_parameters["radial_stations"] = np.linspace(0, 0.5 * next(it), self.num_radial[stage])  # Radial stations are defined as fraction of blade radius * local radius
 
                 # Extract sectional blading parameter lists
@@ -382,7 +382,7 @@ class DesignVectorInterface:
             duct_variables, blade_blading_parameters = self.ComputeDuctRadialLocation(duct_variables=duct_variables,
                                                                                       blade_blading_parameters=blade_blading_parameters)
 
-        # Write the reference length for UDFDAC
+        # Write the reference length for UDC
         Lref = blade_blading_parameters[0]["radial_stations"][-1] * 2  # The last entry in radial stations corresponds to the blade tip, so multiply by 2 to get the blade diameter
 
         return centerbody_variables, duct_variables, blade_design_parameters, blade_blading_parameters, Lref

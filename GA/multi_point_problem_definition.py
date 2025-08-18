@@ -1,5 +1,5 @@
 """
-problem_definition-multistage
+multi_point_problem_definition
 ==================
 
 Description
@@ -20,13 +20,13 @@ Examples
 
 Notes
 -----
-This module integrates with the UDFDAC for aerodynamic analysis. Ensure that the executable and required
+This module integrates with the UDC for aerodynamic analysis. Ensure that the executable and required
 input files are present in the appropriate directories. The module is designed to handle mixed-variable optimization
 problems, including real and integer variables.
 
 References
 ----------
-For more details on the MTFLOW solver integrated in the UDFDAC and its input/output requirements, refer to the MTFLOW user manual:
+For more details on the MTFLOW solver integrated in the UDC and its input/output requirements, refer to the MTFLOW user manual:
 https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 
 Versioning
@@ -38,7 +38,7 @@ Version: 2.0
 
 Changelog:
 - V1.0: Initial implementation.
-- V2.0: Renamed MTFLOW_caller to UDFDAC for consistency with written thesis. Updated imports to reflect new structure.
+- V2.0: Renamed MTFLOW_caller to UDC for consistency with written thesis. Updated imports to reflect new structure.
 """
 
 # Import standard libraries
@@ -72,7 +72,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
     Inherits from the ElementwiseProblem class from pymoo.core.problem.
     """
 
-    # Define the file names relevant for UDFDAC
+    # Define the file names relevant for UDC
     FILE_TEMPLATES = {"walls": "walls.{}",
                       "tflow": "tflow.{}",
                       "forces": "forces.{}",
@@ -175,10 +175,10 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
 
         # Use lazy-loaded modules (initialized at first use)
         if not hasattr(self, "_lazy_modules_loaded"):
-            from UDFDAC import UDFDAC  # type: ignore
+            from UDC import UDC  # type: ignore
             from Submodels.output_handling import output_processing  # type: ignore
             from Submodels.file_handling import fileHandlingMTSET, fileHandlingMTFLO  # type: ignore
-            self._UDFDAC = UDFDAC
+            self._UDC = UDC
             self._output_processing = output_processing
             self._fileHandlingMTSET = fileHandlingMTSET
             self._fileHandlingMTFLO = fileHandlingMTFLO
@@ -192,7 +192,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         """
         Generate a unique analysis name and write it to self.
         This is required to enable multi-threading of the optimization problem, and log each state file,
-        since each evaluation of UDFDAC requires a unique set of files.
+        since each evaluation of UDC requires a unique set of files.
 
         Returns
         -------
@@ -211,7 +211,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         process_id = os.getpid() % 10000  # 4 chars max
 
         # The analysis name is formatted as: <MMDDHHMMSS>_<process_ID>_<unique_id>.
-        # Analysis name has a length of 28 characters, satisfying the maximum length of 32 characters accepted by UDFDAC.
+        # Analysis name has a length of 28 characters, satisfying the maximum length of 32 characters accepted by UDC.
         self.analysis_name = self.analysis_name_template.format(timestamp, process_id, unique_id)
 
         # Additionally set the tflow file path
@@ -240,7 +240,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
     def ComputeOmega(self,
                      idx: int) -> None:
         """
-        A simple function to compute the non-dimensional UDFDAC rotational rate Omega,
+        A simple function to compute the non-dimensional UDC rotational rate Omega,
         and write it to the oper dictionary.
 
         Parameters
@@ -257,8 +257,8 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         if idx >= len(self.blade_blading_parameters[0]["RPS_lst"]):
             raise IndexError(f"Expected at least {idx+1} RPS values, but got {len(self.blade_blading_parameters[0]['RPS_lst'])}")
 
-        # Compute the non-dimensional rotational rate Omega for UDFDAC and write it to the blading parameters
-        # Multiplied by -1 to comply with sign convention in UDFDAC.
+        # Compute the non-dimensional rotational rate Omega for UDC and write it to the blading parameters
+        # Multiplied by -1 to comply with sign convention in UDC.
 
         # First compute the constant non-dimensionalisation factor
         factor = -2 * np.pi * self.Lref / self.oper["Vinl"]
@@ -273,7 +273,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                  oper_idx) -> None:
         """
         A simple function to correctly set the rotational rate Omega in the tflow.analysis_name file.
-        This is used in a multi-point analysis to update the tflow file for each analysis rather than regenerating the full tflow file.
+        This can be used in a multi-point fixed pitch analysis to update the tflow file for each analysis rather than regenerating the full tflow file.
 
         Parameters
         ----------
@@ -313,11 +313,11 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
 
     def CleanUpFiles(self) -> None:
         """
-        Move the UDFDAC statefile to a separate folder and clean up temporary files.
+        Move the UDC statefile to a separate folder and clean up temporary files.
 
         This method:
         1. Moves the tdat statefile to a persistent archive folder.
-        2. Removes all temporary UDFDAC input/output files, including the original statefile.
+        2. Removes all temporary UDC input/output files, including the original statefile.
 
         Note that the output files can always be regenerated from the statefile.
 
@@ -346,11 +346,11 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                     file_path.unlink(missing_ok=True)
 
 
-    def GenerateUDFDACInputs(self,
+    def GenerateUDCInputs(self,
                              x: dict[str, int | float]) -> bool:
         """
-        Generates the input files required for the UDFDAC simulation.
-        This method creates the necessary input files for the UDFDAC simulation by utilizing the
+        Generates the input files required for the UDC simulation.
+        This method creates the necessary input files for the UDC simulation by utilizing the
         `fileHandlingMTSET/MTFLO` classes from the `Submodels.file_handling` module. It generates two input files:
         - walls.analysis_name: The MTSET input file, which contains the axisymmetric geometries.
         - tflow.analysis_name: The MTFLO blading input file, which contains the blading and design parameters.
@@ -441,7 +441,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                 # Only update variable pitch if it is used, otherwise leave it as constant.
                 blading_params["ref_blade_angle"] = blading_params["ref_blade_angle_lst"][oper_idx]
 
-        # Overwrite the UDFDAC input file to the correct inputs
+        # Overwrite the UDC input file to the correct inputs
         # First set the correct nondimensional rotational rate
         self.ComputeOmega(oper_idx)
 
@@ -506,14 +506,14 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         # Generate a unique analysis name
         self.SetAnalysisName()
 
-        # Generate the UDFDAC input files.
+        # Generate the UDC input files.
         # If design_okay is false, this indicates an error in the input file generation caused by an infeasible design vector.
-        design_okay = self.GenerateUDFDACInputs(x)
+        design_okay = self.GenerateUDCInputs(x)
 
-        # Only perform the UDFDAC analyses if the input generation has succeeded.
-        # Initialise the UDFDAC output list of dictionaries. Use the crash outputs in
+        # Only perform the UDC analyses if the input generation has succeeded.
+        # Initialise the UDC output list of dictionaries. Use the crash outputs in
         # initialisation to pre-populate them in case of a crash or infeasible design vector
-        UDFDAC_outputs = [copy.deepcopy(self.CRASH_OUTPUTS) for _ in range(len(self.multi_oper))]
+        UDC_outputs = [copy.deepcopy(self.CRASH_OUTPUTS) for _ in range(len(self.multi_oper))]
 
         if design_okay:
             valid_grid = False
@@ -526,46 +526,46 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                     # Only update tflow file for the second-onward point, since the initial point is written when first generating the input files
                     design_okay = self.ComputeMTFLOInputs(oper_idx=idx)
 
-                UDFDAC_interface = self._UDFDAC(operating_conditions=self.oper,
-                                                ref_length=self.Lref,
-                                                analysis_name=self.analysis_name,
-                                                grid_checked=valid_grid,
-                                                run_viscous=True,
-                                                **kwargs)
+                UDC_interface = self._UDC(operating_conditions=self.oper,
+                                          ref_length=self.Lref,
+                                          analysis_name=self.analysis_name,
+                                          grid_checked=valid_grid,
+                                          run_viscous=True,
+                                          **kwargs)
                 if design_okay:
                     # Duplicate check required for a multi-point analysis
                     try:
-                        # Run UDFDAC
-                        exit_flag = UDFDAC_interface.caller(external_inputs=True,
-                                                            output_type=OutputType.FORCES_ONLY)
+                        # Run UDC
+                        exit_flag = UDC_interface.caller(external_inputs=True,
+                                                         output_type=OutputType.FORCES_ONLY)
 
                         # Extract outputs
                         if exit_flag != ExitFlag.CRASH:
                             output_handler = self._output_processing(analysis_name=self.analysis_name)
-                            UDFDAC_outputs[idx] = output_handler.GetAllVariables(output_type=0)
+                            UDC_outputs[idx] = output_handler.GetAllVariables(output_type=0)
                         else:
                             # If the solver outputs are invalid, set the crash outputs and break out of the loop to avoid useless calculation of other operating points.
-                            UDFDAC_outputs[idx] = self.CRASH_OUTPUTS
+                            UDC_outputs[idx] = self.CRASH_OUTPUTS
                             break
 
                     except Exception as e:
                         exit_flag = ExitFlag.CRASH
-                        UDFDAC_outputs[idx] = self.CRASH_OUTPUTS
+                        UDC_outputs[idx] = self.CRASH_OUTPUTS
                         if self.verbose:
-                            print(f"[UDFDAC_ERROR] OP={idx}, case={self.analysis_name}: {e}")
+                            print(f"[UDC_ERROR] OP={idx}, case={self.analysis_name}: {e}")
 
                     # Set valid_grid to true to skip the grid checking routines for the next operating point if the solver exited with a converged/non-converged solution.
                     if exit_flag in (ExitFlag.SUCCESS, ExitFlag.NON_CONVERGENCE, ExitFlag.CHOKING):
                         valid_grid = True
                 else:
                     # If any of the operating points are infeasible, set crash outputs.
-                    UDFDAC_outputs[idx] = self.CRASH_OUTPUTS
+                    UDC_outputs[idx] = self.CRASH_OUTPUTS
 
         # Obtain objective(s)
         # The out dictionary is updated in-place
         Objectives(duct_variables=self.duct_variables,
                    oper=self.multi_oper,
-                   Lref=self.Lref).ComputeMultiPointObjectives(analysis_outputs=UDFDAC_outputs,
+                   Lref=self.Lref).ComputeMultiPointObjectives(analysis_outputs=UDC_outputs,
                                                                objective_IDs=config.objective_IDs,
                                                                out=out)
 
@@ -574,7 +574,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         Constraints(self.centerbody_variables,
                     self.duct_variables,
                     self.blade_blading_parameters,
-                    design_okay).ComputeMultiPointConstraints(analysis_outputs=UDFDAC_outputs,
+                    design_okay).ComputeMultiPointConstraints(analysis_outputs=UDC_outputs,
                                                               Lref=self.Lref,
                                                               oper=self.multi_oper,
                                                               out=out)

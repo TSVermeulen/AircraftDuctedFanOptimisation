@@ -39,7 +39,7 @@ Changelog:
 - V1.2: Improved documentation and added type hints for better clarity.
 - V2.0: Refactored code for better modularity and maintainability. Updated examples and notes.
 - V2.1: Updated efficiency objective for better performance. Improved efficiency of frontal area objective
-- V3.0: Renamed MTFLOW to UDFDAC for consistency with written thesis.
+- V3.0: Renamed MTFLOW to UDC for consistency with written thesis.
 """
 
 # Import standard libraries
@@ -176,7 +176,7 @@ class Objectives:
         -------
         - wetted_area : float
             The wetted area as taken from the output file forces.analysis_name.
-            The wetted area is computed in the normalised coordinate system of UDFDAC,
+            The wetted area is computed in the normalised coordinate system of UDC,
             so it is multiplied by Lref^2 to obtain the dimensional form.
         """
 
@@ -320,7 +320,7 @@ class Objectives:
 
         # First compute the outputs which are a function of operating condition
         for i, outputs in enumerate(analysis_outputs):
-            # Rounds the objective values to 5 decimal figures to match the number of sigfigs given by the UDFDAC outputs to avoid rounding errors.
+            # Rounds the objective values to 5 decimal figures to match the number of sigfigs given by the UDC outputs to avoid rounding errors.
             computed_objectives[i * num_varobjectives : (i + 1) * num_varobjectives] = np.fromiter(
                 (round(obj(outputs), 5) for obj in variable_objectives),
                 dtype=float,

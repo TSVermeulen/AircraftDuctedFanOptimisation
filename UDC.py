@@ -1,19 +1,19 @@
 """
-UDFDAC.py
+UDC.py
 =================
 
 Description
 -----------
 This module provides a complete interface with the MTFLOW programs, from input 
 file generation through to output generation, including convergence handling, 
-choking handling, crash detection, and grid refinement in the form of the Unified Ducted Fan Design and Analysis Code (UDFDAC). 
+choking handling, crash detection, and grid refinement in the form of the Unified Ducted fan Code (UDC). 
 It builds on the MTSET_call, MTFLO_call, and MTSOL_call classes to construct the complete interface.
 The module is able to maintain a logging file to allow for debugging through the 
 use of an optional control boolean. 
 
 Classes
 -------
-UDFDAC : class
+UDC : class
     A class to execute the complete MTFLOW interface. Effectively a detailed "wrapper" class of the MTSET_call, MTFLO_call, 
     and MTSOL_call classes. 
 
@@ -44,7 +44,7 @@ Examples
 >>> centrebody_parameters = {"b_0": 0., "b_2": 0., "b_8": 7.52387039e-02, "b_15": 7.46448823e-01, "b_17": 0, 'x_t': 0.29842005729819904, 'y_t': 0.12533559300869632, 'x_c': 0, 'y_c': 0, 'z_TE': 0, 'dz_TE': 0.00277173368735548, 'r_LE': -0.06946118699675888, 'trailing_wedge_angle': np.float64(0.27689037361278407), 'trailing_camberline_angle': 0.0, 'leading_edge_direction': 0.0, "Chord Length": 4, "Leading Edge Coordinates": (0.3, 0)}
 
 >>> start_time = time.time()
->>> class_call = UDFDAC(operating_conditions=oper,
+>>> class_call = UDC(operating_conditions=oper,
 >>>                     centrebody_params=centrebody_parameters,
 >>>                     duct_params=duct_parameters,
 >>>                     blading_parameters=blading_parameters,
@@ -53,7 +53,7 @@ Examples
 >>>                     ).caller()
 >>> end_time = time.time()
     
->>> print(f"Execution of UDFDAC.caller() took {end_time - start_time} second")
+>>> print(f"Execution of UDC.caller() took {end_time - start_time} second")
 
 Notes
 -----
@@ -80,7 +80,7 @@ Changelog:
 - V1.3: Removed HandleExitFlag() method as it is not needed. Extracted choking handling to a separate method.
 - V1.4: Cleaned up imports. Implemented chdir context manager. Switched to pathlib for path operations. Cleaned up/streamlined exit flags. Implemented OutputType enum class. 
 - V1.5: Updated to remove iter_count output from MTSOl_call. Updated documentation. Reduced no of streamwise points to 150 to reduce computational cost. Adopted named constants for grid coefficients and streamwise points. 
-- V2.0: Renamed MTFLOW_caller to UDFDAC for consistency with written thesis. Updated to reflect new structure.
+- V2.0: Renamed MTFLOW_caller to UDC for consistency with written thesis. Updated to reflect new structure.
 """
 
 # Import standard libraries
@@ -117,7 +117,7 @@ def change_working_directory(dir: Path):
         os.chdir(current_dir)
 
 
-class UDFDAC:
+class UDC:
     """
     Wrapper class to execute the complete MTFLOW evaluation cycle.
     This class handles the setup, execution, and error handling for the MTFLOW evaluation process, which includes generating input files, constructing grids, and running solvers.
@@ -136,7 +136,7 @@ class UDFDAC:
                  **kwargs
                  ) -> None:
         """
-        Initialize the UDFDAC class.
+        Initialize the UDC class.
 
         This method sets up the initial state of the class.
 
@@ -205,7 +205,7 @@ class UDFDAC:
         Parameters
         ----------
         - external_inputs : bool, optional
-            A boolean controlling the generation of the MTFLO and MTSET input files. If true, assumes walls.analysis_name and tflow.analysis_name have been generated outside of UDFDAC. 
+            A boolean controlling the generation of the MTFLO and MTSET input files. If true, assumes walls.analysis_name and tflow.analysis_name have been generated outside of UDC. 
             This is useful for debugging or validation against existing, external data. 
         - output_type : OutputType, optional
             An enum to determine which output files to generate. OutputType.FORCES_ONLY generates only the forces file, while OutputType.ALL_FILES generates all files.
@@ -358,7 +358,7 @@ if __name__ == "__main__":
     centrebody_parameters = {"b_0": 0., "b_2": 0., "b_8": 7.52387039e-02, "b_15": 7.46448823e-01, "b_17": 0, 'x_t': 0.29842005729819904, 'y_t': 0.12533559300869632, 'x_c': 0, 'y_c': 0, 'z_TE': 0, 'dz_TE': 0.00277173368735548, 'r_LE': -0.06946118699675888, 'trailing_wedge_angle': np.float64(0.27689037361278407), 'trailing_camberline_angle': 0.0, 'leading_edge_direction': 0.0, "Chord Length": 4, "Leading Edge Coordinates": (0.3, 0)}
 
     start_time = time.time()
-    solver = UDFDAC(operating_conditions=oper,
+    solver = UDC(operating_conditions=oper,
                     ref_length=fan_diameter,
                     analysis_name=analysisName)
 
@@ -369,4 +369,4 @@ if __name__ == "__main__":
                               design_parameters=design_parameters)
     end_time = time.time()
 
-    print(f"Execution of UDFDAC.caller() took {end_time - start_time} second")
+    print(f"Execution of UDC.caller() took {end_time - start_time} second")
