@@ -1,7 +1,4 @@
 # The Unified Ducted Fan Code and Ducted Fan Optimisation Framework
-
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/TSVermeulen/Conceptual-Investigation-of-Alternative-Electric-Ducted-Fan-Architectures)
-
 This GitHub repository contains the codebase developed for the Unified Ducted fan Code (UDC) and its implementation into a ducted fan optimisation framework using the Unified Non-dominated Sorting Genetic Algorithm III (U-NSGA-III), as part of the MSc thesis titled "A Framework for Medium-Fidelity Ducted Fan Design Optimisation" by T.S. Vermeulen at Delft University of Technology, Faculty of Aerospace Engineering.
 
 ## Description
