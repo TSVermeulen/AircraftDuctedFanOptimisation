@@ -3,7 +3,7 @@
 
 cff-version: 1.2.0
 title: >-
-  Unified Ducted Fan Design and Analysis Code and
+  Unified Ducted fan Code and
   Optimisation Algorithm
 message: >-
   If you use this software, please cite it using the
@@ -16,7 +16,7 @@ authors:
 repository-code: >-
   https://github.com/TSVermeulen/AircraftDuctedFanOptimisation
 abstract: >-
-  Code repository of the developed UDFDAC and implementation
+  Code repository of the developed UDC and implementation
   into the U-NSGA-III genetic algorithm, as done during this
   thesis. 
 license: MIT
