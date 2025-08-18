@@ -27,7 +27,7 @@ To run the UDC or the developed optimisation framework, the following dependenci
 - Dill (Optimisation framework only)
 - Pandas
 
-The tools and frameworks developed in this thesis were written in Python 3.12.8 using a conda environment. Although the author sees no issues with usage at other Python versions, no guarantees are given. An offline Python install package is available in the misc subfolder of this repository. 
+The tools and frameworks developed in this thesis were written in Python 3.12.8 using a standard conda environment. Although the author sees no issues with usage at other Python versions, no guarantees are given.
 
 ## The UDFDAC
 
