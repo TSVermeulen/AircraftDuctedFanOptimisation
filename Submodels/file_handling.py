@@ -319,7 +319,7 @@ class fileHandlingMTSET:
             xy_duct = self.GetProfileCoordinates(self.duct_params)
             
         # Non-dimensionalise the profile coordinates
-        xy_centerbody = np.round(xy_centerbody / self.ref_length, 5)
+        xy_centerbody = xy_centerbody / self.ref_length
 
         # Generate walls.xxx input data structure
         file_path = self.submodels_path / "walls.{}".format(self.analysis_name)
@@ -339,7 +339,7 @@ class fileHandlingMTSET:
                 file.write('    '.join(map(str, [999., 999.])) + '\n')
 
                 # Non-dimensionalise the duct coordinates
-                xy_duct = np.round(xy_duct / self.ref_length, 5)
+                xy_duct = xy_duct / self.ref_length
 
                 for row in xy_duct:
                     file.write('    '.join(map(str, row)) + '\n')

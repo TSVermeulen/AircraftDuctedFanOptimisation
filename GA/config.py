@@ -70,24 +70,24 @@ class ObjectiveID(IntEnum):
     ENERGY = auto()
     
 # Define the (multi-point) operating conditions
-multi_oper = [#{"Inlet_Mach": 0.125,  # ~take-off condition
-            #    "N_crit": 9,
-            #    "atmos": Atmosphere(0),
-            #    "Omega": -11.42397,
-            #    "RPS": 42,
-            #    "flight_phase_time": 1200},
+multi_oper = [{"Inlet_Mach": 0.125,  # ~take-off condition
+               "N_crit": 9,
+               "atmos": Atmosphere(0),
+               "Omega": -11.42397,
+               "RPS": 42,
+               "flight_phase_time": 15*60},
             #   {"Inlet_Mach": 0.2,  # loiter condition at ~125kts
             #    "N_crit": 9,
             #    "atmos": Atmosphere(3048),
             #    "Omega": -11.42397,
             #    "RPS": 44,
-            #    "flight_phase_time": 6120},
-              {"Inlet_Mach": 0.3,  # Combat condition at ~185kts
-               "N_crit": 9,
-               "atmos": Atmosphere(3048),
-               "Omega": -11.42397,
-               "RPS": 58.5,
-               "flight_phase_time": 3600},
+            #    "flight_phase_time": 1.7*3600},
+            #   {"Inlet_Mach": 0.3,  # Combat condition at ~185kts
+            #    "N_crit": 9,
+            #    "atmos": Atmosphere(3048),
+            #    "Omega": -11.42397,
+            #    "RPS": 58.5,
+            #    "flight_phase_time": 3600},
                 ]
 
 # Compute the inlet velocities and write them to the multi-point oper dict
@@ -179,7 +179,7 @@ def _load_blading(omega: float,
                                    "ref_blade_angle_lst": [0], 
                                    "reference_section_blade_angle": 0, 
                                    "blade_count": 4, 
-                                   "radial_stations": np.array([0.0, 1.20968]), 
+                                   "radial_stations": np.array([0.0, 1.15]), 
                                    "chord_length": np.array([0.57658, 0.14224]), 
                                    "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                    "sweep_angle": np.array([0, 0])}
@@ -193,7 +193,7 @@ def _load_blading(omega: float,
                                  "ref_blade_angle_lst": [0], 
                                  "reference_section_blade_angle": 0, 
                                  "blade_count": 2, 
-                                 "radial_stations": np.array([0.0, 1.20968]), 
+                                 "radial_stations": np.array([0.0, 1.15]), 
                                  "chord_length": np.array([0.10287, 0.10287]), 
                                  "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                  "sweep_angle": np.array([0, 0])}
@@ -248,13 +248,13 @@ STAGE_BLADING_PARAMETERS, STAGE_DESIGN_VARIABLES = _load_blading(multi_oper[0]["
                                                                  REFERENCE_BLADE_ANGLES[0])
 
 # Define the target thrust/power and efficiency for use in constraints
-P_ref_constr = [#2.3201 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # take-off power
+P_ref_constr = [2.3201 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # take-off power
                 # 0.46287 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # endurance power
-                0.21720 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # combat power
+                # 0.21720 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # combat power
                 ]  # Reference Power in Watts derived from baseline analysis
-T_ref_constr = [#1.6485 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # take-off thrust
+T_ref_constr = [1.6485 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # take-off thrust
                 # 0.36771 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # endurance thrust
-                0.16605 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # combat thrust
+                # 0.16605 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # combat thrust
                 ] # Reference Thrust in Newtons derived from baseline analysis
 
 deviation_range = 0.01  # +/- x% of the reference value for the constraints
@@ -293,7 +293,7 @@ class EqConstraintID(IntEnum):
     
     CONSTANT_POWER = auto()
 
-constraint_IDs = [[InEqConstraintID.EFFICIENCY_LEQ_THEOR_LIMIT, InEqConstraintID.THRUST_FEASIBILITY, InEqConstraintID.ENERGY_IMPROVEMENT],
+constraint_IDs = [[InEqConstraintID.EFFICIENCY_LEQ_THEOR_LIMIT, InEqConstraintID.THRUST_FEASIBILITY],
                   []]
 
 
@@ -315,10 +315,11 @@ MAX_ONE2ONE_ATTEMPTS = 200  # Maximum number of attempts to enforce one-to-one o
 
 # Problem controls
 ARCHIVE_STATEFILES = False  # Bool to control if the statefiles should be archived after each evaluation. 
-PROBLEM_TYPE = "multi_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file. 
+PROBLEM_TYPE = "single_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file. 
 RESERVED_THREADS = 0  # Threads reserved for the operating system and any other programs.
 THREADS_PER_EVALUATION = 1  # Number of threads per MTFLOW evaluation: one for running MTSET/MTSOL/MTFLO and one for polling outputs
 
 # Postprocessing visualisation controls
-ref_objectives = np.array([-0.84830, 0.54508])  # ref objective values for endurance cruise condition
-frontcons_objectives = np.array([-0.82313, 0.51689])  # ref objective values for the endurance cruise condition with a frontal area constraint. 
+# ref_objectives = np.array([-0.74376, 1])  # ref objective values for endurance cruise condition
+# ref_objectives = np.array([-0.66469])  # ref objective values for take-off condition
+ref_objectives = np.array([-0.7645])  # ref objective values for combat condition
