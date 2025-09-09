@@ -319,20 +319,20 @@ class DesignVectorInterface:
                     except StopIteration:
                         raise ValueError("Design vector is too short for the expected blade radial section variables.") from None
                     section_parameters = {"b_0": section_vals[0],
-                                        "b_2": section_vals[1],
-                                        "b_8": self.Getb8(section_vals[2], section_vals[11], section_vals[5], section_vals[6]),
-                                        "b_15": section_vals[3],
-                                        "b_17": section_vals[4],
-                                        "x_t": section_vals[5],
-                                        "y_t": section_vals[6],
-                                        "x_c": section_vals[7],
-                                        "y_c": section_vals[8],
-                                        "z_TE": section_vals[9],
-                                        "dz_TE": section_vals[10],
-                                        "r_LE": section_vals[11],
-                                        "trailing_wedge_angle": section_vals[12],
-                                        "trailing_camberline_angle": section_vals[13],
-                                        "leading_edge_direction": section_vals[14]}
+                                          "b_2": section_vals[1],
+                                          "b_8": self.Getb8(section_vals[2], section_vals[11], section_vals[5], section_vals[6]),
+                                          "b_15": section_vals[3],
+                                          "b_17": section_vals[4],
+                                          "x_t": section_vals[5],
+                                          "y_t": section_vals[6],
+                                          "x_c": section_vals[7],
+                                          "y_c": section_vals[8],
+                                          "z_TE": section_vals[9],
+                                          "dz_TE": section_vals[10],
+                                          "r_LE": section_vals[11],
+                                          "trailing_wedge_angle": section_vals[12],
+                                          "trailing_camberline_angle": section_vals[13],
+                                          "leading_edge_direction": section_vals[14]}
                     stage_design_parameters.append(section_parameters)
             else:
                 # If the stage is meant to be constant, read it in from config.
