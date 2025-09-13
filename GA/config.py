@@ -121,7 +121,7 @@ OPTIMIZE_STAGE = [True, False, False]
 ROTATING = [True, False, False]
 NUM_RADIALSECTIONS = [4, 2, 2]  # Define the number of radial sections at which the blade profiles for each stage will be defined. Note that we cannot use more than 16 radial sections due to limitations of MTFLOW. Advice from the user manual: ~5 or less is good. 
 NUM_STAGES = 3  # Define the number of stages (i.e. total count of rotors + stators)
-REFERENCE_BLADE_ANGLES = (float(np.deg2rad(14.5)), float(np.deg2rad(14.5)))  # Reference angles at the reference section of the rotor, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
+REFERENCE_BLADE_ANGLES = (float(np.deg2rad(14.5)))  # Reference angles at the reference section of the rotor, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
 BLADE_DIAMETERS = [2.1336, 2.2098, 2.2098]
 tipGap = 0.01016  # 1.016 cm tip gap
 
@@ -149,6 +149,10 @@ def _load_blading(RPS_lst: tuple[float],
         - design_parameters : list
             A list containing dictionaries with the design parameters for each radial station.
     """
+
+    # Explicitly cast RPS and ref_blade_angle to lists if lengths are 1
+    RPS_lst = [RPS_lst] if isinstance(RPS_lst, (int, float)) else list(RPS_lst)
+    ref_blade_angle_lst = [ref_blade_angle_lst] if isinstance(ref_blade_angle_lst, (int, float)) else list(ref_blade_angle_lst)
 
     # Start defining the MTFLO blading inputs
     radial_stations = np.array([0, 0.32004, 0.74676, 1.0668])  # 0, 0.3, 0.7, 1

@@ -137,8 +137,8 @@ class DesignVectorInterface:
                 # Compute the LE and TE x-coordinates of the tip section
                 sweep = np.tan(blading["sweep_angle"][-1])
                 x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip
-                projected_chord = blading["chord_length"][-1] * np.cos(np.pi/2 -
-                                                                    (blading["blade_angle"][-1] + blading["ref_blade_angle"] - blading["reference_section_blade_angle"]))
+                chi = np.pi/2 - (blading["blade_angle"][-1] + blading["ref_blade_angle"] - blading["reference_section_blade_angle"])
+                projected_chord = blading["chord_length"][-1] * np.cos(chi)
                 x_tip_TE = x_tip_LE + projected_chord
 
                 # Compute the offsets for the LE and TE of the blade tip
@@ -164,7 +164,7 @@ class DesignVectorInterface:
         for i in range(self.num_stages):
             if not self.rotating[i]:
                 r_old = blade_blading_parameters[i]["radial_stations"][-1]
-                if r_old:
+                if r_old != 0:
                     # Simple guard against r=0
                     blade_blading_parameters[i]["radial_stations"] = blade_blading_parameters[i]["radial_stations"] / r_old * LE_coordinate_duct
                 else:
