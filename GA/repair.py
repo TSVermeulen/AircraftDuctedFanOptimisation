@@ -540,9 +540,9 @@ class RepairIndividuals(Repair):
 
             # Reconstruct the design vector into a singular dictionary
             x = self.dvi.ReconstructDesignVector(centerbody_variables,
-                                               duct_variables,
-                                               blade_design_parameters,
-                                               blade_blading_parameters)
+                                                 duct_variables,
+                                                 blade_design_parameters,
+                                                 blade_blading_parameters)
 
             # Convert design vector into array together with bounds to enforce design variable bounds
             x_array = np.array(list(x.values()))

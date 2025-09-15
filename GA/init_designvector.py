@@ -28,11 +28,13 @@ Versioning
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@student.tudelft.nl
 Student ID: 4995309
-Version: 1.1
+Version: 1.2
 
 Changelog:
 - V1.0: Initial implementation. Extracted from the problem_definition.py file for better modularity and readability.
 - V1.1: Implemented optional variable pitch handling.
+- V1.2: Made blade profile thickness distributions optional in the design vector. 
+        Controlled in config using the OPTIMIZE_BLADETHICKNESS boolean
 """
 
 # Import standard libraries
@@ -66,6 +68,7 @@ class DesignVector:
 
     # Initialize the profile vars as None
     _cached_profile_vars = None
+    _cached_camberonly_profile_vars = None
 
     # Indices for the thickness parameters for the centerbody parameters
     # We force the centerbody to be symmetric, so camber parameters are not needed
@@ -73,38 +76,58 @@ class DesignVector:
     
 
     @classmethod
-    def _create_profile_vars(cls) -> list:
+    def _create_profile_vars(cls, 
+                             include_thickness: bool = True) -> list:
         """
         Create the profile section variables once and cache them.
+
+        Parameters
+        ----------
+        - include_thickness : bool, optional
+            Optional control bool to decide if the profile camber distribution
+            should be part of the profile variables. 
         """
-        return [Real(bounds=cls.BP_3434_bounds["b_0"]),  # b_0
-                Real(bounds=cls.BP_3434_bounds["b_2"]),  # b_2
-                Real(bounds=cls.BP_3434_bounds["b_8"]),  # mapping variable for b_8
-                Real(bounds=cls.BP_3434_bounds["b_15"]),  # b_15
-                Real(bounds=cls.BP_3434_bounds["b_17"]),  # b_17
-                Real(bounds=cls.BP_3434_bounds["x_t"]),  # x_t
-                Real(bounds=cls.BP_3434_bounds["y_t"]),  # y_t
-                Real(bounds=cls.BP_3434_bounds["x_c"]),  # x_c
-                Real(bounds=cls.BP_3434_bounds["y_c"]),  # y_c
-                Real(bounds=cls.BP_3434_bounds["z_TE"]),  # z_TE
-                Real(bounds=cls.BP_3434_bounds["dz_TE"]),  # dz_TE
-                Real(bounds=cls.BP_3434_bounds["r_LE"]),  # r_LE
-                Real(bounds=cls.BP_3434_bounds["trailing_wedge_angle"]),  # trailing_wedge_angle
-                Real(bounds=cls.BP_3434_bounds["trailing_camberline_angle"]),  # trailing_camberline_angle
-                Real(bounds=cls.BP_3434_bounds["leading_edge_direction"])]  # leading_edge_direction
+        if include_thickness:
+            return [Real(bounds=cls.BP_3434_bounds["b_0"]),  # b_0
+                    Real(bounds=cls.BP_3434_bounds["b_2"]),  # b_2
+                    Real(bounds=cls.BP_3434_bounds["b_8"]),  # mapping variable for b_8
+                    Real(bounds=cls.BP_3434_bounds["b_15"]),  # b_15
+                    Real(bounds=cls.BP_3434_bounds["b_17"]),  # b_17
+                    Real(bounds=cls.BP_3434_bounds["x_t"]),  # x_t
+                    Real(bounds=cls.BP_3434_bounds["y_t"]),  # y_t
+                    Real(bounds=cls.BP_3434_bounds["x_c"]),  # x_c
+                    Real(bounds=cls.BP_3434_bounds["y_c"]),  # y_c
+                    Real(bounds=cls.BP_3434_bounds["z_TE"]),  # z_TE
+                    Real(bounds=cls.BP_3434_bounds["dz_TE"]),  # dz_TE
+                    Real(bounds=cls.BP_3434_bounds["r_LE"]),  # r_LE
+                    Real(bounds=cls.BP_3434_bounds["trailing_wedge_angle"]),  # trailing_wedge_angle
+                    Real(bounds=cls.BP_3434_bounds["trailing_camberline_angle"]),  # trailing_camberline_angle
+                    Real(bounds=cls.BP_3434_bounds["leading_edge_direction"])]  # leading_edge_direction
+        else:
+            return [Real(bounds=cls.BP_3434_bounds["b_0"]),  # b_0
+                    Real(bounds=cls.BP_3434_bounds["b_2"]),  # b_2
+                    Real(bounds=cls.BP_3434_bounds["b_17"]),  # b_17
+                    Real(bounds=cls.BP_3434_bounds["x_c"]),  # x_c
+                    Real(bounds=cls.BP_3434_bounds["y_c"]),  # y_c
+                    Real(bounds=cls.BP_3434_bounds["z_TE"]),  # z_TE
+                    Real(bounds=cls.BP_3434_bounds["trailing_camberline_angle"]),  # trailing_camberline_angle
+                    Real(bounds=cls.BP_3434_bounds["leading_edge_direction"])]  # leading_edge_direction
+
 
     @classmethod
-    def profile_section_vars(cls) -> list:
+    def profile_section_vars(cls) -> tuple[list]:
         """
-        Return the standard 15-var profile section definition.
+        Return the standard profile section definitions.
         Bounds are based on those presented in:
             Rogalsky T. Acceleration of differential evolution for aerodynamic design.
             Ph.D. Thesis, University of Manitoba; 2004.
         """
 
         if cls._cached_profile_vars is None:
-            cls._cached_profile_vars = cls._create_profile_vars()
-        return cls._cached_profile_vars.copy()  # Return a copy to prevent modification.
+            cls._cached_profile_vars = cls._create_profile_vars(include_thickness=True)
+        if cls._cached_camberonly_profile_vars is None:
+            cls._cached_camberonly_profile_vars = cls._create_profile_vars(include_thickness=False)
+        return cls._cached_profile_vars.copy(), cls._cached_camberonly_profile_vars.copy()  # Return copies to prevent modification.
 
 
     @classmethod
@@ -130,14 +153,14 @@ class DesignVector:
         vector = []
         if cfg.OPTIMIZE_CENTERBODY:
             # If the centerbody is to be optimised, initialise the variable types
-            complete_profile = cls.profile_section_vars()
+            complete_profile = cls.profile_section_vars()[0]
             section_profile = [complete_profile[i] for i in cls.CENTERBODY_VAR_INDICES]
 
             vector.extend(section_profile)
             vector.append(Real(bounds=(0.25, 4)))  # Chord Length
         if cfg.OPTIMIZE_DUCT:
             # If the duct is to be optimised, intialise the variable types
-            duct_profile = cls.profile_section_vars()
+            duct_profile = cls.profile_section_vars()[0]
             duct_profile[6] = Real(bounds=(0.05, 0.2))  # set y_t for the duct
             vector.extend(duct_profile)
             vector.append(Real(bounds=(1.0, 1.5)))  # Chord Length
@@ -157,9 +180,14 @@ class DesignVector:
                 })
 
         # For the stage(s) marked for optimisation, add the profile design variables to the design vector
+        # Control of the thickness distribution is global for all blade rows, so compute it outside of the loop
+        if cfg.OPTIMIZE_BLADETHICKNESS:
+            section_blade_profile = cls.profile_section_vars()[0]
+        else:
+            section_blade_profile = cls.profile_section_vars()[1]
         for stage_config in stage_configs:
             for _ in range(stage_config['num_radial_sections']):
-                vector.extend(cls.profile_section_vars())
+                vector.extend(section_blade_profile)
 
         # Add stage-specific variables
         for stage_config in stage_configs:
