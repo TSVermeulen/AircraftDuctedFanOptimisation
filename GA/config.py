@@ -121,6 +121,7 @@ OPTIMIZE_STAGE = [True, False, False]
 ROTATING = [True, False, False]
 NUM_RADIALSECTIONS = [4, 2, 2]  # Define the number of radial sections at which the blade profiles for each stage will be defined. Note that we cannot use more than 16 radial sections due to limitations of MTFLOW. Advice from the user manual: ~5 or less is good. 
 NUM_STAGES = 3  # Define the number of stages (i.e. total count of rotors + stators)
+OPTIMIZE_BLADETHICKNESS = True  # Boolean to control if the blade thickness distributions should be optimised
 REFERENCE_BLADE_ANGLES = [float(np.deg2rad(14.5)), 0, 0]  # Reference angles at the reference section, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
 BLADE_DIAMETERS = [2.1336, 2.2098, 2.2098]
 tipGap = 0.01016  # 1.016 cm tip gap

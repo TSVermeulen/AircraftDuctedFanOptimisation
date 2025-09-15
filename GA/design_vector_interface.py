@@ -26,7 +26,7 @@ Versioning
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@student.tudelft.nl
 Student ID: 4995309
-Version: 2.0
+Version: 2.1
 
 Changelog:
 - V1.0: Initial implementation.
@@ -34,6 +34,8 @@ Changelog:
 - V1.2: Rework of design vector access. Inclusion of utils.ensure_repo_paths.
 - V1.3: Added type hints for better code clarity and maintainability. Added reconstruct_design_vector method.
 - V2.0: Renamed MTFLOW to UDC for consistency with written thesis.
+- V2.1: Added support for config.OPTIMIZE_BLADETHICKNESS boolean. 
+        Reduces problem dimensionality by optionally optimising the blade thickness distributions.
 """
 
 # Import standard libraries
@@ -71,7 +73,12 @@ class DesignVectorInterface:
         self.num_radial = config.NUM_RADIALSECTIONS
         self.num_stages = config.NUM_STAGES
         self.optimize_stages = config.OPTIMIZE_STAGE
+        self.optimize_bladethickness = config.OPTIMIZE_BLADETHICKNESS
         self.rotating = config.ROTATING
+        self.tipGap = config.tipGap
+        self.optimize_centrebody = config.OPTIMIZE_CENTERBODY
+        self.optimize_duct = config.OPTIMIZE_DUCT
+
 
         # Initialize the AirfoilParameterisation class for slightly better memory usage
         self.Parameterisation = _PARAMETERISATION
@@ -123,7 +130,6 @@ class DesignVectorInterface:
                                                    extrapolate=False)
 
         x_min, x_max = lower_x[order[0]], lower_x[order[-1]]
-        tip_gap = config.tipGap
         for i in range(self.num_stages):
             if not self.rotating[i]:
                 continue
@@ -144,7 +150,7 @@ class DesignVectorInterface:
             TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))  # Set to 0 if duct does not lie above TE
 
             # Compute the radial location of the duct
-            radial_duct_coordinates[i] = y_tip + tip_gap + max(LE_offset, TE_offset)
+            radial_duct_coordinates[i] = y_tip + self.tipGap + max(LE_offset, TE_offset)
 
         # The LE y coordinate of the duct is then the maximum of the computed coordinates to enforce the minimum tip gap everywhere
         if radial_duct_coordinates.any():
@@ -245,14 +251,14 @@ class DesignVectorInterface:
         it = iter(ordered_values)
 
         # Define a pointer to count the number of variable parameters
-        centerbody_designvar_count = len(config.CENTERBODY_VALUES)
-        duct_designvar_count = len(config.DUCT_VALUES)
-        section_designvar_count = duct_designvar_count - 2  # -2 since the sections do not use chord length or LE x-coordinate as variable.
+        centerbody_designvar_count = 8
+        duct_designvar_count = 17
+        section_designvar_count = 15 if self.optimize_bladethickness else 8
 
         # Deconstruct the centerbody values if it's variable.
         # If the centerbody is constant, read in the centerbody values from config.
         # Note that if the centerbody is variable, we keep the LE coordinate fixed, as the LE coordinate of the duct would already be free to move.
-        if config.OPTIMIZE_CENTERBODY:
+        if self.optimize_centrebody:
             try:
                 centerbody_vals = [next(it) for _ in range(centerbody_designvar_count)]
             except StopIteration:
@@ -279,7 +285,7 @@ class DesignVectorInterface:
 
         # Deconstruct the duct values if it's variable.
         # If the duct is constant, read in the duct values from config.
-        if config.OPTIMIZE_DUCT:
+        if self.optimize_duct:
             try:
                 duct_vals = [next(it) for _ in range(duct_designvar_count)]
             except StopIteration:
@@ -312,27 +318,45 @@ class DesignVectorInterface:
             stage_design_parameters = []
             if self.optimize_stages[stage]:
                 # If the stage is to be optimized, read in the design vector for the blade profiles
-                for _ in range(self.num_radial[stage]):
+                for section in range(self.num_radial[stage]):
                     # Loop over the number of radial sections and append each section to stage_design_parameters
                     try:
                         section_vals = [next(it) for _ in range(section_designvar_count)]
                     except StopIteration:
                         raise ValueError("Design vector is too short for the expected blade radial section variables.") from None
-                    section_parameters = {"b_0": section_vals[0],
-                                        "b_2": section_vals[1],
-                                        "b_8": self.Getb8(section_vals[2], section_vals[11], section_vals[5], section_vals[6]),
-                                        "b_15": section_vals[3],
-                                        "b_17": section_vals[4],
-                                        "x_t": section_vals[5],
-                                        "y_t": section_vals[6],
-                                        "x_c": section_vals[7],
-                                        "y_c": section_vals[8],
-                                        "z_TE": section_vals[9],
-                                        "dz_TE": section_vals[10],
-                                        "r_LE": section_vals[11],
-                                        "trailing_wedge_angle": section_vals[12],
-                                        "trailing_camberline_angle": section_vals[13],
-                                        "leading_edge_direction": section_vals[14]}
+                    if self.optimize_bladethickness:
+                        section_parameters = {"b_0": section_vals[0],
+                                              "b_2": section_vals[1],
+                                              "b_8": self.Getb8(section_vals[2], section_vals[11], section_vals[5], section_vals[6]),
+                                              "b_15": section_vals[3],
+                                              "b_17": section_vals[4],
+                                              "x_t": section_vals[5],
+                                              "y_t": section_vals[6],
+                                              "x_c": section_vals[7],
+                                              "y_c": section_vals[8],
+                                              "z_TE": section_vals[9],
+                                              "dz_TE": section_vals[10],
+                                              "r_LE": section_vals[11],
+                                              "trailing_wedge_angle": section_vals[12],
+                                              "trailing_camberline_angle": section_vals[13],
+                                              "leading_edge_direction": section_vals[14]}
+                    else:
+                        # If only the blade camber distribution is meant to be optimised, read in the thickness parameters from the reference design
+                        section_parameters = {"b_0": section_vals[0],
+                                              "b_2": section_vals[1],
+                                              "b_8": config.STAGE_DESIGN_VARIABLES[stage][section]["b_8"],
+                                              "b_15": config.STAGE_DESIGN_VARIABLES[stage][section]["b_15"],
+                                              "b_17": section_vals[2],
+                                              "x_t": config.STAGE_DESIGN_VARIABLES[stage][section]["x_t"],
+                                              "y_t": config.STAGE_DESIGN_VARIABLES[stage][section]["y_t"],
+                                              "x_c": section_vals[3],
+                                              "y_c": section_vals[4],
+                                              "z_TE": section_vals[5],
+                                              "dz_TE": config.STAGE_DESIGN_VARIABLES[stage][section]["dz_TE"],
+                                              "r_LE": config.STAGE_DESIGN_VARIABLES[stage][section]["r_LE"],
+                                              "trailing_wedge_angle": config.STAGE_DESIGN_VARIABLES[stage][section]["trailing_wedge_angle"],
+                                              "trailing_camberline_angle": section_vals[6],
+                                              "leading_edge_direction": section_vals[7]}
                     stage_design_parameters.append(section_parameters)
             else:
                 # If the stage is meant to be constant, read it in from config.
@@ -471,7 +495,21 @@ class DesignVectorInterface:
             if config.OPTIMIZE_STAGE[i]:
                 for j in range(config.NUM_RADIALSECTIONS[i]):
                     # Loop over the number of radial sections and append each section to stage_design_parameters
-                    vector.extend(profile_section_vars(blade_design_parameters[i][j]))
+                    if self.optimize_bladethickness:
+                        # If the full profile parameterisation is used, simply add the dictionary values
+                        profile = profile_section_vars(blade_design_parameters[i][j])
+                        vector.extend(profile)
+                    else:
+                        # If only the camber distribution is optimised, extract those from the profile and add them to the design vector
+                        profile = [blade_design_parameters[i][j]["b_0"],
+                                   blade_design_parameters[i][j]["b_2"],
+                                   blade_design_parameters[i][j]["b_17"],
+                                   blade_design_parameters[i][j]["x_c"],
+                                   blade_design_parameters[i][j]["y_c"],
+                                   blade_design_parameters[i][j]["z_TE"],
+                                   blade_design_parameters[i][j]["trailing_camberline_angle"],
+                                   blade_design_parameters[i][j]["leading_edge_direction"]]
+                        vector.extend(profile)
 
         for i, opt_stage in enumerate(config.OPTIMIZE_STAGE):
             # Loop over the stages and write the blading parameters to the design vector
@@ -495,3 +533,19 @@ class DesignVectorInterface:
         vector = {f"x{i}": var for i, var in enumerate(vector)}
 
         return vector
+    
+
+if __name__ == "__main__":
+    # Create a reference vector for testing
+    from problem_definition import OptimizationProblem
+    from init_population import InitPopulation  # type: ignore
+    from repair import RepairIndividuals  # type: ignore
+
+    test = OptimizationProblem()
+    ref_pop = InitPopulation(population_type="biased").GeneratePopulation()
+    ref_vectors = ref_pop.get("X")
+    ref_vectors = RepairIndividuals()._do(test, ref_vectors)
+    ref_vector = ref_vectors[0]  # Use the first vector for testing, since it is the reference vector
+
+    interface = DesignVectorInterface()
+    vector = interface.DeconstructDesignVector(ref_vector)
