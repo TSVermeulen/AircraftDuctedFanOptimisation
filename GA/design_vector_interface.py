@@ -75,6 +75,10 @@ class DesignVectorInterface:
         self.optimize_stages = config.OPTIMIZE_STAGE
         self.optimize_bladethickness = config.OPTIMIZE_BLADETHICKNESS
         self.rotating = config.ROTATING
+        self.tipGap = config.tipGap
+        self.optimize_centrebody = config.OPTIMIZE_CENTERBODY
+        self.optimize_duct = config.OPTIMIZE_DUCT
+
 
         # Initialize the AirfoilParameterisation class for slightly better memory usage
         self.Parameterisation = _PARAMETERISATION
@@ -126,7 +130,6 @@ class DesignVectorInterface:
                                                    extrapolate=False)
 
         x_min, x_max = lower_x[order[0]], lower_x[order[-1]]
-        tip_gap = config.tipGap
         for i in range(self.num_stages):
             if not self.rotating[i]:
                 continue
@@ -147,7 +150,7 @@ class DesignVectorInterface:
             TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))  # Set to 0 if duct does not lie above TE
 
             # Compute the radial location of the duct
-            radial_duct_coordinates[i] = y_tip + tip_gap + max(LE_offset, TE_offset)
+            radial_duct_coordinates[i] = y_tip + self.tipGap + max(LE_offset, TE_offset)
 
         # The LE y coordinate of the duct is then the maximum of the computed coordinates to enforce the minimum tip gap everywhere
         if radial_duct_coordinates.any():
@@ -248,14 +251,14 @@ class DesignVectorInterface:
         it = iter(ordered_values)
 
         # Define a pointer to count the number of variable parameters
-        centerbody_designvar_count = len(config.CENTERBODY_VALUES)
-        duct_designvar_count = len(config.DUCT_VALUES)
+        centerbody_designvar_count = 8
+        duct_designvar_count = 17
         section_designvar_count = 15 if self.optimize_bladethickness else 8
 
         # Deconstruct the centerbody values if it's variable.
         # If the centerbody is constant, read in the centerbody values from config.
         # Note that if the centerbody is variable, we keep the LE coordinate fixed, as the LE coordinate of the duct would already be free to move.
-        if config.OPTIMIZE_CENTERBODY:
+        if self.optimize_centrebody:
             try:
                 centerbody_vals = [next(it) for _ in range(centerbody_designvar_count)]
             except StopIteration:
@@ -282,7 +285,7 @@ class DesignVectorInterface:
 
         # Deconstruct the duct values if it's variable.
         # If the duct is constant, read in the duct values from config.
-        if config.OPTIMIZE_DUCT:
+        if self.optimize_duct:
             try:
                 duct_vals = [next(it) for _ in range(duct_designvar_count)]
             except StopIteration:
@@ -492,7 +495,7 @@ class DesignVectorInterface:
             if config.OPTIMIZE_STAGE[i]:
                 for j in range(config.NUM_RADIALSECTIONS[i]):
                     # Loop over the number of radial sections and append each section to stage_design_parameters
-                    if config.OPTIMIZE_BLADETHICKNESS:
+                    if self.optimize_bladethickness:
                         # If the full profile parameterisation is used, simply add the dictionary values
                         profile = profile_section_vars(blade_design_parameters[i][j])
                         vector.extend(profile)

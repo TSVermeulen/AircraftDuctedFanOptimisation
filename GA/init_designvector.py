@@ -39,6 +39,7 @@ Changelog:
 
 # Import standard libraries
 from types import ModuleType
+from typing import ClassVar
 
 # Import 3rd party libraries
 import numpy as np
@@ -67,8 +68,8 @@ class DesignVector:
                       "leading_edge_direction": (0.001, 0.2)}
 
     # Initialize the profile vars as None
-    _cached_profile_vars = None
-    _cached_camberonly_profile_vars = None
+    _cached_profile_vars: ClassVar[list | None] = None
+    _cached_camberonly_profile_vars: ClassVar[list | None] = None
 
     # Indices for the thickness parameters for the centerbody parameters
     # We force the centerbody to be symmetric, so camber parameters are not needed
@@ -115,7 +116,7 @@ class DesignVector:
 
 
     @classmethod
-    def profile_section_vars(cls) -> tuple[list]:
+    def profile_section_vars(cls) -> tuple[list, list]:
         """
         Return the standard profile section definitions.
         Bounds are based on those presented in:
