@@ -76,12 +76,12 @@ multi_oper = [{"Inlet_Mach": 0.125,  # ~take-off condition
                "Omega": -11.42397,
                "RPS": 42,
                "flight_phase_time": 15*60},
-              {"Inlet_Mach": 0.2,  # loiter condition at ~125kts
-               "N_crit": 9,
-               "atmos": Atmosphere(3048),
-               "Omega": -11.42397,
-               "RPS": 44,
-               "flight_phase_time": 1.7*3600},
+            #   {"Inlet_Mach": 0.2,  # loiter condition at ~125kts
+            #    "N_crit": 9,
+            #    "atmos": Atmosphere(3048),
+            #    "Omega": -11.42397,
+            #    "RPS": 44,
+            #    "flight_phase_time": 1.7*3600},
             #   {"Inlet_Mach": 0.3,  # Combat condition at ~185kts
             #    "N_crit": 9,
             #    "atmos": Atmosphere(3048),
@@ -98,7 +98,7 @@ for oper_dict in multi_oper:
 # Calculate total objectives: base objectives × operating points, 
 # minus single-point-only objectives for additional operating points
 # Define the objective IDS and their order
-objective_IDs = [ObjectiveID.ENERGY]  # Must be defined in order of which they exist in the enum! 
+objective_IDs = [ObjectiveID.EFFICIENCY]  # Must be defined in order of which they exist in the enum! 
 _single_point_only = {ObjectiveID.FRONTAL_AREA, ObjectiveID.WETTED_AREA, ObjectiveID.ENERGY}
 n_objectives = len(objective_IDs) * len(multi_oper) \
                - sum(1 for obj in objective_IDs if obj in _single_point_only) * (len(multi_oper) - 1)
@@ -241,16 +241,17 @@ def _load_blading(RPS_lst: tuple[float],
     return copy.deepcopy(blading_parameters), copy.deepcopy(design_parameters)
 
 # Compute the blading and design parameters for the rotors/stators of the reference design
-STAGE_BLADING_PARAMETERS, STAGE_DESIGN_VARIABLES = _load_blading((multi_oper[0]["RPS"], multi_oper[1]["RPS"]),
+# Automatically takes the correct RPS count based on the number of operating conditions (single- versus multi-point)
+STAGE_BLADING_PARAMETERS, STAGE_DESIGN_VARIABLES = _load_blading(tuple([oper["RPS"] for oper in multi_oper]),
                                                                  REFERENCE_BLADE_ANGLES)
 
 # Define the target thrust/power and efficiency for use in constraints
 P_ref_constr = [2.3201 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # take-off power
-                0.46287 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # endurance power
+                # 0.46287 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # endurance power
                 # 0.21720 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # combat power
                 ]  # Reference Power in Watts derived from baseline analysis
 T_ref_constr = [1.6485 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # take-off thrust
-                0.36771 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # endurance thrust
+                # 0.36771 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # endurance thrust
                 # 0.16605 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # combat thrust
                 ] # Reference Thrust in Newtons derived from baseline analysis
 
