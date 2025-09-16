@@ -10,5 +10,10 @@ tflow.*
 walls.*
 *.dill
 *.pyc
-Submodels/__pycache__
-GA/__pycache__
+__pycache__/
+/.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+.python-version
