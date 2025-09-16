@@ -9,3 +9,5 @@ tdat.*
 tflow.*
 walls.*
 *.dill
+*.pyc
+*/__pycache__/
