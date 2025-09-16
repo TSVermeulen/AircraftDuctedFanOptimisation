@@ -128,17 +128,17 @@ tipGap = 0.01016  # 1.016 cm tip gap
 
 
 @functools.lru_cache(maxsize=None, typed=True)  # Unlimited - adjust if memory becomes a concern. 
-def _load_blading(RPS_lst: tuple[float],                      
-                  ref_blade_angle_lst: tuple[float]) -> tuple[list, list]:
+def _load_blading(RPS_lst: tuple[float]|float,                      
+                  ref_blade_angle_lst: tuple[float]|float) -> tuple[list, list]:
     """
     Generate MTFLO blading.
     The blading parameters are based on Figure 3 in [1].
 
     Parameters
     ----------
-    - RPS_lst : list[float]
+    - RPS_lst : tuple[float] | float
         The rotational rate of the rotor in rotations per second for each operating point considered. 
-    - ref_blade_angle_lst : list[float]
+    - ref_blade_angle_lst : tuple[float] | float
         The blade set angle, in radians, for each operating point considered. 
     
     Returns
@@ -161,7 +161,7 @@ def _load_blading(RPS_lst: tuple[float],
     blade_angle = np.array([np.deg2rad(38.1), np.deg2rad(30.9), np.deg2rad(16.8), np.deg2rad(0)])
     propeller_parameters = {"root_LE_coordinate": 0.1495672948767407, 
                             "rotational_rate": 0,  # Initialise to zero, will be updated by the UDC/Opti framework interface
-                            "RPS": [RPS_lst[0]],  # Initialise to the first entry in the input list
+                            "RPS": RPS_lst[0],  # Initialise to the first entry in the input list
                             "RPS_lst": RPS_lst,
                             "ref_blade_angle": ref_blade_angle_lst[0], 
                             "ref_blade_angle_lst": ref_blade_angle_lst,

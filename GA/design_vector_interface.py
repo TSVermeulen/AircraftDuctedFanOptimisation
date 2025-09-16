@@ -141,12 +141,10 @@ class DesignVectorInterface:
             blading = blade_blading_parameters[i]
             y_tip_LE = blading["radial_stations"][-1]
             for angle in blading["ref_blade_angle_lst"]:
-                blading["ref_blade_angle"] = angle  # Set the blade pitch to the current angle
-
                 # Compute the LE and TE x-coordinates of the tip section
                 sweep = np.tan(blading["sweep_angle"][-1])
                 x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip_LE
-                chi = np.pi/2 - (blading["blade_angle"][-1] + blading["ref_blade_angle"] - blading["reference_section_blade_angle"])
+                chi = np.pi/2 - (blading["blade_angle"][-1] + angle - blading["reference_section_blade_angle"])
                 projected_chord = blading["chord_length"][-1] * np.cos(chi)
                 x_tip_TE = x_tip_LE + projected_chord
 
@@ -257,7 +255,7 @@ class DesignVectorInterface:
             - centerbody_variables: dict
             - duct_variables: dict
             - blade_design_parameters: list[list[dict]]
-            - blade_blading_parameters: list[list[dict]]
+            - blade_blading_parameters: list[[dict]
             - Lref: float
         """
 
@@ -393,6 +391,14 @@ class DesignVectorInterface:
                 ref_blade_angle_lst = []
                 for _ in range(len(config.STAGE_BLADING_PARAMETERS[stage]["ref_blade_angle_lst"])):
                     ref_blade_angle_lst.append(next(it))  # Allow for multi-point variable pitch AND fixed pitch analyses by simply reading in the appropriate number of angles
+                
+                # Check consistency of the amount of tip angles against the analysis being performed
+                if len(ref_blade_angle_lst) not in (1, num_operating_conditions):
+                    raise ValueError(
+                        f"ref_blade_angle count {len(ref_blade_angle_lst)} does not match operating points {num_operating_conditions} "
+                        f"(stage {stage}). Provide either 1 (fixed pitch) or {num_operating_conditions} angles."
+                    )
+                
                 stage_blading_parameters["ref_blade_angle_lst"] = ref_blade_angle_lst
                 stage_blading_parameters["ref_blade_angle"] = ref_blade_angle_lst[0]  # Initialise to the first pitch angle
 
