@@ -10,4 +10,5 @@ tflow.*
 walls.*
 *.dill
 *.pyc
-*/__pycache__/
+Submodels/__pycache__/
+GA/__pycache__/*
