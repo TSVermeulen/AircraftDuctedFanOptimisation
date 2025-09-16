@@ -92,6 +92,8 @@ class DesignVectorInterface:
                                   blade_blading_parameters: list[dict]) -> tuple[dict, list]:
         """
         Compute the y-coordinate of the LE of the duct based on the design variables.
+        Accounts for the minimum duct y-coordinate influenced by the blade angle at the tip. 
+        Does not currently account for the presence of skew. 
 
         Parameters
         ----------
@@ -135,24 +137,35 @@ class DesignVectorInterface:
                 continue
 
             # Loop over the number of blade angles to account for variable pitch to find the largest required radial duct coordinate
+            # Note that this currently only works for skew=0. If skew is implemented in future work, this needs to be reworked to account for skew.
             blading = blade_blading_parameters[i]
-            y_tip = blading["radial_stations"][-1]
+            y_tip_LE = blading["radial_stations"][-1]
             for angle in blading["ref_blade_angle_lst"]:
                 blading["ref_blade_angle"] = angle  # Set the blade pitch to the current angle
 
                 # Compute the LE and TE x-coordinates of the tip section
                 sweep = np.tan(blading["sweep_angle"][-1])
-                x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip
+                x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip_LE
                 chi = np.pi/2 - (blading["blade_angle"][-1] + blading["ref_blade_angle"] - blading["reference_section_blade_angle"])
                 projected_chord = blading["chord_length"][-1] * np.cos(chi)
                 x_tip_TE = x_tip_LE + projected_chord
 
-                # Compute the offsets for the LE and TE of the blade tip
+                # Compute the minimum radius of a circle for the trailing edge of the blade tip which satisfies the 
+                # tip gap requirement
+                chord_into_plane = blading["chord_length"][-1] * np.sin(chi)  # Neglect the effect of trailing edge thickness
+                theta = np.atan2(chord_into_plane, blading["radial_stations"][-1])
+                y_TE = blading["radial_stations"][-1] + self.tipGap / np.cos(theta)
+
+                # Compute the offsets for the LE and TE of the blade tip from the LE y-coordinate of the duct to the local 
+                # y-coordinate of the lower surface of the duct
                 LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else float(duct_interpolant(x_tip_LE))  # Set to 0 if duct does not lie above LE
                 TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))  # Set to 0 if duct does not lie above TE
 
                 # Compute the radial location of the duct for the current tip angle and overwrite the current guess if it is larger
-                radial_duct_position = y_tip + self.tipGap + max(LE_offset, TE_offset)
+                # Takes the maximum value for the LE & TE since a minimum gap must be enforced
+                LE_duct_position = y_tip_LE + self.tipGap + LE_offset
+                TE_duct_position = y_TE + TE_offset
+                radial_duct_position = max(LE_duct_position, TE_duct_position)
                 if radial_duct_position > radial_duct_coordinates[i]:
                     radial_duct_coordinates[i] = radial_duct_position
 
