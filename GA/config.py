@@ -38,6 +38,7 @@ import copy
 import functools
 from enum import IntEnum, auto
 from pathlib import Path
+from typing import Sequence
 
 # Import 3rd party libraries
 import numpy as np
@@ -128,17 +129,17 @@ tipGap = 0.01016  # 1.016 cm tip gap
 
 
 @functools.lru_cache(maxsize=None, typed=True)  # Unlimited - adjust if memory becomes a concern. 
-def _load_blading(RPS_lst: tuple[float]|float,                      
-                  ref_blade_angle_lst: tuple[float]|float) -> tuple[list, list]:
+def _load_blading(RPS_lst: Sequence[float]|float,                      
+                  ref_blade_angle_lst: Sequence[float]|float) -> tuple[list, list]:
     """
     Generate MTFLO blading.
     The blading parameters are based on Figure 3 in [1].
 
     Parameters
     ----------
-    - RPS_lst : tuple[float] | float
+    - RPS_lst : Sequence[float] | float
         The rotational rate of the rotor in rotations per second for each operating point considered. 
-    - ref_blade_angle_lst : tuple[float] | float
+    - ref_blade_angle_lst : Sequence[float] | float
         The blade set angle, in radians, for each operating point considered. 
     
     Returns
@@ -152,8 +153,9 @@ def _load_blading(RPS_lst: tuple[float]|float,
     """
 
     # Explicitly cast RPS and ref_blade_angle to lists if lengths are 1
-    RPS_lst = [RPS_lst] if isinstance(RPS_lst, (int, float)) else list(RPS_lst)
-    ref_blade_angle_lst = [ref_blade_angle_lst] if isinstance(ref_blade_angle_lst, (int, float)) else list(ref_blade_angle_lst)
+    scalar_numbertypes = (int, float, np.floating)
+    RPS_lst = [RPS_lst] if isinstance(RPS_lst, scalar_numbertypes) else list(RPS_lst)
+    ref_blade_angle_lst = [ref_blade_angle_lst] if isinstance(ref_blade_angle_lst, scalar_numbertypes) else list(ref_blade_angle_lst)
 
     # Start defining the MTFLO blading inputs
     radial_stations = np.array([0, 0.32004, 0.74676, 1.0668])  # 0, 0.3, 0.7, 1

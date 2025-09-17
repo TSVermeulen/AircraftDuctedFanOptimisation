@@ -231,6 +231,8 @@ class DesignVectorInterface:
         term = -2 * r_le * x_t / 3
         sqrt_term = 0 if term <= 0 else np.sqrt(term)
         factor = min(y_t, sqrt_term)
+        if factor <= 0:
+            raise ValueError("Invalid geometry: b_8_map denominator <=0. Check r_LE, x_t, y_t values.")
         return float(b_8_map * factor)
 
 
@@ -255,7 +257,7 @@ class DesignVectorInterface:
             - centerbody_variables: dict
             - duct_variables: dict
             - blade_design_parameters: list[list[dict]]
-            - blade_blading_parameters: list[[dict]
+            - blade_blading_parameters: list[dict]
             - Lref: float
         """
 
@@ -395,8 +397,8 @@ class DesignVectorInterface:
                 # Check consistency of the amount of tip angles against the analysis being performed
                 if len(ref_blade_angle_lst) not in (1, num_operating_conditions):
                     raise ValueError(
-                        f"ref_blade_angle count {len(ref_blade_angle_lst)} does not match operating points {num_operating_conditions} "
-                        f"(stage {stage}). Provide either 1 (fixed pitch) or {num_operating_conditions} angles."
+                        f"ref_blade_angle count {len(ref_blade_angle_lst)} != operating points {num_operating_conditions} "
+                        f"(stage {stage}). Provide either 1 (fixed pitch) or one per operating point."
                     )
                 
                 stage_blading_parameters["ref_blade_angle_lst"] = ref_blade_angle_lst
