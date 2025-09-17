@@ -96,9 +96,8 @@ for oper_dict in multi_oper:
     oper_dict["Vinl"] = oper_dict["atmos"].speed_of_sound[0] * oper_dict["Inlet_Mach"]
 
 
-# Calculate total objectives: base objectives × operating points, 
-# minus single-point-only objectives for additional operating points
-# Define the objective IDS and their order
+# Calculate the total number of objectives
+# Note: Some objectives like energy or frontal area are computed once across all operating points
 objective_IDs = [ObjectiveID.ENERGY]  # Must be defined in order of which they exist in the enum! 
 _single_point_only = {ObjectiveID.FRONTAL_AREA, ObjectiveID.WETTED_AREA, ObjectiveID.ENERGY}
 n_objectives = len(objective_IDs) * len(multi_oper) \
@@ -130,7 +129,7 @@ tipGap = 0.01016  # 1.016 cm tip gap
 
 @functools.lru_cache(maxsize=None, typed=True)  # Unlimited - adjust if memory becomes a concern. 
 def _load_blading(RPS_lst: Sequence[float]|float,                      
-                  ref_blade_angle_lst: Sequence[float]|float) -> tuple[list, list]:
+                  ref_blade_angle_lst: Sequence[float]|float) -> tuple[list[dict], list[list[dict]]]:
     """
     Generate MTFLO blading.
     The blading parameters are based on Figure 3 in [1].
@@ -146,9 +145,9 @@ def _load_blading(RPS_lst: Sequence[float]|float,
     -------
     - (list, list):
         A tuple containing two lists:
-        - blading_parameters : list
+        - blading_parameters : list[dict]
             A list containing dictionaries with the blading parameters.
-        - design_parameters : list
+        - design_parameters : list[list[dict]]
             A list containing dictionaries with the design parameters for each radial station.
     """
 

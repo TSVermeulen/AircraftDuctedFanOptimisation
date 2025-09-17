@@ -108,7 +108,7 @@ class DesignVectorInterface:
             - duct_variables : dict
                 The updated duct variables dictionary containing the updated LE y coordinate.
             - blade_blading_parameters : list[dict]
-                THe updated blading parameters containing the updated radii of the stator stage(s).
+                The updated blading parameters containing the updated radii of the stator stage(s).
         """
 
         # Initialize data array for the radial duct coordinates to zeroes
@@ -279,7 +279,7 @@ class DesignVectorInterface:
             try:
                 centerbody_vals = [next(it) for _ in range(centerbody_designvar_count)]
             except StopIteration:
-                raise ValueError("Design vector is too short for the expected centerbody variables.") from None
+                raise ValueError(f"Design vector is too short for centerbody variables. Expected {centerbody_designvar_count} variables") from None
             centerbody_variables = {"b_0": 0,
                                     "b_2": 0,
                                     "b_8": self.Getb8(centerbody_vals[0], centerbody_vals[5], centerbody_vals[2], centerbody_vals[3]),
@@ -306,7 +306,7 @@ class DesignVectorInterface:
             try:
                 duct_vals = [next(it) for _ in range(duct_designvar_count)]
             except StopIteration:
-                raise ValueError("Design vector is too short for the expected duct variables.") from None
+                raise ValueError(f"Design vector is too short for duct variables. Expected {duct_designvar_count} variables") from None
             duct_variables = {"b_0": duct_vals[0],
                               "b_2": duct_vals[1],
                               "b_8": self.Getb8(duct_vals[2], duct_vals[11], duct_vals[5], duct_vals[6]),
@@ -340,7 +340,7 @@ class DesignVectorInterface:
                     try:
                         section_vals = [next(it) for _ in range(section_designvar_count)]
                     except StopIteration:
-                        raise ValueError("Design vector is too short for the expected blade radial section variables.") from None
+                        raise ValueError(f"Design vector is too short for blade radial section variables. Expected {section_designvar_count} variables") from None
                     if self.optimize_bladethickness:
                         section_parameters = {"b_0": section_vals[0],
                                               "b_2": section_vals[1],
@@ -515,9 +515,9 @@ class DesignVectorInterface:
             vector.append(duct_variables["Chord Length"])  # Chord Length
             vector.append(duct_variables["Leading Edge Coordinates"][0])  # Leading Edge X-Coordinate
 
-        for i in range(len(config.OPTIMIZE_STAGE)):
+        for i, optimize_stage in enumerate(config.OPTIMIZE_STAGE):
             # If (any of) the rotor/stator stage(s) are to be optimised, reconstruct the design variables for the profiles
-            if config.OPTIMIZE_STAGE[i]:
+            if optimize_stage:
                 for j in range(config.NUM_RADIALSECTIONS[i]):
                     # Loop over the number of radial sections and append each section to stage_design_parameters
                     if self.optimize_bladethickness:
@@ -544,9 +544,8 @@ class DesignVectorInterface:
                 for angle in blade_blading_parameters[i]["ref_blade_angle_lst"]:
                     vector.append(angle)  # Enables variable pitch to be used. 
 
-                # vector.append(blade_blading_parameters[i]["ref_blade_angle"])  # ref_blade_angle
                 vector.append(int(blade_blading_parameters[i]["blade_count"]))  # blade_count
-                vector.extend([blade_blading_parameters[i]["RPS_lst"][j] for j in range(len(blade_blading_parameters[i]["RPS_lst"]))])  # blade RPS
+                vector.extend([RPS for RPS in blade_blading_parameters[i]["RPS_lst"]])  # blade RPS
                 vector.append(blade_blading_parameters[i]["radial_stations"][-1] * 2)  # blade diameter
 
                 vector.extend(blade_blading_parameters[i]["chord_length"])  # chord length

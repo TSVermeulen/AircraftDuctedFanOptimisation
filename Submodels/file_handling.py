@@ -808,7 +808,7 @@ class fileHandlingMTFLO:
             file.write('END\n \n')
 
             # Loop over the number of stages and write the data for each stage
-            for stage in range(len(blading_params)):
+            for stage, blading_param in enumerate(blading_params):
                 # First write the "generic" data for the stage
                 # This includes the number of blades, the rotational rate, and the data types to be provided
                 # Formatting is in-line with the user guide from the MTFLOW documentation
@@ -818,12 +818,12 @@ class fileHandlingMTFLO:
 
                 # Write the number of blades
                 file.write('NBLADE\n')
-                file.write(str(blading_params[stage]["blade_count"]) + '\n')
+                file.write(str(blading_param["blade_count"]) + '\n')
                 file.write('END\n \n')
 
                 # Write the rotational rate in units of RPS * 2pi * L / V
                 file.write('OMEGA\n')
-                file.write(str(blading_params[stage]["rotational_rate"]) + '\n')
+                file.write(str(blading_param["rotational_rate"]) + '\n')
                 file.write('END\n \n')
 
                 # Write the data types to be provided for the stage
@@ -838,7 +838,7 @@ class fileHandlingMTFLO:
                 # The MTFLO code cannot accept an input file with more than 16x16 points in the streamwise and radial directions for each stage
                 # n_points_axial=10 is used to avoid spline interpolation overshoots internally in MTFLO. 
                 n_points_axial = 10
-                radial_points = blading_params[stage]["radial_stations"]
+                radial_points = blading_param["radial_stations"]
 
                 # Loop over the radial points and construct the data for each radial point
                 # Each radial point is defined as a "section" within the input file
@@ -847,7 +847,7 @@ class fileHandlingMTFLO:
                     file.write('SECTION\n')
 
                     # All parameters are normalised using the local chord length, so we need to obtain the local chord in order to obtain the dimensional parameters
-                    local_chord = blading_params[stage]["chord_length"][idx]
+                    local_chord = blading_param["chord_length"][idx]
                    
                     # Create complete airfoil representation from BP3434 parameterisation of the radial section
                     upper_x, upper_y, lower_x, lower_y = self.parameterisation.ComputeProfileCoordinates(design_params[stage][idx])
@@ -858,7 +858,7 @@ class fileHandlingMTFLO:
                     
                     # Rotate the airfoil profile to the correct angle
                     # The blade pitch is defined with respect to the blade pitch angle at the reference radial station, and thus is corrected accordingly. 
-                    blade_pitch = (blading_params[stage]["blade_angle"][idx] + blading_params[stage]["ref_blade_angle"] - blading_params[stage]["reference_section_blade_angle"])
+                    blade_pitch = (blading_param["blade_angle"][idx] + blading_param["ref_blade_angle"] - blading_param["reference_section_blade_angle"])
                     rotated_upper_x, rotated_upper_y, rotated_lower_x, rotated_lower_y  = self.RotateProfile(blade_pitch,
                                                                                                              upper_x,
                                                                                                              lower_x,
@@ -867,7 +867,7 @@ class fileHandlingMTFLO:
 
                     # Compute the local leading edge offset at the radial station from the provided interpolant
                     # Use it to offset the x-coordinates of the upper and lower surfaces to the correct position
-                    LE_coordinate = blading_params[stage]["root_LE_coordinate"] + r * np.tan(blading_params[stage]["sweep_angle"][idx])
+                    LE_coordinate = blading_param["root_LE_coordinate"] + r * np.tan(blading_param["sweep_angle"][idx])
                     rotated_upper_x += LE_coordinate - rotated_upper_x[0]
                     rotated_lower_x += LE_coordinate - rotated_lower_x[0]
 
@@ -889,7 +889,7 @@ class fileHandlingMTFLO:
                         
                         # Perform check that thickness does not exceed limit of complete blockage (T=2pir/N)
                         # If thickness exceeds limit, raises a ValueError
-                        self.ValidateBladeThickness(max(circumferential_thickness), r, blading_params[stage]["blade_count"])
+                        self.ValidateBladeThickness(max(circumferential_thickness), r, blading_param["blade_count"])
 
                     # Compute the blade slope in the m'-theta plane. 
                     # Uses the average of the upper and lower x-coordinates to evaluate against. 
