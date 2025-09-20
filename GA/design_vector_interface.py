@@ -232,7 +232,7 @@ class DesignVectorInterface:
         sqrt_term = 0 if term <= 0 else np.sqrt(term)
         factor = min(y_t, sqrt_term)
         if factor <= 0:
-            raise ValueError("Invalid geometry: b_8_map denominator <=0. Check r_LE, x_t, y_t values.")
+            raise ValueError(f"Invalid geometry for b_8_map: denominator<=0 (r_LE={r_le}, x_t={x_t}, y_t={y_t}).")
         return float(b_8_map * factor)
 
 
@@ -279,7 +279,7 @@ class DesignVectorInterface:
             try:
                 centerbody_vals = [next(it) for _ in range(centerbody_designvar_count)]
             except StopIteration:
-                raise ValueError(f"Design vector is too short for centerbody variables. Expected {centerbody_designvar_count} variables") from None
+                raise ValueError(f"Design vector too short for centerbody variables. Expected {centerbody_designvar_count} variables") from None
             centerbody_variables = {"b_0": 0,
                                     "b_2": 0,
                                     "b_8": self.Getb8(centerbody_vals[0], centerbody_vals[5], centerbody_vals[2], centerbody_vals[3]),
@@ -306,7 +306,7 @@ class DesignVectorInterface:
             try:
                 duct_vals = [next(it) for _ in range(duct_designvar_count)]
             except StopIteration:
-                raise ValueError(f"Design vector is too short for duct variables. Expected {duct_designvar_count} variables") from None
+                raise ValueError(f"Design vector too short for duct variables. Expected {duct_designvar_count} variables") from None
             duct_variables = {"b_0": duct_vals[0],
                               "b_2": duct_vals[1],
                               "b_8": self.Getb8(duct_vals[2], duct_vals[11], duct_vals[5], duct_vals[6]),
@@ -340,7 +340,7 @@ class DesignVectorInterface:
                     try:
                         section_vals = [next(it) for _ in range(section_designvar_count)]
                     except StopIteration:
-                        raise ValueError(f"Design vector is too short for blade radial section variables. Expected {section_designvar_count} variables") from None
+                        raise ValueError(f"Design vector too short for blade radial section variables. Expected {section_designvar_count} variables") from None
                     if self.optimize_bladethickness:
                         section_parameters = {"b_0": section_vals[0],
                                               "b_2": section_vals[1],

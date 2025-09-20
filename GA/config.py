@@ -205,6 +205,7 @@ def _load_blading(RPS_lst: Sequence[float]|float,
 
     # Define the sweep angles
     # Note that this is approximate, since the rotation of the chord line is not completely accurate when rotating a complete profile
+    # As approximation, we use the first blade reference angle in the reference blade angle list.
     sweep_angle = np.zeros_like(blading_parameters[0]["chord_length"])
     root_blade_angle = (blade_angle[0] + blading_parameters[0]["ref_blade_angle"] - blading_parameters[0]["reference_section_blade_angle"])
 
@@ -322,4 +323,5 @@ THREADS_PER_EVALUATION = 1  # Number of threads per MTFLOW evaluation: one for r
 # Postprocessing visualisation controls
 # ref_objectives = np.array([-0.74376, 1])  # ref objective values for endurance cruise condition
 # ref_objectives = np.array([-0.66469])  # ref objective values for take-off condition
-ref_objectives = np.array([-0.7645])  # ref objective values for combat condition
+# ref_objectives = np.array([-0.7645])  # ref objective values for combat condition
+ref_objectives = np.array([1])  # reference energy objective value for a multi-point problem

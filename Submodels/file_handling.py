@@ -317,6 +317,13 @@ class fileHandlingMTSET:
             xy_centerbody = self.GetProfileCoordinates(self.centerbody_params)
         if xy_duct is None and not self.external_input:
             xy_duct = self.GetProfileCoordinates(self.duct_params)
+
+        # Quick check if the centerbody and duct profiles are provided if external inputs are used
+        if self.external_input:
+            if xy_centerbody is None:
+                raise ValueError("Centerbody profile coordinates must be provided when external_input is True.")
+            if xy_duct is None:
+                raise ValueError("Duct profile coordinates must be provided when external_input is True.")
             
         # Non-dimensionalise the profile coordinates
         xy_centerbody = xy_centerbody / self.ref_length
