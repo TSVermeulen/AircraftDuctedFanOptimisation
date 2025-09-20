@@ -40,13 +40,15 @@ Versioning
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@student.tudelft.nl
 Student ID: 4995309
-Version: 1.3
+Version: 1.4
 
 Changelog:
 - V1.0: Initial version with tested biased population generation and basic random population generation functionality.
 - V1.1: Added support for configurable random seed for reproducibility and improved documentation. Reworked GenerateBiasedPopulation to improve speed using NumPy.
 - V1.2: Implemented perturbation for zero-valued real design parameters.
 - V1.3: Implemented optional variable pitch handling. 
+- V1.4: Added support for optional blade thickness distributions to reduce dimensionality of problem.
+        Controlled through the config.OPTIMIZE_BLADETHICKNESS boolean. 
 """
 
 # Import standard libraries
@@ -166,17 +168,20 @@ class InitPopulation():
                 for j in range(config.NUM_RADIALSECTIONS[i]):
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["b_0"])
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["b_2"])
-                    vector.append(map_b8_value(config.STAGE_DESIGN_VARIABLES[i][j]))
-                    vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["b_15"])
+                    if config.OPTIMIZE_BLADETHICKNESS:
+                        vector.append(map_b8_value(config.STAGE_DESIGN_VARIABLES[i][j]))
+                        vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["b_15"])
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["b_17"])
-                    vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["x_t"])
-                    vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["y_t"])
+                    if config.OPTIMIZE_BLADETHICKNESS:
+                        vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["x_t"])
+                        vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["y_t"])
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["x_c"])
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["y_c"])
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["z_TE"])
-                    vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["dz_TE"])
-                    vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["r_LE"])
-                    vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["trailing_wedge_angle"])
+                    if config.OPTIMIZE_BLADETHICKNESS:
+                        vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["dz_TE"])
+                        vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["r_LE"])
+                        vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["trailing_wedge_angle"])
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["trailing_camberline_angle"])
                     vector.append(config.STAGE_DESIGN_VARIABLES[i][j]["leading_edge_direction"])
 

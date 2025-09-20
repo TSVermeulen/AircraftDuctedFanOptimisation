@@ -424,7 +424,7 @@ class RepairIndividuals(Repair):
         # Use a try-except block to handle cases where the profile shape is infeasible.
         try:
             # Loop over the radial sections
-            for i in range(len(design_params)):
+            for i, design_param in enumerate(design_params):
 
                 if blading_params["radial_stations"][i] == 0:
                     continue
@@ -434,7 +434,7 @@ class RepairIndividuals(Repair):
                     # First precompute the limit of complete blockage at the radial station
                     complete_blockage = 2 * np.pi * blading_params["radial_stations"][i] / blading_params["blade_count"]
 
-                    upper_x, upper_y, lower_x, lower_y = self.airfoil_parameterisation.ComputeProfileCoordinates(design_params[i])
+                    upper_x, upper_y, lower_x, lower_y = self.airfoil_parameterisation.ComputeProfileCoordinates(design_param)
                     upper_x *= blading_params["chord_length"][i]
                     upper_y *= blading_params["chord_length"][i]
                     lower_x *= blading_params["chord_length"][i]
@@ -540,9 +540,9 @@ class RepairIndividuals(Repair):
 
             # Reconstruct the design vector into a singular dictionary
             x = self.dvi.ReconstructDesignVector(centerbody_variables,
-                                               duct_variables,
-                                               blade_design_parameters,
-                                               blade_blading_parameters)
+                                                 duct_variables,
+                                                 blade_design_parameters,
+                                                 blade_blading_parameters)
 
             # Convert design vector into array together with bounds to enforce design variable bounds
             x_array = np.array(list(x.values()))
