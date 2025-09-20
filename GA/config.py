@@ -38,6 +38,7 @@ import copy
 import functools
 from enum import IntEnum, auto
 from pathlib import Path
+from typing import Sequence
 
 # Import 3rd party libraries
 import numpy as np
@@ -70,24 +71,24 @@ class ObjectiveID(IntEnum):
     ENERGY = auto()
     
 # Define the (multi-point) operating conditions
-multi_oper = [#{"Inlet_Mach": 0.125,  # ~take-off condition
-            #    "N_crit": 9,
-            #    "atmos": Atmosphere(0),
-            #    "Omega": -11.42397,
-            #    "RPS": 42,
-            #    "flight_phase_time": 1200},
-            #   {"Inlet_Mach": 0.2,  # loiter condition at ~125kts
-            #    "N_crit": 9,
-            #    "atmos": Atmosphere(3048),
-            #    "Omega": -11.42397,
-            #    "RPS": 44,
-            #    "flight_phase_time": 6120},
-              {"Inlet_Mach": 0.3,  # Combat condition at ~185kts
+multi_oper = [{"Inlet_Mach": 0.125,  # ~take-off condition
+               "N_crit": 9,
+               "atmos": Atmosphere(0),
+               "Omega": -11.42397,
+               "RPS": 42,
+               "flight_phase_time": 15*60},
+              {"Inlet_Mach": 0.2,  # loiter condition at ~125kts
                "N_crit": 9,
                "atmos": Atmosphere(3048),
                "Omega": -11.42397,
-               "RPS": 58.5,
-               "flight_phase_time": 3600},
+               "RPS": 44,
+               "flight_phase_time": 1.7*3600},
+            #   {"Inlet_Mach": 0.3,  # Combat condition at ~185kts
+            #    "N_crit": 9,
+            #    "atmos": Atmosphere(3048),
+            #    "Omega": -11.42397,
+            #    "RPS": 58.5,
+            #    "flight_phase_time": 3600},
                 ]
 
 # Compute the inlet velocities and write them to the multi-point oper dict
@@ -95,10 +96,9 @@ for oper_dict in multi_oper:
     oper_dict["Vinl"] = oper_dict["atmos"].speed_of_sound[0] * oper_dict["Inlet_Mach"]
 
 
-# Calculate total objectives: base objectives × operating points, 
-# minus single-point-only objectives for additional operating points
-# Define the objective IDS and their order
-objective_IDs = [ObjectiveID.EFFICIENCY]  # Must be defined in order of which they exist in the enum! 
+# Calculate the total number of objectives
+# Note: Some objectives like energy or frontal area are computed once across all operating points
+objective_IDs = [ObjectiveID.ENERGY]  # Must be defined in order of which they exist in the enum! 
 _single_point_only = {ObjectiveID.FRONTAL_AREA, ObjectiveID.WETTED_AREA, ObjectiveID.ENERGY}
 n_objectives = len(objective_IDs) * len(multi_oper) \
                - sum(1 for obj in objective_IDs if obj in _single_point_only) * (len(multi_oper) - 1)
@@ -121,50 +121,51 @@ OPTIMIZE_STAGE = [True, False, False]
 ROTATING = [True, False, False]
 NUM_RADIALSECTIONS = [4, 2, 2]  # Define the number of radial sections at which the blade profiles for each stage will be defined. Note that we cannot use more than 16 radial sections due to limitations of MTFLOW. Advice from the user manual: ~5 or less is good. 
 NUM_STAGES = 3  # Define the number of stages (i.e. total count of rotors + stators)
-OPTIMIZE_BLADETHICKNESS = True  # Boolean to control if the blade thickness distributions should be optimised
-REFERENCE_BLADE_ANGLES = [float(np.deg2rad(14.5)), 0, 0]  # Reference angles at the reference section, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
+OPTIMIZE_BLADETHICKNESS = False  # Boolean to control if the blade thickness distributions should be optimised
+REFERENCE_BLADE_ANGLES = (float(np.deg2rad(14.5)), float(np.deg2rad(14.5)))  # Reference angles at the reference section of the rotor, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
 BLADE_DIAMETERS = [2.1336, 2.2098, 2.2098]
 tipGap = 0.01016  # 1.016 cm tip gap
 
 
 @functools.lru_cache(maxsize=None, typed=True)  # Unlimited - adjust if memory becomes a concern. 
-def _load_blading(omega: float,  
-                  RPS: float,                      
-                  ref_blade_angle: float) -> tuple[list, list]:
+def _load_blading(RPS_lst: Sequence[float]|float,                      
+                  ref_blade_angle_lst: Sequence[float]|float) -> tuple[list[dict], list[list[dict]]]:
     """
     Generate MTFLO blading.
     The blading parameters are based on Figure 3 in [1].
 
     Parameters
     ----------
-    - omega : float
-        The non-dimensional rotational speed of the rotor, as defined in the MTFLOW documentation in units of Vinl/Lref
-    - RPS : float
-        The rotational rate of the rotor in rotations per second. 
-    - ref_blade_angle : float
-        The blade set angle, in radians. 
+    - RPS_lst : Sequence[float] | float
+        The rotational rate of the rotor in rotations per second for each operating point considered. 
+    - ref_blade_angle_lst : Sequence[float] | float
+        The blade set angle, in radians, for each operating point considered. 
     
     Returns
     -------
     - (list, list):
         A tuple containing two lists:
-        - blading_parameters : list
+        - blading_parameters : list[dict]
             A list containing dictionaries with the blading parameters.
-        - design_parameters : list
+        - design_parameters : list[list[dict]]
             A list containing dictionaries with the design parameters for each radial station.
     """
+
+    # Explicitly cast RPS and ref_blade_angle to lists if lengths are 1
+    scalar_numbertypes = (int, float, np.floating)
+    RPS_lst = [RPS_lst] if isinstance(RPS_lst, scalar_numbertypes) else list(RPS_lst)
+    ref_blade_angle_lst = [ref_blade_angle_lst] if isinstance(ref_blade_angle_lst, scalar_numbertypes) else list(ref_blade_angle_lst)
 
     # Start defining the MTFLO blading inputs
     radial_stations = np.array([0, 0.32004, 0.74676, 1.0668])  # 0, 0.3, 0.7, 1
     chord_length = np.array([0.3510, 0.3152, 0.2367, 0.2205])
     blade_angle = np.array([np.deg2rad(38.1), np.deg2rad(30.9), np.deg2rad(16.8), np.deg2rad(0)])
     propeller_parameters = {"root_LE_coordinate": 0.1495672948767407, 
-                            "rotational_rate": omega, 
-                            "RPS": RPS,
-                            # "RPS_lst": [RPS, multi_oper[1]["RPS"]],
-                            "RPS_lst": [RPS],
-                            "ref_blade_angle": ref_blade_angle, 
-                            "ref_blade_angle_lst": [ref_blade_angle],
+                            "rotational_rate": 0,  # Initialise to zero, will be updated by the UDC/Opti framework interface
+                            "RPS": RPS_lst[0],  # Initialise to the first entry in the input list
+                            "RPS_lst": RPS_lst,
+                            "ref_blade_angle": ref_blade_angle_lst[0], 
+                            "ref_blade_angle_lst": ref_blade_angle_lst,
                             "reference_section_blade_angle": 0, 
                             "blade_count": 3, 
                             "radial_stations": radial_stations, 
@@ -174,10 +175,9 @@ def _load_blading(omega: float,
     horizontal_strut_parameters = {"root_LE_coordinate": 0.57785, 
                                    "rotational_rate": 0, 
                                    "RPS": 0,
-                                #    "RPS_lst": [0, 0],
-                                   "RPS_lst": [0],
+                                   "RPS_lst": [0] * len(RPS_lst),
                                    "ref_blade_angle": 0, 
-                                   "ref_blade_angle_lst": [0], 
+                                   "ref_blade_angle_lst": [0] * len(ref_blade_angle_lst), 
                                    "reference_section_blade_angle": 0, 
                                    "blade_count": 4, 
                                    "radial_stations": np.array([0.0, 1.20968]), 
@@ -188,10 +188,9 @@ def _load_blading(omega: float,
     diagonal_strut_parameters = {"root_LE_coordinate": 0.577723, 
                                  "rotational_rate": 0, 
                                  "RPS": 0,
-                                #  "RPS_lst": [0, 0],
-                                 "RPS_lst": [0],
+                                 "RPS_lst": [0] * len(RPS_lst),
                                  "ref_blade_angle": 0, 
-                                 "ref_blade_angle_lst": [0], 
+                                 "ref_blade_angle_lst": [0] * len(ref_blade_angle_lst), 
                                  "reference_section_blade_angle": 0, 
                                  "blade_count": 2, 
                                  "radial_stations": np.array([0.0, 1.20968]), 
@@ -206,12 +205,13 @@ def _load_blading(omega: float,
 
     # Define the sweep angles
     # Note that this is approximate, since the rotation of the chord line is not completely accurate when rotating a complete profile
+    # As approximation, we use the first blade reference angle in the reference blade angle list.
     sweep_angle = np.zeros_like(blading_parameters[0]["chord_length"])
     root_blade_angle = (blade_angle[0] + blading_parameters[0]["ref_blade_angle"] - blading_parameters[0]["reference_section_blade_angle"])
 
     root_LE = blading_parameters[0]["root_LE_coordinate"] # The location of the root LE is arbitrary for computing the sweep angles.
     root_mid_chord = root_LE + (0.3510 / 2) * np.cos(np.pi / 2 - root_blade_angle)
-    rotation_angle = np.pi / 2 - (blade_angle + ref_blade_angle - propeller_parameters["reference_section_blade_angle"])
+    rotation_angle = np.pi / 2 - (blade_angle + ref_blade_angle_lst[0] - propeller_parameters["reference_section_blade_angle"])
     local_LE = root_mid_chord - (chord_length / 2) * np.cos(rotation_angle)
     with np.errstate(divide="ignore", invalid="ignore"):
         sweep_angle = np.where(radial_stations != 0, np.arctan((local_LE - root_LE) / radial_stations), 0)
@@ -244,18 +244,18 @@ def _load_blading(omega: float,
     return copy.deepcopy(blading_parameters), copy.deepcopy(design_parameters)
 
 # Compute the blading and design parameters for the rotors/stators of the reference design
-STAGE_BLADING_PARAMETERS, STAGE_DESIGN_VARIABLES = _load_blading(multi_oper[0]["Omega"],
-                                                                 multi_oper[0]["RPS"],
-                                                                 REFERENCE_BLADE_ANGLES[0])
+# Automatically takes the correct RPS count based on the number of operating conditions (single- versus multi-point)
+STAGE_BLADING_PARAMETERS, STAGE_DESIGN_VARIABLES = _load_blading(tuple([oper["RPS"] for oper in multi_oper]),
+                                                                 REFERENCE_BLADE_ANGLES)
 
 # Define the target thrust/power and efficiency for use in constraints
-P_ref_constr = [#2.3201 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # take-off power
-                # 0.46287 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # endurance power
-                0.21720 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # combat power
+P_ref_constr = [2.3201 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # take-off power
+                0.46287 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # endurance power
+                # 0.21720 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # combat power
                 ]  # Reference Power in Watts derived from baseline analysis
-T_ref_constr = [#1.6485 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # take-off thrust
-                # 0.36771 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # endurance thrust
-                0.16605 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # combat thrust
+T_ref_constr = [1.6485 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # take-off thrust
+                0.36771 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # endurance thrust
+                # 0.16605 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # combat thrust
                 ] # Reference Thrust in Newtons derived from baseline analysis
 
 deviation_range = 0.01  # +/- x% of the reference value for the constraints
@@ -294,7 +294,7 @@ class EqConstraintID(IntEnum):
     
     CONSTANT_POWER = auto()
 
-constraint_IDs = [[InEqConstraintID.EFFICIENCY_LEQ_THEOR_LIMIT, InEqConstraintID.THRUST_FEASIBILITY, InEqConstraintID.ENERGY_IMPROVEMENT],
+constraint_IDs = [[InEqConstraintID.EFFICIENCY_LEQ_THEOR_LIMIT, InEqConstraintID.THRUST_FEASIBILITY],
                   []]
 
 
@@ -321,5 +321,7 @@ RESERVED_THREADS = 0  # Threads reserved for the operating system and any other 
 THREADS_PER_EVALUATION = 1  # Number of threads per MTFLOW evaluation: one for running MTSET/MTSOL/MTFLO and one for polling outputs
 
 # Postprocessing visualisation controls
-ref_objectives = np.array([-0.84830, 0.54508])  # ref objective values for endurance cruise condition
-frontcons_objectives = np.array([-0.82313, 0.51689])  # ref objective values for the endurance cruise condition with a frontal area constraint. 
+# ref_objectives = np.array([-0.74376, 1])  # ref objective values for endurance cruise condition
+# ref_objectives = np.array([-0.66469])  # ref objective values for take-off condition
+# ref_objectives = np.array([-0.7645])  # ref objective values for combat condition
+ref_objectives = np.array([1])  # reference energy objective value for a multi-point problem

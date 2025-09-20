@@ -92,6 +92,8 @@ class DesignVectorInterface:
                                   blade_blading_parameters: list[dict]) -> tuple[dict, list]:
         """
         Compute the y-coordinate of the LE of the duct based on the design variables.
+        Accounts for the minimum duct y-coordinate influenced by the blade angle at the tip. 
+        Does not currently account for the presence of skew. 
 
         Parameters
         ----------
@@ -106,10 +108,10 @@ class DesignVectorInterface:
             - duct_variables : dict
                 The updated duct variables dictionary containing the updated LE y coordinate.
             - blade_blading_parameters : list[dict]
-                THe updated blading parameters containing the updated radii of the stator stage(s).
+                The updated blading parameters containing the updated radii of the stator stage(s).
         """
 
-        # Initialize data array for the radial duct coordinates
+        # Initialize data array for the radial duct coordinates to zeroes
         radial_duct_coordinates = np.zeros(self.num_stages)
 
         # Compute the duct x,y coordinates. Note that we are only interested in the lower surface.
@@ -134,25 +136,38 @@ class DesignVectorInterface:
             if not self.rotating[i]:
                 continue
 
-            # Extract blading and blade radius
+            # Loop over the number of blade angles to account for variable pitch to find the largest required radial duct coordinate
+            # Note that this currently only works for skew=0. If skew is implemented in future work, this needs to be reworked to account for skew.
             blading = blade_blading_parameters[i]
-            y_tip = blading["radial_stations"][-1]
+            y_tip_LE = blading["radial_stations"][-1]
+            for angle in blading["ref_blade_angle_lst"]:
+                # Compute the LE and TE x-coordinates of the tip section
+                sweep = np.tan(blading["sweep_angle"][-1])
+                x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip_LE
+                chi = np.pi/2 - (blading["blade_angle"][-1] + angle - blading["reference_section_blade_angle"])
+                projected_chord = blading["chord_length"][-1] * np.cos(chi)
+                x_tip_TE = x_tip_LE + projected_chord
 
-            # Compute the LE and TE x-coordinates of the tip section
-            sweep = np.tan(blading["sweep_angle"][-1])
-            x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip
-            projected_chord = blading["chord_length"][-1] * np.cos(np.pi/2 -
-                                                                   (blading["blade_angle"][-1] + blading["ref_blade_angle"] - blading["reference_section_blade_angle"]))
-            x_tip_TE = x_tip_LE + projected_chord
+                # Compute the minimum radius of a circle for the trailing edge of the blade tip which satisfies the 
+                # tip gap requirement
+                chord_into_plane = blading["chord_length"][-1] * np.sin(chi)  # Neglect the effect of trailing edge thickness
+                theta = np.atan2(chord_into_plane, blading["radial_stations"][-1])
+                y_TE = blading["radial_stations"][-1] + self.tipGap / np.cos(theta)
 
-            # Compute the offsets for the LE and TE of the blade tip
-            LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else float(duct_interpolant(x_tip_LE))  # Set to 0 if duct does not lie above LE
-            TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))  # Set to 0 if duct does not lie above TE
+                # Compute the offsets for the LE and TE of the blade tip from the LE y-coordinate of the duct to the local 
+                # y-coordinate of the lower surface of the duct
+                LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else float(duct_interpolant(x_tip_LE))  # Set to 0 if duct does not lie above LE
+                TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))  # Set to 0 if duct does not lie above TE
 
-            # Compute the radial location of the duct
-            radial_duct_coordinates[i] = y_tip + self.tipGap + max(LE_offset, TE_offset)
+                # Compute the radial location of the duct for the current tip angle and overwrite the current guess if it is larger
+                # Takes the maximum value for the LE & TE since a minimum gap must be enforced
+                LE_duct_position = y_tip_LE + self.tipGap + LE_offset
+                TE_duct_position = y_TE + TE_offset
+                radial_duct_position = max(LE_duct_position, TE_duct_position)
+                if radial_duct_position > radial_duct_coordinates[i]:
+                    radial_duct_coordinates[i] = radial_duct_position
 
-        # The LE y coordinate of the duct is then the maximum of the computed coordinates to enforce the minimum tip gap everywhere
+        # The LE y coordinate of the duct is then the maximum of the computed coordinates for each of the blade stages to enforce the minimum tip gap everywhere
         if radial_duct_coordinates.any():
             LE_coordinate_duct = float(radial_duct_coordinates.max())
         else:
@@ -166,7 +181,7 @@ class DesignVectorInterface:
         for i in range(self.num_stages):
             if not self.rotating[i]:
                 r_old = blade_blading_parameters[i]["radial_stations"][-1]
-                if r_old:
+                if r_old != 0:
                     # Simple guard against r=0
                     blade_blading_parameters[i]["radial_stations"] = blade_blading_parameters[i]["radial_stations"] / r_old * LE_coordinate_duct
                 else:
@@ -216,6 +231,8 @@ class DesignVectorInterface:
         term = -2 * r_le * x_t / 3
         sqrt_term = 0 if term <= 0 else np.sqrt(term)
         factor = min(y_t, sqrt_term)
+        if factor <= 0:
+            raise ValueError(f"Invalid geometry for b_8_map: denominator<=0 (r_LE={r_le}, x_t={x_t}, y_t={y_t}).")
         return float(b_8_map * factor)
 
 
@@ -240,7 +257,7 @@ class DesignVectorInterface:
             - centerbody_variables: dict
             - duct_variables: dict
             - blade_design_parameters: list[list[dict]]
-            - blade_blading_parameters: list[list[dict]]
+            - blade_blading_parameters: list[dict]
             - Lref: float
         """
 
@@ -262,7 +279,7 @@ class DesignVectorInterface:
             try:
                 centerbody_vals = [next(it) for _ in range(centerbody_designvar_count)]
             except StopIteration:
-                raise ValueError("Design vector is too short for the expected centerbody variables.") from None
+                raise ValueError(f"Design vector too short for centerbody variables. Expected {centerbody_designvar_count} variables") from None
             centerbody_variables = {"b_0": 0,
                                     "b_2": 0,
                                     "b_8": self.Getb8(centerbody_vals[0], centerbody_vals[5], centerbody_vals[2], centerbody_vals[3]),
@@ -289,7 +306,7 @@ class DesignVectorInterface:
             try:
                 duct_vals = [next(it) for _ in range(duct_designvar_count)]
             except StopIteration:
-                raise ValueError("Design vector is too short for the expected duct variables.") from None
+                raise ValueError(f"Design vector too short for duct variables. Expected {duct_designvar_count} variables") from None
             duct_variables = {"b_0": duct_vals[0],
                               "b_2": duct_vals[1],
                               "b_8": self.Getb8(duct_vals[2], duct_vals[11], duct_vals[5], duct_vals[6]),
@@ -323,7 +340,7 @@ class DesignVectorInterface:
                     try:
                         section_vals = [next(it) for _ in range(section_designvar_count)]
                     except StopIteration:
-                        raise ValueError("Design vector is too short for the expected blade radial section variables.") from None
+                        raise ValueError(f"Design vector too short for blade radial section variables. Expected {section_designvar_count} variables") from None
                     if self.optimize_bladethickness:
                         section_parameters = {"b_0": section_vals[0],
                                               "b_2": section_vals[1],
@@ -375,7 +392,15 @@ class DesignVectorInterface:
 
                 ref_blade_angle_lst = []
                 for _ in range(len(config.STAGE_BLADING_PARAMETERS[stage]["ref_blade_angle_lst"])):
-                    ref_blade_angle_lst.append(next(it))  # Allow for multi-point variable pitch
+                    ref_blade_angle_lst.append(next(it))  # Allow for multi-point variable pitch AND fixed pitch analyses by simply reading in the appropriate number of angles
+                
+                # Check consistency of the amount of tip angles against the analysis being performed
+                if len(ref_blade_angle_lst) not in (1, num_operating_conditions):
+                    raise ValueError(
+                        f"ref_blade_angle count {len(ref_blade_angle_lst)} != operating points {num_operating_conditions} "
+                        f"(stage {stage}). Provide either 1 (fixed pitch) or one per operating point."
+                    )
+                
                 stage_blading_parameters["ref_blade_angle_lst"] = ref_blade_angle_lst
                 stage_blading_parameters["ref_blade_angle"] = ref_blade_angle_lst[0]  # Initialise to the first pitch angle
 
@@ -383,7 +408,7 @@ class DesignVectorInterface:
                 stage_blading_parameters["blade_count"] = int(next(it))
                 stage_blading_parameters["RPS_lst"] = [next(it) if self.rotating[stage] else 0 for _ in range(num_operating_conditions)]
                 stage_blading_parameters["RPS"] = 0  # Initialize the RPS at zero - this will be overwritten later by the appropriate RPS for the operating condition.
-                stage_blading_parameters["rotation_rate"] = 0  # Initialize the UDC non-dimensional rotational rate to zero - this will be overwritten later by the appropriate Omega within the problem definition.
+                stage_blading_parameters["rotational_rate"] = 0  # Initialize the UDC non-dimensional rotational rate to zero - this will be overwritten later by the appropriate Omega within the problem definition.
                 stage_blading_parameters["radial_stations"] = np.linspace(0, 0.5 * next(it), self.num_radial[stage])  # Radial stations are defined as fraction of blade radius * local radius
 
                 # Extract sectional blading parameter lists
@@ -490,9 +515,9 @@ class DesignVectorInterface:
             vector.append(duct_variables["Chord Length"])  # Chord Length
             vector.append(duct_variables["Leading Edge Coordinates"][0])  # Leading Edge X-Coordinate
 
-        for i in range(len(config.OPTIMIZE_STAGE)):
+        for i, optimize_stage in enumerate(config.OPTIMIZE_STAGE):
             # If (any of) the rotor/stator stage(s) are to be optimised, reconstruct the design variables for the profiles
-            if config.OPTIMIZE_STAGE[i]:
+            if optimize_stage:
                 for j in range(config.NUM_RADIALSECTIONS[i]):
                     # Loop over the number of radial sections and append each section to stage_design_parameters
                     if self.optimize_bladethickness:
@@ -519,9 +544,8 @@ class DesignVectorInterface:
                 for angle in blade_blading_parameters[i]["ref_blade_angle_lst"]:
                     vector.append(angle)  # Enables variable pitch to be used. 
 
-                # vector.append(blade_blading_parameters[i]["ref_blade_angle"])  # ref_blade_angle
                 vector.append(int(blade_blading_parameters[i]["blade_count"]))  # blade_count
-                vector.extend([blade_blading_parameters[i]["RPS_lst"][j] for j in range(len(blade_blading_parameters[i]["RPS_lst"]))])  # blade RPS
+                vector.extend([RPS for RPS in blade_blading_parameters[i]["RPS_lst"]])  # blade RPS
                 vector.append(blade_blading_parameters[i]["radial_stations"][-1] * 2)  # blade diameter
 
                 vector.extend(blade_blading_parameters[i]["chord_length"])  # chord length
