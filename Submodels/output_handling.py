@@ -546,7 +546,7 @@ class output_processing:
     """
 
     def __init__(self,
-                 analysis_name: str):
+                 analysis_name: str = None):
         """
         Class Initialisation.
 
@@ -563,14 +563,17 @@ class output_processing:
         self.submodels_path = self.parent_dir / "Submodels"
 
         # Validate if the required forces file exist
-        self.forces_path = self.submodels_path / f"forces.{self.analysis_name}"
+        self.forces_path = None
+        if self.analysis_name is not None:
+            self.forces_path = self.submodels_path / f"forces.{self.analysis_name}"
 
-        if not self.forces_path.exists():
-            raise FileNotFoundError(f"The required file forces.{self.analysis_name} was not found.")
+            if not self.forces_path.exists():
+                raise FileNotFoundError(f"The required file forces.{self.analysis_name} was not found.")
 
 
     def GetAllVariables(self,
-                        output_type : int = 0,
+                        output_type: int = 0,
+                        forces_data: list[str] = None,
                         ) -> dict[str, float | dict[str, float]]:
         """
         Read the forces.analysis_name file and return the variables and their values.
@@ -592,18 +595,24 @@ class output_processing:
             - grouped_data : A dictionary containing the element breakdowns for the duct and centerbody
         """
 
-        # Short sleep to ensure file has finished reading/writing to
-        time.sleep(0.25)
+        # Only read the forces data from a file if it is not provided as an argument
+        if forces_data is None:
+            # Short sleep to ensure file has finished reading/writing to
+            time.sleep(0.25)
 
-        try:
-            with open(self.forces_path, 'r') as file:
-                # Read the file contents, and replace the newline characters with empty strings.
-                # Also remove any empty lines from the list
-                forces_file_contents = file.readlines()
-                forces_file_contents = [s for s in forces_file_contents if s.strip()]
-                forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
-        except OSError as e:
-            raise OSError(f"An error occurred opening the forces.{self.analysis_name} file: {e}") from e
+            try:
+                with open(self.forces_path, 'r') as file:
+                    # Read the file contents, and replace the newline characters with empty strings.
+                    # Also remove any empty lines from the list
+                    forces_file_contents = file.readlines()
+                    forces_file_contents = [s for s in forces_file_contents if s.strip()]
+                    forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
+            except OSError as e:
+                raise OSError(f"An error occurred opening the forces.{self.analysis_name} file: {e}") from e
+        else:
+            forces_file_contents = forces_data
+            forces_file_contents = [s for s in forces_file_contents if s.strip()]
+            forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
 
         # Define a unified number pattern
         number_pattern = r"(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[+-]?Infinity)"

@@ -406,14 +406,11 @@ class OptimizationProblem(ElementwiseProblem):
 
             try:
                 # Run UDC
-                exit_flag = UDC_interface.caller(external_inputs=True,
+                exit_flag, UDC_outputs = UDC_interface.caller(external_inputs=True,
                                                  output_type=OutputType.FORCES_ONLY)
 
-                # Extract outputs
-                if exit_flag != ExitFlag.CRASH:
-                    output_handler = self._output_processing(analysis_name=self.analysis_name)
-                    UDC_outputs = output_handler.GetAllVariables(output_type=0)
-                else:
+                # Check outputs in case of crashes
+                if exit_flag == ExitFlag.SUCCESS:
                     UDC_outputs = self.CRASH_OUTPUTS
 
             except Exception as e:
