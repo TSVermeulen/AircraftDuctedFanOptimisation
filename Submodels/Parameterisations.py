@@ -56,21 +56,22 @@ Version: 1.3.1
 Date [dd-mm-yyyy]: 24-06-2025
 
 Changelog:
-- V1.1: Updated with comments from coderabbitAI.
-- V1.0: Adapted version of a parameterisation using only the bezier coefficients
-        to give an improved fit to the reference data.
-- V1.1: Updated docstring, and working implementation for symmetric profiles
-        (i.e. zero camber)
-- V1.2: Updated FindInitialparameterisation method to use SLSQP optimization
-        rather than least squares to enable correct constraint handling.
+- V1.1:   Updated with comments from coderabbitAI.
+- V1.0:   Adapted version of a parameterisation using only the bezier
+          coefficients to give an improved fit to the reference data.
+- V1.1:   Updated docstring, and working implementation for symmetric profiles
+          (i.e. zero camber)
+- V1.2:   Updated FindInitialparameterisation method to use SLSQP optimization
+          rather than least squares to enable correct constraint handling.
 - V1.2.1: Previously increased the number of points in the u-vectors for the
           bezier curves to 200. This yields too many in the walls.xxx input file
           for MTSET to handle, causing a crash. Number of points has been
           reduced to 100.
-- V1.3: Fixed type hinting. Fixed issue in internal handling/definition of
-        b_15 & b_17. Improved accuracy. Updated documentation.
-        Refactored findInitialparameterisation.
-- V1.3.1: Implemented get_figsize method to ensure plot sizes are consistent for LaTeX thesis document.
+- V1.3:   Fixed type hinting. Fixed issue in internal handling/definition of
+          b_15 & b_17. Improved accuracy. Updated documentation.
+          Refactored findInitialparameterisation.
+- V1.3.1: Implemented get_figsize method to ensure plot sizes are consistent for
+          LaTeX thesis document.
 """
 
 # Import standard libraries
@@ -158,10 +159,15 @@ class AirfoilParameterisation:
 
         # Input checking
         if len(coefficients) != 4:
-            raise ValueError(f"Coefficient list must contain exactly 4 elements. Coefficient list contains {len(coefficients)} elements")
+            raise ValueError(f"Coefficient list must contain exactly 4 "
+                             f"elements. Currently contains {len(coefficients)}"
+                             f" elements")
 
         # Calculate the value of y at u using a 3rd degree Bezier curve
-        return coefficients[0] * (1 - u) ** 3 + 3 * coefficients[1] * u * (1 - u) ** 2 + 3 * coefficients[2] * u ** 2 * (1 - u) + coefficients[3] * u ** 3
+        return coefficients[0] * (1 - u) ** 3 + \
+            3 * coefficients[1] * u * (1 - u) ** 2 + \
+                3 * coefficients[2] * u ** 2 * (1 - u) + \
+                    coefficients[3] * u ** 3
 
 
     def BezierCurve4(self,
@@ -187,9 +193,15 @@ class AirfoilParameterisation:
 
         # Input checking
         if len(coefficients) != 5:
-            raise ValueError(f"Coefficient list must contain exactly 5 elements. Coefficient list contains {len(coefficients)} elements.")
+            raise ValueError(f"Coefficient list must contain exactly 5 "
+                             f"elements. Currently contains {len(coefficients)}"
+                             f" elements")
 
-        return coefficients[0] * (1 - u) ** 4 + 4 * coefficients[1] * u * (1 - u) ** 3 + 6 * coefficients[2] * u ** 2 * (1 - u) ** 2 + 4 * coefficients[3] * u ** 3 * (1 - u) + coefficients[4] * u ** 4
+        return coefficients[0] * (1 - u) ** 4 + \
+            4 * coefficients[1] * u * (1 - u) ** 3 + \
+                6 * coefficients[2] * u ** 2 * (1 - u) ** 2 + \
+                    4 * coefficients[3] * u ** 3 * (1 - u) + \
+                        coefficients[4] * u ** 4
 
 
     def GetCamberAngleDistribution(self,
@@ -228,17 +240,24 @@ class AirfoilParameterisation:
         ----------
         - reference_file : Path
             Path to the file containing the reference profile coordinates.
+
+        Returns
+        -------
+        None
         """
 
         # Load in the reference profile shape from the reference_file.
         # Assumes coordinates are sorted counter clockwise from TE of the Upper
         # surface.
         # Profile shape must be provided in input file with unit chord length
-        # Skips the first row of the profile file as it contains the profile name
+        # Skips the first row of the profile file as it contains the
+        # profile name
         try:
-            reference_coordinates = np.genfromtxt(reference_file, dtype=np.floating, skip_header=1)
+            reference_coordinates = np.genfromtxt(reference_file,
+                                                  dtype=np.floating,
+                                                  skip_header=1)
         except FileNotFoundError as err:
-            raise FileNotFoundError(f"The data input file {reference_file} does not exist in the current working directory.") from err
+            raise FileNotFoundError(f"The file {reference_file} does not exist in the current working directory.") from err
 
         # Find index of LE coordinate and compute the camber and thickness distributions.
         # LE coordinate index must be the index for x = 0.
@@ -299,6 +318,10 @@ class AirfoilParameterisation:
 
         Calculates the leading edge radius, leading edge direction,
         trailing edge wedge angle, and trailing edge camber line angle.
+
+        Parameters
+        ----------
+        None
 
         Returns
         -------
@@ -373,9 +396,13 @@ class AirfoilParameterisation:
 
     def GetThicknessControlPoints(self,
                                   airfoil_params: dict[str, float],
-                                  ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+                                  ) -> tuple[np.typing.NDArray[np.floating],
+                                             np.typing.NDArray[np.floating],
+                                             np.typing.NDArray[np.floating],
+                                             np.typing.NDArray[np.floating]]:
         """
-        Calculate the control points for the thickness distribution Bezier curves.
+        Calculate the control points for the thickness distribution
+        Bezier curves.
 
         Parameters
         ----------
@@ -399,17 +426,23 @@ class AirfoilParameterisation:
         Returns
         -------
         - x_leading_edge_thickness_coeff : np.typing.NDArray[np.floating]
-            X-coordinates of the control points for the leading edge thickness Bezier curve.
+            X-coordinates of the control points for the leading edge
+            thickness Bezier curve.
         - y_leading_edge_thickness_coeff : np.typing.NDArray[np.floating]
-            Y-coordinates of the control points for the leading edge thickness Bezier curve.
-        -x_trailing_edge_thickness_coeff : np.typing.NDArray[np.floating]
-            X-coordinates of the control points for the trailing edge thickness Bezier curve.
+            Y-coordinates of the control points for the leading edge
+            thickness Bezier curve.
+        - x_trailing_edge_thickness_coeff : np.typing.NDArray[np.floating]
+            X-coordinates of the control points for the trailing edge
+            thickness Bezier curve.
         - y_trailing_edge_thickness_coeff : np.typing.NDArray[np.floating]
-            Y-coordinates of the control points for the trailing edge thickness Bezier curve.
+            Y-coordinates of the control points for the trailing edge
+            thickness Bezier curve.
         """
 
-        # First use the provided b_15 parameter value to construct the relative location of the inflection point
-        b_15_coordinate = (airfoil_params["b_15"] - airfoil_params["x_t"]) / (1 - airfoil_params["x_t"])
+        # First use the provided b_15 parameter value to construct the
+        # relative location of the inflection point
+        b_15_coordinate = (airfoil_params["b_15"] - \
+                           airfoil_params["x_t"]) / (1 - airfoil_params["x_t"])
 
         # Construct leading edge x coefficients
         x_leading_edge_thickness_coeff = np.array([0,
@@ -441,7 +474,10 @@ class AirfoilParameterisation:
 
     def GetCamberControlPoints(self,
                                airfoil_params: dict[str, float],
-                               ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+                               ) -> tuple[np.typing.NDArray[np.floating],
+                                          np.typing.NDArray[np.floating],
+                                          np.typing.NDArray[np.floating],
+                                          np.typing.NDArray[np.floating]]:
         """
         Calculate the control points for the camber distribution Bezier curves.
 
@@ -521,7 +557,10 @@ class AirfoilParameterisation:
                                          thickness: np.typing.NDArray[np.floating],
                                          camber_x: np.typing.NDArray[np.floating],
                                          camber: np.typing.NDArray[np.floating],
-                                         ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+                                         ) -> tuple[np.typing.NDArray[np.floating],
+                                                    np.typing.NDArray[np.floating],
+                                                    np.typing.NDArray[np.floating],
+                                                    np.typing.NDArray[np.floating]]:
         """
         Convert Bezier curves to airfoil coordinates.
 
@@ -548,8 +587,10 @@ class AirfoilParameterisation:
             Array of y-coordinates for the lower surface of the airfoil.
         """
 
-        thickness_interpolation = interpolate.CubicSpline(thickness_x, thickness)  # Interpolation of bezier thickness distribution
-        thickness_distribution = thickness_interpolation(camber_x)  # Use interpolation to get value of thickness at camber points
+        # Interpolation of bezier thickness distribution at the camber points
+        thickness_interpolation = interpolate.CubicSpline(thickness_x,
+                                                          thickness)
+        thickness_distribution = thickness_interpolation(camber_x)
 
         # Calculate gradient of camber angle line
         theta = self.GetCamberAngleDistribution(camber_x, camber)
@@ -564,7 +605,8 @@ class AirfoilParameterisation:
 
 
     def GenerateBezierUVectors(self,
-                               ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+                               ) -> tuple[np.typing.NDArray[np.floating],
+                                          np.typing.NDArray[np.floating]]:
         """
         Create u-vectors for Bezier curve generation.
 
@@ -577,17 +619,21 @@ class AirfoilParameterisation:
         """
 
         # Create u-vectors for Bezier curve generation
+        # Cosine spacing for increased resolution at LE and sine spacing for TE
         pi_factor = np.pi / (2 * (self.N_BEZIER_POINTS - 1))
         i_scaled = np.arange(self.N_BEZIER_POINTS) * pi_factor
-        u_leading_edge = 1. - np.cos(i_scaled)  # Space points using a cosine spacing for increased resolution at LE
-        u_trailing_edge = np.sin(i_scaled)  # Space points using a sine spacing for increased resolution at TE
+        u_leading_edge = 1. - np.cos(i_scaled)
+        u_trailing_edge = np.sin(i_scaled)
 
         return u_leading_edge, u_trailing_edge
 
 
     def ComputeBezierCurves(self,
                             airfoil_params: dict[str, float],
-                            ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+                            ) -> tuple[np.typing.NDArray[np.floating],
+                                       np.typing.NDArray[np.floating],
+                                       np.typing.NDArray[np.floating],
+                                       np.typing.NDArray[np.floating]]:
         """
         Calculate the thickness and camber Bezier distributions.
 
@@ -614,25 +660,29 @@ class AirfoilParameterisation:
         # Calculate the Bezier curve coefficients for the thickness curves
         x_LE_thickness_coeff, y_LE_thickness_coeff, x_TE_thickness_coeff, y_TE_thickness_coeff = self.GetThicknessControlPoints(airfoil_params)
 
-        # Calculate the leading edge thickness distribution
+        # Calculate the leading edge thickness distribution using
+        # 3rd order Bezier curve
         y_LE_thickness = self.BezierCurve3(y_LE_thickness_coeff,
-                                           u_leading_edge)  # Leading edge thickness represented by 3rd order Bezier curve
+                                           u_leading_edge)
         x_LE_thickness = self.BezierCurve3(x_LE_thickness_coeff,
-                                           u_leading_edge)  # Leading edge thickness bezier x-coordinates, represented by a 3rd order curve
+                                           u_leading_edge)
 
-        # Calculate the trailing edge thickness distribution
+        # Calculate the trailing edge thickness distribution using
+        # 4th order Bezier curve
         y_TE_thickness = self.BezierCurve4(y_TE_thickness_coeff,
-                                           u_trailing_edge[1:])  # Trailing edge thickness represented by 4th order Bezier curve
+                                           u_trailing_edge[1:])
         x_TE_thickness = self.BezierCurve4(x_TE_thickness_coeff,
-                                           u_trailing_edge[1:])  # Trailing edge bezier x-coordinates, represented by 4th order curve
+                                           u_trailing_edge[1:])
 
-        # Construct full curves by combining LE and TE data
+        # Construct full thickness curves by combining LE and TE data
         bezier_thickness = np.concatenate((y_LE_thickness, y_TE_thickness),
-                                          axis=0)  # Construct complete thickness curve over length of profile
+                                          axis=0)
         bezier_thickness_x = np.concatenate((x_LE_thickness, x_TE_thickness),
-                                            axis=0)  # Construct complete array of x-coordinates over length of profile
+                                            axis=0)
 
-        # Check the sorting of the thickness curve - if the arrays are not sorted we raise a valueerror as it indicates an infeasible parameterisation
+        # Check the sorting of the thickness curve.
+        # If the arrays are not sorted we raise a valueerror as it indicates an
+        # infeasible parameterisation
         if not np.all(np.diff(bezier_thickness_x) >= 0):
             raise ValueError("The thickness parameterisation for the profile is infeasible.")
 
@@ -640,24 +690,29 @@ class AirfoilParameterisation:
             # Calculate the Bezier curve coefficients for the camber curves
             x_LE_camber_coeff, y_LE_camber_coeff, x_TE_camber_coeff, y_TE_camber_coeff = self.GetCamberControlPoints(airfoil_params)
 
-            # Calculate the leading edge camber distribution
+            # Calculate the leading edge camber distribution using
+            # 3rd order Bezier curve
             y_LE_camber = self.BezierCurve3(y_LE_camber_coeff,
-                                            u_leading_edge)  # Leading edge camber represented by 3rd order Bezier curve
+                                            u_leading_edge)
             x_LE_camber = self.BezierCurve3(x_LE_camber_coeff,
-                                            u_leading_edge)  # Leading edge camber bezier x-coordinates, represented by a 3rd order curve
+                                            u_leading_edge)
 
-            # Calculate the trailing edge camber distribution using the parameter b_17
+            # Calculate the trailing edge camber distribution using
+            # 4th order Bezier curve
             y_TE_camber = self.BezierCurve4(y_TE_camber_coeff,
-                                            u_trailing_edge[1:])  # Trailing edge camber represented by 4th order Bezier curve
+                                            u_trailing_edge[1:])
             x_TE_camber = self.BezierCurve4(x_TE_camber_coeff,
-                                            u_trailing_edge[1:])  # Trailing edge camber bezier x-coordinates, represented by a 4th order curve
+                                            u_trailing_edge[1:])
 
+             # Construct full camber curves by combining LE and TE data
             bezier_camber = np.concatenate((y_LE_camber, y_TE_camber),
-                                           axis=0)  # Construct complete camber curve over length of profile
+                                           axis=0)
             bezier_camber_x = np.concatenate((x_LE_camber, x_TE_camber),
-                                             axis=0)  # Construct complete array of x-coordinates over length of profile
+                                             axis=0)
 
-            # Check the sorting of the camber curve - if the arrays are not sorted sort them to attempt to fix the profile
+            # Check the sorting of the camber curve.
+            # If the arrays are not sorted sort them to attempt to fix
+            # the profile
             if not np.all(np.diff(bezier_camber_x) >= 0):
                 raise ValueError("The camber distribution for the profile is infeasible.")
 
@@ -671,7 +726,10 @@ class AirfoilParameterisation:
 
     def ComputeProfileCoordinates(self,
                                   airfoil_params: dict[str, float],
-                                  ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
+                                  ) -> tuple[np.typing.NDArray[np.floating],
+                                             np.typing.NDArray[np.floating],
+                                             np.typing.NDArray[np.floating],
+                                             np.typing.NDArray[np.floating]]:
         """
         Calculate the airfoil coordinates from the Bezier control points.
 
@@ -700,7 +758,7 @@ class AirfoilParameterisation:
                                                                                    bezier_thickness,
                                                                                    bezier_camber_x,
                                                                                    bezier_camber)
-        
+
         # Validate profile shape by checking one-to-one of the x-arrays
         if (not np.all(np.diff(upper_x) >= 0) and not np.all(np.diff(lower_x) >= 0)):
             raise ValueError("The parameterisation for the profile is infeasible.")
@@ -709,7 +767,7 @@ class AirfoilParameterisation:
 
 
     def CheckOptimizedResult(self,
-                             airfoil_params: dict,
+                             airfoil_params: dict[str, float | np.floating],
                              reference_file: Path = None,
                              ) -> None:
         """
@@ -718,11 +776,15 @@ class AirfoilParameterisation:
 
         Parameters
         ----------
-        - airfoil_params : dict
+        - airfoil_params : dict[str, float | np.floating]
             A dictionary containing the airfoil parameterisation parameters.
         - reference_file : Path, optional
             The path to the reference file against which the fitting took
             place.
+
+        Returns
+        -------
+        None
         """
 
         # Load in the reference profile shape and obtain the relevant parameters
@@ -745,13 +807,7 @@ class AirfoilParameterisation:
 
         def get_figsize(columnwidth=448.1309, wf=0.5, hf=(5.**0.5-1.0)/2.0, ):
             """
-            Parameters
-            - wf [float]:  width fraction in columnwidth units
-            - hf [float]:  height fraction in columnwidth units.
-                            Set by default to golden ratio.
-            - columnwidth [float]: width of the column in pt in latex. Get this from LaTeX
-                                    using \\showthe\\columnwidth
-            Returns:  [fig_width,fig_height]: that should be given to matplotlib
+            Simple figsize function taken from matplotlib
             """
 
             fig_width_pt = columnwidth*wf
@@ -911,7 +967,7 @@ class AirfoilParameterisation:
         def x1_constraint_lower_thickness(x):
             x = np.multiply(x, self.guess_design_vector)  # Denormalise design vector
             return (7 * x[5] + 9 * x[2] / (2 * x[11])) / 4 - x[5]
-        
+
         def x1_constraint_upper_thickness(x):
             x = np.multiply(x, self.guess_design_vector)  # Denormalise design vector
             return 1 - (7 * x[5] + 9 * x[2] / (2 * x[11])) / 4
@@ -920,7 +976,7 @@ class AirfoilParameterisation:
         def x2_constraint_lower_thickness(x):
             x = np.multiply(x, self.guess_design_vector)  # Denormalise design vector
             return 2 * x[5] + 15 * x[2] ** 2 / (4 * x[11])
-        
+
         def x2_constraint_upper_thickness(x):
             x = np.multiply(x, self.guess_design_vector)  # Denormalise design vector
             return 1 - 2 * x[5] + 15 * x[2] ** 2 / (4 * x[11])
@@ -1019,7 +1075,12 @@ class AirfoilParameterisation:
                 out["G"] = [g1, g2, g4]
 
 
-        term_conditions = DefaultSingleObjectiveTermination(xtol=1e-18, cvtol=1e-12, ftol=0.001, period=10, n_max_gen=500, n_max_evals=100000)
+        term_conditions = DefaultSingleObjectiveTermination(xtol=1e-18,
+                                                            cvtol=1e-12,
+                                                            ftol=0.001,
+                                                            period=10,
+                                                            n_max_gen=500,
+                                                            n_max_evals=100000)
         problem = ProblemDefinition()
         algorithm = GA(pop_size=150,
                        eliminate_duplicates=True)
