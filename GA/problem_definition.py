@@ -83,7 +83,7 @@ from init_designvector import DesignVector  # type: ignore
 from design_vector_interface import DesignVectorInterface  # type: ignore
 import config  # type: ignore
 
-class OptimizationProblem(ElementwiseProblem):
+class OptimisationProblem(ElementwiseProblem):
     """
     Class definition of the optimisation problem to be solved using the genetic
     algorithm. Inherits from the ElementwiseProblem class from
@@ -506,7 +506,7 @@ if __name__ == "__main__":
     Test Block
     """
 
-    test = OptimizationProblem()
+    test = OptimisationProblem()
 
     # Create a reference vector for testing
     from init_population import InitPopulation  # type: ignore

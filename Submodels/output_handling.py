@@ -644,6 +644,11 @@ class output_processing:
         # Only read the forces data from a file if it is not
         # provided as an argument
         if forces_data is None:
+            if self.forces_path is None:
+                raise ValueError("Forces path is not defined. Please provide "
+                                 "forces_data or initialize the class with "
+                                 "an analysis_name.")
+            
             # Short sleep to ensure file has finished reading/writing to
             time.sleep(0.25)
 

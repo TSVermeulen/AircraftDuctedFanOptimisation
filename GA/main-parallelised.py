@@ -59,7 +59,7 @@ ensure_repo_paths()
 
 # Import interface submodels and other dependencies
 import config #type: ignore
-from problem_definition import OptimizationProblem #type: ignore
+from problem_definition import OptimisationProblem #type: ignore
 from init_population import InitPopulation #type: ignore
 from termination_conditions import GetTerminationConditions #type: ignore
 from repair import RepairIndividuals #type: ignore

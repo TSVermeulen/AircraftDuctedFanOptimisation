@@ -711,8 +711,7 @@ class AirfoilParameterisation:
                                              axis=0)
 
             # Check the sorting of the camber curve.
-            # If the arrays are not sorted sort them to attempt to fix
-            # the profile
+            # If the arrays are not sorted raises a ValueError.
             if not np.all(np.diff(bezier_camber_x) >= 0):
                 raise ValueError("The camber distribution for the profile is infeasible.")
 

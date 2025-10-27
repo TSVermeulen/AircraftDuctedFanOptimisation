@@ -58,7 +58,7 @@ from utils import ensure_repo_paths, calculate_n_reference_points #type: ignore
 ensure_repo_paths()
 
 import config  #type: ignore
-from problem_definition import OptimizationProblem #type: ignore
+from problem_definition import OptimisationProblem #type: ignore
 from init_population import InitPopulation #type: ignore
 from termination_conditions import GetTerminationConditions #type: ignore
 from repair import RepairIndividuals #type: ignore

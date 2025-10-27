@@ -293,7 +293,7 @@ class UDC:
                 self.design_parameters = kwargs.get('design_parameters')
                 fileHandlingMTSET(params_CB=self.centrebody_params,
                                   params_duct=self.duct_params,
-                                  case_name=self.analysis_name,
+                                  analysis_name=self.analysis_name,
                                   ref_length=self.ref_length).GenerateMTSETInput()
 
             # --------------------
@@ -352,7 +352,7 @@ class UDC:
             # Generate the MTFLO input file tflow.analysis_name if needed
             # --------------------
             if not external_inputs and exit_flag != ExitFlag.CRASH:
-                fileHandlingMTFLO(case_name=self.analysis_name,
+                fileHandlingMTFLO(analysis_name=self.analysis_name,
                                   ref_length=self.ref_length).GenerateMTFLOInput(blading_params=self.blading_parameters,
                                                                                  design_params=self.design_parameters)
 
@@ -426,11 +426,11 @@ if __name__ == "__main__":
                     ref_length=fan_diameter,
                     analysis_name=analysisName)
 
-    exit_flag = solver.caller(external_inputs=False,
-                              centrebody_params=centrebody_parameters,
-                              duct_params=duct_parameters,
-                              blading_parameters=blading_parameters,
-                              design_parameters=design_parameters)
+    exit_flag, outputs = solver.caller(external_inputs=False,
+                                       centrebody_params=centrebody_parameters,
+                                       duct_params=duct_parameters,
+                                       blading_parameters=blading_parameters,
+                                       design_parameters=design_parameters)
     end_time = time.time()
 
     print(f"Execution of UDC.caller() took {end_time - start_time} second")

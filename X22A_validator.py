@@ -72,7 +72,7 @@ L_REF = FAN_DIAMETER  # m, reference length for use by MTFLOW
 def GenerateMTFLOBlading(Omega: float,
                          ref_blade_angle: float,
                          plot : bool,
-                         ) -> tuple[list, list]:
+                         ) -> tuple[list[dict[str, float | np.typing.NDArray[np.floating]], list[list[dict[str, float | np.floating]]]]]:
     """
     Generate MTFLO blading.
     The blading parameters are based on Figure 3 in [1].
@@ -186,7 +186,7 @@ def GenerateMTFLOBlading(Omega: float,
             x_mid_arr[section] = (x_LE + x_TE) / 2
             x_LE_arr[section] = x_LE
             x_TE_arr[section] = x_TE
-            plt.plot([x_LE, x_TE], [blading_parameters[0]["radial_stations"][section], blading_parameters[0]["radial_stations"][section]], label=f"r={round(blading_parameters[0]["radial_stations"][section], 2)} m")
+            plt.plot([x_LE, x_TE], [blading_parameters[0]['radial_stations'][section], blading_parameters[0]['radial_stations'][section]], label=f"r={round(blading_parameters[0]['radial_stations'][section], 2)} m")
 
         plt.xlabel("Axial Location [m]")
         plt.ylabel("Radial location [m]")
@@ -542,16 +542,19 @@ def ExecuteParameterSweep(omega: np.typing.NDArray[np.floating],
             # Execute MTSOL
             # We are only interested in the output data here,
             # not the exit flag(s)
-            _, output_data = MTSOL_call(operating_conditions=oper,
-                                        analysis_name=ANALYSIS_NAME,
-                                        ).caller(run_viscous=True,
-                                                 generate_output=True)
+            exit_flag, output_data = MTSOL_call(operating_conditions=oper,
+                                                analysis_name=ANALYSIS_NAME,
+                                                ).caller(run_viscous=True,
+                                                         generate_output=True)
 
             # Extract outputs
-            CT = output_data['data']['Total force CT']
-            CP = output_data['data']['Total power CP']
-            etaP = output_data['data']['EtaP']
-            print(f"Omega: {omega[i]}, TC: {CT}, CP: {CP}, etaP: {etaP}")
+            if exit_flag in (-1, 3, 1):  # SUCCESS, COMPLETED, NON_CONVERGENCE
+                CT = output_data['data']['Total force CT']
+                CP = output_data['data']['Total power CP']
+                etaP = output_data['data']['EtaP']
+                print(f"Omega: {omega[i]}, TC: {CT}, CP: {CP}, etaP: {etaP}")
+            else:
+                CT = CP = etaP = 0
 
             CT_outputs[i] = CT
             CP_outputs[i] = CP
