@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
         """ Initialise the optimisation problem and algorithm """
         # Initialise the optimisation problem by passing the configuration and the starmap interface of the thread_pool
-        problem = OptimizationProblem(elementwise_runner=runner,
+        problem = OptimisationProblem(elementwise_runner=runner,
                                       seed=config.GLOBAL_SEED)
 
         # Initialise the algorithm

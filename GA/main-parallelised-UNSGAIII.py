@@ -103,7 +103,7 @@ if __name__ == "__main__":
             problem = MultiPointOptimizationProblem(elementwise_runner=runner,
                                                     seed=config.GLOBAL_SEED)
         else:
-            problem = OptimizationProblem(elementwise_runner=runner,
+            problem = OptimisationProblem(elementwise_runner=runner,
                                           seed=config.GLOBAL_SEED)
 
         # Create the reference directions to be used for the optimisation

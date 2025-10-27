@@ -71,7 +71,7 @@ if __name__ == "__main__":
         from multi_point_problem_definition import MultiPointOptimizationProblem # type: ignore
         problem = MultiPointOptimizationProblem(seed=config.GLOBAL_SEED)
     else:
-        problem = OptimizationProblem(seed=config.GLOBAL_SEED)
+        problem = OptimisationProblem(seed=config.GLOBAL_SEED)
 
     # Create the reference directions to be used for the optimisation
     ref_dirs = get_reference_directions("energy",
