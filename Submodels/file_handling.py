@@ -167,35 +167,31 @@ class fileHandlingMTSET:
                  domain_boundaries : Optional[list[float]] = None,
                  ) -> None:
         """
-        Initialize the fileHandlingMTSET class.
-    
-        This method sets up the initial state of the class.
-
-        Parameters
-        ----------
-        - params_CB : dict[str, float | np.floating]
-            Dictionary containing parameters for the centerbody.
-        - params_duct : dict[str, float | np.floating]
-            Dictionary containing parameters for the duct.
-        - analysis_name : str
-            Name of the case being handled.
-        - ref_length : float | np.floating
-            The reference length used by MTFLOW to non-dimensionalise all 
-            the dimensions.
-        - external_input : bool, optional
-            A control boolean to bypass the input of the "proper" centerbody 
-            and duct dictionaries. This is useful when debugging or running 
-            cases where pre-existing geometry is to be used, rather than 
-            parameterised geometry. 
-        - domain_boundaries : list[float], optional
-            A list containing the grid boundaries in the format 
-            [XFRONT, XREAR, YBOT, YTOP]. Note that these boundaries must 
-            already be non-dimensionalised by the reference length!
-
-        Returns
-        -------
-        None
-        """
+                 Initialize a fileHandlingMTSET instance, validate inputs, and set up paths and parameterisation.
+                 
+                 Parameters:
+                     params_CB (dict): Centerbody design parameters. Must contain at least
+                         "Leading Edge Coordinates" and "Chord Length"; when `external_input` is False,
+                         additional geometry coefficients and metadata keys are required.
+                     params_duct (dict): Duct design parameters. Same key requirements as `params_CB`.
+                     analysis_name (str): Case name used for output file naming.
+                     ref_length (float): Reference length for non-dimensionalisation; must be > 0.
+                     external_input (bool, optional): If True, skip full parameter dictionary validation
+                         and expect precomputed profile arrays to be provided elsewhere. Defaults to False.
+                     domain_boundaries (list[float] | None, optional): Optional non-dimensionalised grid
+                         boundaries in the form [XFRONT, XREAR, YBOT, YTOP]. If omitted, boundaries
+                         will be computed later.
+                 
+                 Raises:
+                     ValueError: If required keys are missing from `params_CB` or `params_duct`, or if
+                         `ref_length` is not positive.
+                     TypeError: If `analysis_name` is not a string.
+                 
+                 Notes:
+                     This initializer assigns the validated parameter dictionaries to instance attributes,
+                     configures internal grid constants, sets repository paths (parent and Submodels),
+                     and instantiates the AirfoilParameterisation helper.
+                 """
 
         # Input validation
         # Required keys for parameter dictionaries
@@ -253,19 +249,12 @@ class fileHandlingMTSET:
 
     def GetGridSize(self) -> list[float]:
         """
-        Determine grid size - x & y coordinates of grid boundary. 
-        Non-dimensionalises all geometry based on the reference length, 
-        in accordance with the MTFLOW documentation. 
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - list[float]
-            A list containing the grid boundaries in the format 
-            [XFRONT, XREAR, YBOT, YTOP]
+        Compute the domain grid boundaries for the case, non-dimensionalized by the reference length.
+        
+        If all entries in self.domain_boundaries are defined, those values are returned unchanged. Otherwise the front, rear, and top boundaries are computed from the centerbody and duct leading-edge coordinates, chord lengths, and internal sizing constants; the bottom boundary is set to 0.
+        
+        Returns:
+            list[float]: Grid boundaries in the order [XFRONT, XREAR, YBOT, YTOP], each value non-dimensionalized by self.ref_length.
         """
 
         # If all boundaries are provided, return them directly
@@ -306,21 +295,17 @@ class fileHandlingMTSET:
                               airfoil_parameters: dict[str, float | np.floating],
                               ) -> np.typing.NDArray[np.floating]:
         """
-        Compute the profile coordinates of an airfoil based on given design 
-        parameters and leading edge coordinates. Note that the outputs are 
-        still dimensional, and are yet to be non-dimensionalised!
-
-        Parameters
-        ----------
-        - airfoil_parameters : dict[str, float | np.floating]
-            Dictionary of design parameters for the profile parameterisation.
-
-        Returns
-        -------
-        - np.typing.NDArray[np.floating]
-            A 2D numpy array of shape (N, 2) containing the x and y 
-            coordinates of the airfoil profile.
-        """
+                              Compute the airfoil profile coordinates positioned in the global domain using the provided design parameters.
+                              
+                              Parameters:
+                                  airfoil_parameters (dict[str, float | np.floating]):
+                                      Design parameters for the profile. Expected keys include "Chord Length" (used to scale the parameterised coordinates)
+                                      and "Leading Edge Coordinates" (2-tuple or list used to offset x and y). The returned coordinates are dimensional.
+                              
+                              Returns:
+                                  np.typing.NDArray[np.floating]:
+                                      An (N, 2) array of (x, y) coordinates describing the full airfoil profile in dimensional units.
+                              """
             
         # Compute the profile x,y coordinates
         coordinates = self.parameterisation.ComputeProfileCoordinates(airfoil_params=airfoil_parameters)
@@ -346,19 +331,17 @@ class fileHandlingMTSET:
                            xy_duct: Optional[np.typing.NDArray[np.floating]] = None,
                            ) -> None:
         """
-        Write the MTSET input file walls.xxx for the given case. 
-
-        Parameters
-        ----------
-        - xy_centerbody : Optional[np.typing.NDArray[np.floating]], optional
-            Tuple containing the x and y coordinates of the centerbody profile.
-        - xy_duct : Optional[np.typing.NDArray[np.floating]], optional
-            Tuple containing the x and y coordinates of the duct profile.
-
-        Returns
-        -------
-        None
-        """
+                           Write the MTSET walls input file for the current case, writing centerbody and optional duct profiles to Submodels/walls.{analysis_name}.
+                           
+                           If profile arrays are not provided and external_input is False, profiles are generated from the stored parameterisation. Coordinates are written after non-dimensionalising by the instance reference length.
+                           
+                           Parameters:
+                               xy_centerbody (Optional[np.typing.NDArray[np.floating]]): Array of centerbody coordinates with shape (N, 2) as (x, y) in the same units as the instance reference length; if omitted and external_input is False, the profile is generated from centerbody_params.
+                               xy_duct (Optional[np.typing.NDArray[np.floating]]): Array of duct coordinates with shape (M, 2) as (x, y) in the same units as the instance reference length; if omitted and external_input is False, the profile is generated from duct_params.
+                           
+                           Raises:
+                               ValueError: If external_input is True but either xy_centerbody or xy_duct is not provided.
+                           """
 
         domain_boundaries = self.GetGridSize()
 
@@ -419,24 +402,13 @@ class fileHandlingMTFLO:
                  ref_length: float,
                  centerbody_rotor_thickness: float = 0.18) -> None:
         """
-        Initialize the fileHandlingMTFLO class.
-        This method sets up the initial state of the class.
-
-        Parameters
-        ----------
-        - analysis_name : str
-            Name of the case being handled.
-        - ref_length : float
-            The reference length used by MTFLOW to non-dimensionalise all 
-            the dimensions.
-        - centerbody_rotor_thickness : float, optional
-            The cutoff radius in meters below which we do not check the 
-            circumferential thickness limit to avoid numerical false triggers.
-        
-        Returns
-        -------
-        None
-        """
+                 Initialize a fileHandlingMTFLO instance and configure analysis name, reference length, paths, and parameterisation.
+                 
+                 Parameters:
+                     analysis_name (str): Case name used for file naming and headers.
+                     ref_length (float): Reference length used to non-dimensionalize geometric values.
+                     centerbody_rotor_thickness (float, optional): Radius in meters below which circumferential thickness checks are skipped to avoid false blockage warnings. Defaults to 0.18.
+                 """
 
         self.analysis_name= analysis_name
         self.ref_length = ref_length
@@ -455,23 +427,16 @@ class fileHandlingMTFLO:
                                local_radius: float,
                                blade_count: int) -> None:
         """
-        Validate that blade thickness doesn't exceed the complete 
-        blockage limit. If radius is less than self.CENTERBODY_ROTOR_THICKNESS, 
-        the function does nothing.
-
-        Parameters
-        ----------
-        - local_thickness : float
-            The local profile thickness
-        - local_radius : float
-            The local radius of the blade-to-blade plane
-        - blade_count : int
-            The total number of blades in the blade-to-blade plane
-
-        Returns
-        -------
-        None
-        """
+                               Check that the local blade thickness does not exceed the full circumferential blockage limit at the given radius.
+                               
+                               Parameters:
+                                   local_thickness (float): Local profile thickness.
+                                   local_radius (float): Radius of the blade-to-blade plane.
+                                   blade_count (int): Number of blades in the blade-to-blade plane.
+                               
+                               Raises:
+                                   ValueError: If local_thickness is greater than or equal to 2 * pi * local_radius and local_radius is greater than self.CENTERBODY_ROTOR_THICKNESS.
+                               """
         
         thickness_limit = 2 * np.pi * local_radius / blade_count
         if local_thickness >= thickness_limit and \
@@ -487,33 +452,21 @@ class fileHandlingMTFLO:
                       y_l: np.typing.NDArray[np.floating],
                       ) -> tuple[np.typing.NDArray[np.floating]]:
         """
-        Rotate a set of x,y coordinates counter-clockwise over the 
-        specified angle.
-
-        Parameters
-        ----------
-        - pitch : float
-            The blade pitch angle in radians.
-        - x_u : np.typing.NDArray[np.floating]
-            The upper surface x-coordinates.
-        - x_l : np.typing.NDArray[np.floating]
-            The lower surface x-coordinates.
-        - y_u : np.typing.NDArray[np.floating]
-            The upper surface y-coordinates.
-        - y_l : np.typing.NDArray[np.floating]
-            The lower surface y-coordinates
-
-        Returns
-        -------
-        - rotated_upper_x : np.typing.NDArray[np.floating]
-            The x-coordinates of the rotated upper surface.
-        - rotated_upper_y : np.typing.NDArray[np.floating]
-            The y-coordinates of the rotated upper surface.
-        - rotated_lower_x : np.typing.NDArray[np.floating]
-            The x-coordinates of the rotated lower surface.
-        - rotated_lower_y : np.typing.NDArray[np.floating]
-            The y-coordinates of the rotated lower surface.
-        """
+                      Rotate the upper and lower profile coordinates by the specified pitch and normalise their leading-edge y positions to zero.
+                      
+                      Parameters:
+                          pitch (float): Blade pitch angle in radians; positive rotates the profile accordingly.
+                          x_u (np.typing.NDArray[np.floating]): Upper surface x-coordinates.
+                          x_l (np.typing.NDArray[np.floating]): Lower surface x-coordinates.
+                          y_u (np.typing.NDArray[np.floating]): Upper surface y-coordinates.
+                          y_l (np.typing.NDArray[np.floating]): Lower surface y-coordinates.
+                      
+                      Returns:
+                          rotated_upper_x (np.typing.NDArray[np.floating]): X-coordinates of the rotated upper surface.
+                          rotated_upper_y (np.typing.NDArray[np.floating]): Y-coordinates of the rotated upper surface with its leading-edge y set to zero.
+                          rotated_lower_x (np.typing.NDArray[np.floating]): X-coordinates of the rotated lower surface.
+                          rotated_lower_y (np.typing.NDArray[np.floating]): Y-coordinates of the rotated lower surface with its leading-edge y set to zero.
+                      """
 
         # Construct the rotation matrix
         rotation_angle = np.pi / 2 - pitch
@@ -565,32 +518,22 @@ class fileHandlingMTFLO:
                                        np.typing.NDArray[np.floating], 
                                        np.typing.NDArray[np.floating]]:
         """
-        Convert the planar airfoil coordinates to cylindrical coordinates.
-
-        Parameters
-        ----------
-        - y_u : np.typing.NDArray[np.floating]
-            The y-coordinates of the upper surface.
-        - y_l : np.typing.NDArray[np.floating]
-            The y-coordinates of the lower surface.
-        - r : float
-            The radius of the cylindrical surface.
-        
-        Returns
-        -------
-        - y_section_upper : np.typing.NDArray[np.floating]
-            The y-coordinates of the upper surface in cylindrical coordinates.
-        - y_section_lower : np.typing.NDArray[np.floating]
-            The y-coordinates of the lower surface in cylindrical coordinates.
-        - y_camber : np.typing.NDArray[np.floating]
-            The y-coordinates of the camber line in cylindrical coordinates.
-        - z_section_upper : np.typing.NDArray[np.floating]
-            The z-coordinates of the upper surface in cylindrical coordinates.
-        - z_section_lower : np.typing.NDArray[np.floating]
-            The z-coordinates of the lower surface in cylindrical coordinates.
-        - z_camber : np.typing.NDArray[np.floating]
-            The z-coordinates of the camber line in cylindrical coordinates.
-        """
+                            Convert planar upper/lower surface offsets into cylindrical (y,z) coordinates for a given radius.
+                            
+                            Parameters:
+                                y_u (np.typing.NDArray[np.floating]): Upper-surface offsets measured normal to the chord (planar y).
+                                y_l (np.typing.NDArray[np.floating]): Lower-surface offsets measured normal to the chord (planar y).
+                                r (float): Radius of the cylindrical surface; if zero, angles are treated as raw offsets.
+                            
+                            Returns:
+                                tuple: Six arrays in this order:
+                                    - y_section_upper (np.typing.NDArray[np.floating]): Upper-surface y-coordinates on the cylinder.
+                                    - y_section_lower (np.typing.NDArray[np.floating]): Lower-surface y-coordinates on the cylinder.
+                                    - y_camber (np.typing.NDArray[np.floating]): Camber-line y-coordinates on the cylinder.
+                                    - z_section_upper (np.typing.NDArray[np.floating]): Upper-surface z-coordinates on the cylinder.
+                                    - z_section_lower (np.typing.NDArray[np.floating]): Lower-surface z-coordinates on the cylinder.
+                                    - z_camber (np.typing.NDArray[np.floating]): Camber-line z-coordinates on the cylinder.
+                            """
 
         # Compute camber from the upper and lower surfaces
         camber = (y_u + y_l) / 2
@@ -743,38 +686,21 @@ class fileHandlingMTFLO:
                         m_prime: np.typing.NDArray[np.floating],
                         theta: np.typing.NDArray[np.floating]) -> None:
         """
-        Generate plots visualising the blade geometry. 
-
-        Parameters
-        ----------
-        - stage : int
-            The stage number of the blade row.
-        - radial_point : float
-            The radial point along the blade span.
-        - x_points : np.typing.NDArray[np.floating]
-            The x-coordinates of the blade profile.
-        - rotated_upper_x : np.typing.NDArray[np.floating]
-            The x-coordinates of the upper surface of the blade profile.
-        - rotated_upper_y : np.typing.NDArray[np.floating] 
-            The y-coordinates of the upper surface of the blade profile.
-        - rotated_lower_x : np.typing.NDArray[np.floating]
-            The x-coordinates of the lower surface of the blade profile.
-        - rotated_lower_y : np.typing.NDArray[np.floating]
-            The y-coordinates of the lower surface of the blade profile.
-        - circumferential_thickness : np.typing.NDArray[np.floating]
-            The circumferential thickness distribution along the blade profile.
-        - blade_slope : np.typing.NDArray[np.floating]
-            The geometric blade slope distribution along the blade profile.
-        - m_prime : np.typing.NDArray[np.floating]
-            The m' coordinates along the blade profile.
-        - theta : np.typing.NDArray[np.floating]
-            The circumferential angles theta of the camber line along the 
-            blade profile.
-        
-        Returns
-        -------
-        None
-        """
+                        Plot blade geometry diagnostics for a single radial section.
+                        
+                        Parameters:
+                            stage (int): Stage index for labeling the plots.
+                            radial_point (float): Radial location (m) of the section being plotted.
+                            x_points (np.typing.NDArray[np.floating]): Axial coordinates of the sampled profile.
+                            rotated_upper_x (np.typing.NDArray[np.floating]): X coordinates of the rotated upper surface.
+                            rotated_upper_y (np.typing.NDArray[np.floating]): Y coordinates of the rotated upper surface.
+                            rotated_lower_x (np.typing.NDArray[np.floating]): X coordinates of the rotated lower surface.
+                            rotated_lower_y (np.typing.NDArray[np.floating]): Y coordinates of the rotated lower surface.
+                            circumferential_thickness (np.typing.NDArray[np.floating]): Circumferential thickness distribution T_theta along x_points.
+                            blade_slope (np.typing.NDArray[np.floating]): Geometric camberline slope distribution dθ/dm' sampled along the profile.
+                            m_prime (np.typing.NDArray[np.floating]): Meridional coordinate m' used for normalization and plotting.
+                            theta (np.typing.NDArray[np.floating]): Circumferential angles of the camber line (radians) sampled along the profile.
+                        """
         
         import matplotlib.pyplot as plt
 
@@ -848,25 +774,20 @@ class fileHandlingMTFLO:
     def _extract_constant_spaced_x_indices(target_array: np.typing.NDArray | list,
                                            sample_size: int) -> list[int]:
         """
-        Given a sorted 1D numpy array target_array containing cosine-spaced 
-        airfoil x-coordinates, this function extracts sample_size values from 
-        x_array with an approximately constant spacing. It does so by generating 
-        the ideal target points and then selecting, for each target, the 
-        closest value that exists in the original array.
-    
-        Parameters
-        ----------
-            - target_array: np.typing.NDArray | list
-                1D sorted numpy array or list of x-coordinates.
-            - sample_size: int
-                The desired number of evenly spaced output samples.
-      
-        Returns
-        -------
-        - selected_indices : list[int]
-            A list containing the indices corresponding to the constant 
-            spaced values.
-        """      
+                                           Select indices from a sorted 1D array that approximate evenly spaced x positions.
+                                           
+                                           Generate sample_size target x positions evenly spaced between the first and last
+                                           elements of target_array and return the indices of the closest existing values,
+                                           ensuring the returned indices are non-decreasing.
+                                           
+                                           Parameters:
+                                               target_array (np.typing.NDArray | list): Sorted 1D array-like of x-coordinates.
+                                               sample_size (int): Desired number of evenly spaced samples.
+                                           
+                                           Returns:
+                                               list[int]: Indices into target_array for the selected values; length equals
+                                               sample_size and indices are non-decreasing.
+                                           """      
 
         # Create the target values 
         x_targets = np.linspace(target_array[0], target_array[-1], sample_size)
@@ -891,49 +812,26 @@ class fileHandlingMTFLO:
                            plot: bool = False,
                            ) -> None:
         """
-        Write the MTFLO input file for the given case.
-
-        Parameters:
-        -----------
-        - blading_params : np.ndarray[dict]
-            Array containing the blading parameters for each stage. Each 
-            dictionary should include the following keys:
-            - "root_LE_coordinate": The leading edge coordinate at the root 
-                                    of the blade.
-            - "rotational_rate": The rotational rate of the blade.
-            - "blade_count": The number of blades.
-            - "radial_stations": Numpy array of the radial stations along 
-                                 the blade span.
-            - "ref_blade_angle": The set angle of the blades.
-            - "reference_section_blade_angle": The blade angle at the reference 
-                                               section of the blade span. This 
-                                               is used as the value on which the 
-                                               other blade angles are computed.
-            - "chord_length": Numpy array of the chord length distribution 
-                              along the blade span.
-            - "sweep_angle": Numpy array of the sweep angle distribution 
-                             along the blade span.
-            - "blade_angle": Numpy array of the twist angle distribution 
-                             along the blade span.
-        - design_params: np.ndarray[dict]
-            Nested array containing an equal number of nests as there are 
-            stages. Each nested array has dictionary entries equal to the 
-            amount of radial stations considered. 
-            Each dictionary must contain the following keys:
-            - "b_0", "b_2", "b_8", "b_15", "b_17": Coefficients for the airfoil 
-                                                   parameterisation.
-            - "x_t", "y_t", "x_c", "y_c": Coordinates for the airfoil 
-                                          parameterisation.
-            - "z_TE", "dz_TE": Trailing edge parameters.
-            - "r_LE": Leading edge radius.
-            - "trailing_wedge_angle": Trailing wedge angle.
-            - "trailing_camberline_angle": Trailing camberline angle.
-            - "leading_edge_direction": Leading edge direction.
-            - "Chord Length": The chord length of the blade.
-        - plot : bool, optional
-            An optional controlling boolean to decide if plots are to be 
-            created of the parameters of interest. Default value is False. 
-        """
+                           Write a tflow.{analysis_name} MTFLO input file describing each stage's blade-row sections.
+                           
+                           For each stage in blading_params, this method samples each radial station from design_params, builds and orients the airfoil section, converts it to cylindrical coordinates, computes circumferential thickness and blade slope, and writes a block of axial samples to the output file. Optionally produces diagnostic plots when plot is True.
+                           
+                           Parameters:
+                               blading_params (np.ndarray[dict]):
+                                   Sequence of stage dictionaries. Each must include:
+                                   "root_LE_coordinate", "rotational_rate", "blade_count",
+                                   "radial_stations" (array), "ref_blade_angle",
+                                   "reference_section_blade_angle", "chord_length" (array),
+                                   "sweep_angle" (array), and "blade_angle" (array).
+                               design_params (np.ndarray[dict]):
+                                   Nested sequence matching blading_params where each stage entry
+                                   is an array/dictionary per radial station containing the airfoil
+                                   parameterisation inputs required by parameterisation.ComputeProfileCoordinates
+                                   (e.g., coefficients like "b_0", geometry keys, TE/LE params).
+                               plot (bool, optional):
+                                   If True, generate and display diagnostic plots for each section.
+                           
+                           """
 
         # Open the tflow.xxx file and start writing the required input 
         # data to it

@@ -156,26 +156,20 @@ class MTSOL_call:
                  analysis_name: str,
                  ) -> None:
         """
-        Initialize the MTSOL_call class.
-
-        This method sets up the initial state of the class.
-
-        Parameters
-        ----------
-        - operating_conditions : dict[str, float]
-            A dictionary containing the operating conditions for the MTSOL
-            analysis. The dictionary needs to contain:
-                - Inlet_Mach: the inlet Mach number
-                - Inlet_Reynolds: the inlet Reynolds number, calculated using
-                                  Lref=fan diameter
-                - N_crit: the critical amplification factor
-        - analysis_name : str
-            A string of the analysis name.
-
-        Returns
-        -------
-        None
-        """
+                 Initialize instance state and validate the presence of the MTSOL executable.
+                 
+                 Parameters:
+                     operating_conditions (dict[str, float]):
+                         Operating parameters for the analysis. Required keys:
+                             - Inlet_Mach: inlet Mach number
+                             - Inlet_Reynolds: inlet Reynolds number (reference length = fan diameter)
+                             - N_crit: critical amplification factor
+                     analysis_name (str):
+                         Name used to identify this analysis and to build output filenames.
+                 
+                 Raises:
+                     FileNotFoundError: If the MTSOL executable is not found at the expected path.
+                 """
 
         self.operating_conditions = operating_conditions
         self.analysis_name = analysis_name
@@ -211,17 +205,11 @@ class MTSOL_call:
     def StdinWrite(self,
                    command: str) -> None:
         """
-        Simple function to write commands to the subprocess stdin in order to pass commands to MTSOL
-
-        Parameters
-        ----------
-        - command : str
-            The text-based command to pass to MTSOL
-
-        Returns
-        -------
-        None
-        """
+                   Write a text command to the MTSOL subprocess stdin and flush the stream.
+                   
+                   Parameters:
+                       command (str): Command string to send to the MTSOL process (without trailing newline).
+                   """
 
         self.process.stdin.write(f"{command} \n")
         self.process.stdin.flush()
@@ -229,18 +217,9 @@ class MTSOL_call:
 
     def GenerateProcess(self) -> None:
         """
-        Create MTSOL subprocess
-
-        Requires that the executable, mtsol.exe, and the input file, tdat.xxx
-        are present in the same directory as this Python file.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Start the MTSOL subprocess and initialize its stdout reader and related control attributes.
+        
+        Sets or resets self.shutdown_event, terminates any existing MTSOL process and reader thread if present, launches the mtsol executable for the current analysis, and creates the following attributes on self: `process` (the subprocess.Popen instance), `output_queue` (Queue of stdout lines), and `reader` (daemon thread that enqueues stdout lines).
         """
 
         # Add a shutdown event to signal thread termination or
@@ -286,7 +265,15 @@ class MTSOL_call:
         self.output_queue = queue.Queue()
 
         def output_reader(out, q) -> None:
-            """ Helper function to read the output on a separate thread """
+            """
+            Continuously read lines from a subprocess stdout stream and enqueue them until a shutdown is requested, the process exits, or EOF is reached.
+            
+            Reads text lines from `out` and puts each line into `q`. The loop stops when `self.shutdown_event` is set, the subprocess referenced by `self.process` has terminated, or the stream yields no more data. Suppresses `ValueError` arising from reading a closed stream; any other exception is printed.
+            
+            Parameters:
+                out (io.TextIOBase): Text stream to read lines from (typically a subprocess stdout pipe).
+                q (queue.Queue): Thread-safe queue to which read lines are enqueued.
+            """
             try:
                 while not getattr(self,
                                   "shutdown_event",
@@ -322,19 +309,12 @@ class MTSOL_call:
 
     def SetOperConditions(self) -> None:
         """
-        Set the operating conditions for the MTSOL analysis.
-
-        Sets the inlet Mach number and critical amplification factor,
-        and sets the Reynolds number equal to zero to ensure an inviscid
-        case is obtained.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Configure MTSOL operating parameters for the current analysis.
+        
+        Sets the inlet Mach number, the critical amplification factor (N), the Reynolds
+        number to 0 to force an initial inviscid solve, and the Smom flag (momentum/entropy
+        conservation) to 4. Each change is submitted to the solver and the method waits
+        for the solver to acknowledge the parameter update before proceeding.
         """
 
         # Enter the Modify solution parameters menu
@@ -371,17 +351,9 @@ class MTSOL_call:
 
     def ToggleViscous(self) -> None:
         """
-        Toggle the viscous setting for all surfaces by setting the inlet
-        Reynolds number. Note that the Reynolds number must be defined using
-        the MTFLOW reference length LREF.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Set the solver Reynolds number to enable viscous behavior for all surfaces using the MTFLOW reference length LREF.
+        
+        Uses the value in self.operating_conditions['Inlet_Reynolds'], sends it to the solver's modify-solution-parameters menu, and waits for the parameter change to complete.
         """
 
         # Enter the Modify solution parameters menu
@@ -402,21 +374,15 @@ class MTSOL_call:
                    mode: str = "enable"
                    ) -> None:
         """
-        Set the viscous toggle for the given surface identifier(s).
-
-        Parameters
-        ----------
-        - surface_ID : list[int] | int
-            IDs of the surface which are to be toggled. For a ducted fan,
-            the ID should be either 1, 3, or 4.
-        - mode : str, optional
-            Optional string to determine which toggling mode to use:
-            enable or disable.
-
-        Returns
-        -------
-        None
-        """
+                   Enable or disable viscous behavior for one or more surface IDs.
+                   
+                   Parameters:
+                       surface_ID (int | list[int]): Surface identifier or list of identifiers to modify (for a ducted fan typically 1, 3, or 4).
+                       mode (str): "enable" to turn viscous behavior on, "disable" to turn it off.
+                   
+                   Raises:
+                       ValueError: If `mode` is not "enable" or "disable".
+                   """
 
         if mode == "enable":
             lookfor_flag = ExitFlag.COMPLETED
@@ -456,30 +422,34 @@ class MTSOL_call:
                           surface_ID: int = None,
                           ) -> ExitFlag:
         """
-        Monitor the console output to verify the completion of a command.
-
-        Parameters
-        ----------
-        - completion_type : CompletionType, optional
-            A CompletionType enum to determine what to check for. Default value
-            is CompletionType.ITERATION
-        - output_file : str, optional
-            A string of the output file for which the completion is to be
-            monitored. Either 'forces', 'flowfield', or 'boundary_layer'.
-            Note that the file extension (i.e. casename), should not be
-            included!
-        - surface_ID : int, optional
-            An integer of the surface which is to be inspected.
-
-        Returns
-        -------
-        - exit_flag : ExitFlag
-            Exit flag indicating the status of the solver execution.
-        """
+                          Waits for a requested MTSOL operation to complete by monitoring subprocess console output.
+                          
+                          Parameters:
+                              completion_type (CompletionType): Which completion event to wait for (iteration, output write, parameter change, or viscous toggle).
+                              output_file (str, optional): If waiting for an OUTPUT event, one of 'forces', 'flowfield', or 'boundary_layer' to confirm the corresponding file appears.
+                              surface_ID (int, optional): Surface identifier used when waiting for a VISCOUS_TOGGLE event.
+                          
+                          Returns:
+                              ExitFlag: One of:
+                                  - ExitFlag.COMPLETED: the requested event completed (but not necessarily converged).
+                                  - ExitFlag.SUCCESS: iteration converged or viscous toggle indicates enabled state.
+                                  - ExitFlag.CHOKING: solver reported a choking condition.
+                                  - ExitFlag.CRASH: the MTSOL subprocess terminated or printed a crash indicator.
+                                  - ExitFlag.NON_CONVERGENCE: timeout expired before the requested event was observed.
+                          """
 
         # Define an exponential time_delay helper function to limit CPU usage
         # while the solver is working
         def _sleep_time(delta_t: float) -> float:
+            """
+            Compute an adaptive short sleep interval based on the provided elapsed time.
+            
+            Parameters:
+            	delta_t (float): Elapsed time (seconds) used to scale the sleep interval.
+            
+            Returns:
+            	sleep_time (float): Sleep interval in seconds; increases exponentially with `delta_t` and is capped at 0.1 seconds.
+            """
             return min(0.1, 0.01 * (2 ** min(10, int(delta_t))))
 
         # Check the console output to ensure that commands are completed
@@ -564,14 +534,9 @@ class MTSOL_call:
 
     def WriteStateFile(self) -> None:
         """
-        Writes the current solution to the state file tdat.analysis_name.
-
-        Parameters
-        ----------
-
-        Returns
-        -------
-        None
+        Write the current solution to the analysis state file and wait for the write to complete.
+        
+        Blocks until the solver confirms the state file has been written.
         """
 
         # Update the solution state file
@@ -683,16 +648,10 @@ class MTSOL_call:
 
     def ExecuteSolver(self) -> ExitFlag:
         """
-        Execute the MTSOL solver for the current analysis.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - exit_flag : ExitFlag
-            Exit flag indicating the status of the solver execution.
+        Run the solver until it converges, crashes, chokes, or the configured iteration limit is reached.
+        
+        Returns:
+            ExitFlag: `ExitFlag.SUCCESS` if the solution converged, `ExitFlag.NON_CONVERGENCE` if the iteration limit was reached without convergence, `ExitFlag.CRASH` if the solver process crashed, `ExitFlag.CHOKING` if a choking condition was detected, or `ExitFlag.NOT_PERFORMED` if no iterations were executed.
         """
 
         # Ensure an iteration limit is defined before executing the solver
@@ -734,24 +693,9 @@ class MTSOL_call:
 
     def HandleNonConvergence(self) -> None:
         """
-        Average over the last self.SAMPLE_SIZE iterations to determine the
-        integral flowfield variables.
-
-        This method performs the following steps for each of the iterations
-        considered:
-            - Executes an iteration
-            - Generates the forces output data from the console output and write
-              it to a list
-        After all iterations are performed, the average of the forces data is
-        computed and written to the forces_data_dict attribute.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Average recent solver forces outputs and populate the in-memory forces_data_dict.
+        
+        Runs up to self.SAMPLE_SIZE solver iterations, collects the forces output for each iteration, converts each collected output into a normalized dictionary via self.output_processing_class.GetAllVariables, computes element-wise averages across the nested dictionaries, and stores the resulting averaged dictionary on self.forces_data_dict. If the solver process is not running, the process is restarted and averaging is terminated early; the method has the side effect of updating self.forces_data_dict.
         """
 
         # Initialize iteration counter and list to store forces data
@@ -790,21 +734,13 @@ class MTSOL_call:
                         count_dict: dict[str, Any],
                         input_dict: dict[str, Any]) -> None:
             """
-            Populate a sum and count dictionary from the input dictionary recursively for averaging.
-
-            Parameters
-            ----------
-            - sum_dict : dict[str, Any]
-                Dictionary to store the accumulated sums.
-            - count_dict : dict[str, Any]
-                Dictionary to store the counts of values.
-            - input_dict : dict[str, Any]
-                Input dictionary to accumulate values from.
-
-            Returns
-            -------
-            None
-            """
+                        Recursively accumulate numeric values from input_dict into sum_dict and track counts in count_dict.
+                        
+                        Parameters:
+                            sum_dict (dict): Mutable dictionary that will receive cumulative sums for matching keys (nested dictionaries are created as needed).
+                            count_dict (dict): Mutable dictionary that will receive counts of values added for matching keys (nested dictionaries are created as needed).
+                            input_dict (dict): Source dictionary whose numeric leaf values are added into sum_dict; nested dictionaries are traversed recursively.
+                        """
 
             for key, value in input_dict.items():
                 if isinstance(value, dict):
@@ -857,21 +793,10 @@ class MTSOL_call:
 
     def CheckInviscidOutput(self) -> bool:
         """
-        Check the efficiency of the invisicid output.
-
-        When interpolatation errors occur in the blade forcing field,
-        they can yield eta > 1.
-        Checking this condition early avoids running the viscous solve,
-        speeding up the solution process.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - valid : bool
-            Boolean to indicate if a feasible result was found.
+        Check whether the inviscid solution efficiency is physically feasible.
+        
+        Returns:
+            True if the computed efficiency (EtaP) is greater than 0 and less than 1, False otherwise. Returns False if an error occurs while obtaining the efficiency.
         """
 
         try:
@@ -887,16 +812,12 @@ class MTSOL_call:
 
     def GetEtaOutput(self) -> float:
         """
-        Function to get the current efficiency.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - eta: float
-            Efficiency
+        Retrieve the current propulsive efficiency (EtaP) from the in-memory forces data.
+        
+        Queries the output processing utility for variables derived from the latest in-memory forces data and returns the EtaP value. If EtaP cannot be obtained (missing data or error), returns 0.
+        
+        Returns:
+            eta (float): The EtaP value, or 0 if not available.
         """
 
         try:
@@ -914,23 +835,22 @@ class MTSOL_call:
                        update_statefile : bool = False,
                        ) -> None:
         """
-        Handle the exit flag of the solver execution.
-
-        Parameters
-        ----------
-        - exit_flag : ExitFlag
-            Exit flag indicating the status of the solver execution.
-        - handle_type : str
-            A string indicating the type of solve:
-                - 'Inviscid'
-                - 'Viscous'
-        - update_statefile: bool, optional
-            A control boolean to determine if the state file should be updated.
-
-        Returns
-        -------
-        None
-        """
+                       Determine and handle follow-up actions based on the solver's exit status.
+                       
+                       Performs follow-up actions appropriate to the provided ExitFlag and solve type:
+                       - For NON_CONVERGENCE: optionally writes the state file; for viscous solves invokes non-convergence recovery.
+                       - For CRASH: for viscous solves restarts the MTSOL process; for inviscid solves no recovery is performed.
+                       - For COMPLETED, SUCCESS, NOT_PERFORMED, CHOKING: optionally writes the state file.
+                       Raises OSError for an unrecognized exit flag.
+                       
+                       Parameters:
+                           exit_flag (ExitFlag): The solver exit status to handle.
+                           handle_type (str): The solve context; expected values are 'Inviscid' or 'Viscous',
+                               which determine whether recovery actions (e.g., restart or non-convergence handling)
+                               are performed for CRASH or NON_CONVERGENCE.
+                           update_statefile (bool): If True, write the current solution to the state file when
+                               appropriate (on NON_CONVERGENCE or successful/terminal states).
+                       """
 
         #If solver does not converge, call the non-convergence handler function.
         if exit_flag == ExitFlag.NON_CONVERGENCE:
@@ -1026,22 +946,12 @@ class MTSOL_call:
 
     def ConvergeIndividualSurfaces(self) -> ExitFlag:
         """
-        Should a complete viscous analysis fail and cause an MTSOL crash,
-        a partial run, where each axisymmetric surface is toggled individually,
-        may sometimes improve performance and yield (partially)
-        converged results.
-
-        This function executes a consecutive partial run, where the centerbody,
-        outer duct, and inner duct are converged in sequence.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - total_exit_flag : ExitFlag
-            Exit flag indicating the overall status of the convergence.
+        Attempt viscous convergence on individual axisymmetric surfaces in sequence: centerbody (1), outer duct (3), then inner duct (4).
+        
+        If any individual viscous solve returns `ExitFlag.CRASH`, that crash flag is returned immediately. Otherwise returns the `ExitFlag` with the highest (worst) value among the three surface runs.
+        
+        Returns:
+            ExitFlag: Overall status of the sequence — `ExitFlag.CRASH` if any run crashed, otherwise the maximum enum value of the three surface exit flags.
         """
 
         # Define initial exit flags and iteration counters
@@ -1085,37 +995,20 @@ class MTSOL_call:
                output_type: OutputType = OutputType.FORCES_ONLY,
                ) -> tuple[ExitFlag, dict[str, float]]:
         """
-        Main execution interface of MTSOL.
-
-        All executions of the MTSOL program are wrapped in
-        try... except... finally... blocks to handle crashes of the solver
-
-        Parameters
-        ----------
-        - run_viscous : bool, optional
-            Flag to indicate whether to run a viscous solve. Default is False.
-        - generate_output : bool, optional
-            Flag to determine if MTFLOW outputs (forces, flowfield,
-            boundary layer) should be generated.
-        - output_type : OutputType, optional
-            An enum to determine which output files to generate.
-            OutputType.FORCES_ONLY generates only the forces data,
-            while OutputType.ALL_FILES generates all files.
-
-        Returns
-        -------
-        - A tuple containing:
-            - total_exit_flag : ExitFlag
-                Exit flag indicating the status of the solver execution. Is
-                equal to the maximum value of the inviscid and viscous exit
-                flags, since exit_flag > -1 indicate failed/nonconverging
-                solves.
-            - forces_data_dict : dict[str, float]
-                A dictionary containing the integral flowfield variables from
-                the forces output using the OutputProcessing class.
-                If the full MTSOL output is requested, this is a copy of the
-                relevant contents of the forces.analysis_name file.
-        """
+               Run MTSOL for the current analysis, optionally performing viscous solves and producing solver outputs.
+               
+               This method manages the MTSOL subprocess lifecycle, applies operating conditions, runs an inviscid solve and—if requested and feasible—a viscous solve (full or per-surface fallback), handles crashes and non-convergence, and populates self.forces_data and self.forces_data_dict with parsed forces results.
+               
+               Parameters:
+                   run_viscous (bool): If True, attempt a viscous solve after the inviscid run.
+                   generate_output (bool): If True, request writing of solver output files (forces/flowfield/boundary_layer) in addition to populating in-memory results.
+                   output_type (OutputType): Which outputs to generate when generate_output is True (OutputType.FORCES_ONLY or OutputType.ALL_FILES).
+               
+               Returns:
+                   tuple[ExitFlag, dict[str, float]]: 
+                       - total_exit_flag: ExitFlag indicating the final status of the run (combined result of inviscid and viscous phases).
+                       - forces_data_dict: Dictionary of integral flowfield variables parsed from the solver's forces output (populated from in-memory console parsing).
+               """
 
         # Define initial exit flags
         exit_flag_invisc = ExitFlag.NOT_PERFORMED

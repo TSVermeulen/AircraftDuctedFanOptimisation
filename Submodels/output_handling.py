@@ -85,19 +85,13 @@ class output_visualisation:
     def __init__(self,
                  analysis_name: str) -> None:
         """
-        Initialize the output_visualisation class.
-
-        This method sets up the initial state of the class.
-
-        Parameters
-        ----------
-        - analysis_name : str
-            A string of the analysis name. Must equal the filename extension.
-
-        Returns
-        -------
-        None
-        """
+                 Initialize an output_visualisation instance for a given analysis and prepare input file paths and existence flags.
+                 
+                 Sets path attributes for the Submodels directory and expected files (flowfield, walls, tflow, boundary_layer), and records boolean flags indicating whether optional inputs (walls, tflow, boundary layer) are present. Raises FileNotFoundError if the required flowfield file is missing.
+                 
+                 Parameters:
+                     analysis_name (str): Name/identifier of the analysis used as the filename extension (e.g., for file flowfield.<analysis_name>).
+                 """
 
         self.analysis_name = analysis_name
 
@@ -142,22 +136,17 @@ class output_visualisation:
 
     def GetFlowfield(self) -> tuple[list[pd.DataFrame], pd.DataFrame]:
         """
-        Load in the flowfield.analysis_name file and write it to a
-        Pandas dataframe.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - tuple[list, pd.DataFrame] :
-            - block_dfs : list[pd.DataFrame]
-                List of nested DataFrames of the flow variables for each
-                streamline.
-            - df : pd.DataFrame
-                A Pandas DataFrame containing the flowfield values across
-                all streamlines.
+        Parse the flowfield file into per-streamline blocks and a single concatenated DataFrame.
+        
+        Reads the file at self.flowfield_path, splits content into blocks separated by blank lines, ignores lines that start with '#', and converts numeric rows into DataFrames using self.FLOWFIELD_COLUMNS.
+        
+        Returns:
+            tuple[list[pd.DataFrame], pd.DataFrame]:
+                - block_dfs: List of DataFrames, one per streamline block containing flowfield variables.
+                - df: A single DataFrame containing all flowfield rows concatenated.
+        
+        Raises:
+            IOError: If the flowfield file cannot be read.
         """
 
         try:
@@ -193,18 +182,12 @@ class output_visualisation:
 
     def GetBoundaryLayer(self) -> list[pd.DataFrame]:
         """
-        Load in the boundary_layer.analysis_name file and write the data for
-        each element to a Pandas dataframe.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - list[pd.DataFrame] :
-            A list of nested DataFrames with the viscous variables for
-            each boundary layer.
+        Parse the boundary_layer.{analysis_name} file into a list of DataFrames, one per boundary-layer element.
+        
+        The file is split into blocks separated by blank lines; comment lines starting with `#` are ignored. Each returned DataFrame uses the column names defined by `self.BOUNDARY_LAYER_COLUMNS`.
+        
+        Returns:
+            list[pd.DataFrame]: List of DataFrames, one per boundary-layer element, each containing the viscous variables.
         """
 
         try:
@@ -236,18 +219,15 @@ class output_visualisation:
 
     def ReadGeometry(self) -> list[np.typing.NDArray[np.floating]]:
         """
-        Read in the centrebody and duct geometry from the
-        walls.analysis_name file
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - shapes : list[np.typing.NDArray[np.floating]]
-            A list of nested arrays, where each array contains the geometry of
-            one of the axisymmetric bodies.
+        Read axisymmetric body outlines from the walls.{analysis_name} file.
+        
+        Each returned element is a NumPy array of shape points (rows of floating-point coordinates) for one body. The file is read starting at the third line; sections are separated by a line containing "999.0    999.0". Empty trailing sections are ignored.
+        
+        Returns:
+            list[np.typing.NDArray[np.floating]]: A list where each entry is a 2D NumPy array of float coordinates for a single body.
+        
+        Raises:
+            IOError: If the walls file cannot be opened or read.
         """
 
         try:
@@ -276,17 +256,15 @@ class output_visualisation:
 
     def ReadBlades(self) -> list[np.typing.NDArray[np.floating]]:
         """
-        Read the blade geometries from the tflow.analysis_name file.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - stage_outlines : list[np.typing.NDArray[np.floating]]
-            A collection of blade outlines where each outline is stored as a
-            NumPy array containing the leading and trailing points.
+        Parse blade outlines from the tflow.{analysis_name} file and return per-stage blade point arrays.
+        
+        Each stage yields a NumPy array of 2D points (x, y) describing the blade outline for that stage; within each array the first point corresponds to the leading point and the last point corresponds to the trailing point. Sections in the file are delimited by the keywords "STAGE", "SECTION", and "END".
+        
+        Returns:
+            list[np.typing.NDArray[np.floating]]: A list where each element is an (N, 2) NumPy array of points for a stage's blade outline.
+        
+        Raises:
+            IOError: If the tflow file cannot be read.
         """
 
         try:
@@ -336,30 +314,15 @@ class output_visualisation:
                        cmap: str = 'viridis',
                        ) -> None:
         """
-        Create contour plots for every parameter in the flowfield.analysis_name
-        file. Plots the axisymmetric bodies in dimgrey to generate the complete
-        flowfield.
-
-        Parameters
-        ----------
-        - df : pd.DataFrame
-            The dataframe of the complete flowfield.
-        - shapes : list[np.typing.NDArray[np.floating]]
-            A nested list with the coordinates of all the axisymmetric bodies.
-        - blades : list[np.typing.NDArray[np.floating]]
-            A nested list with the coordinates of the outlines of the
-            rotor/stator blades in the domain.
-        - figsize : tuple[float, float], optional
-            A tuple with the figure size. Default value corresponds to the
-            internal default of matplotlib.pyplot.
-        - cmap : str, optional
-            A string with the colourmap to be used for the contourplots. Default
-            value is the viridis colourmap.
-
-        Returns
-        -------
-        None
-        """
+                       Generate filled contour plots for each flowfield variable and overlay axisymmetric bodies and blade outlines.
+                       
+                       Parameters:
+                           df (pd.DataFrame): Complete flowfield data containing columns 'x', 'y' and variables named in self.FLOWFIELD_COLUMNS.
+                           shapes (list[np.typing.NDArray[np.floating]]): List of (N,2) arrays for axisymmetric body coordinates to fill on the plots.
+                           blades (list[np.typing.NDArray[np.floating]]): List of (M,2) arrays for blade outline coordinates to plot over the contours.
+                           figsize (tuple[float, float], optional): Figure size passed to matplotlib; defaults to (6.4, 4.8).
+                           cmap (str, optional): Matplotlib colormap name used for filled contours; defaults to 'viridis'.
+                       """
 
         # Close any existing figures to free memory
         plt.close('all')
@@ -396,24 +359,12 @@ class output_visualisation:
                               plot_individual_streamlines: bool = False,
                               ) -> None:
         """
-        Plot the total, interior, exterior, and optional individual streamlines
-        for all logged parameters.
-
-        Parameters
-        ----------
-        - blocks : list[pd.DataFrame]
-            A nested list of dataframes containing the flowfield quantities for
-            each streamline.
-        - plot_individual_streamlines : bool, optional
-            A control boolean to determine if plots for each individual
-            streamline should be generated. This is useful for debugging,
-            but generates a very large amount of plots
-            (11 plots times 45 streamlines). Default is False.
-
-        Returns
-        -------
-        None
-        """
+                              Plot streamline distributions for each flowfield parameter grouped as total, interior, and exterior streams, and optionally create per-streamline plots.
+                              
+                              Parameters:
+                                  blocks (list[pd.DataFrame]): List of DataFrames, each containing flowfield quantities for a single streamline (columns include 'x', 'Vtheta/Uinf' and other parameters from FLOWFIELD_COLUMNS).
+                                  plot_individual_streamlines (bool): If True, generate separate plots for every individual streamline and parameter (can produce many figures). Default is False.
+                              """
 
         # Close any existing figures to free memory
         plt.close('all')
@@ -496,19 +447,16 @@ class output_visualisation:
     def CreateBoundaryLayerPlots(self,
                                  blocks : list[pd.DataFrame]) -> None:
         """
-        Plot the boundary layer quantities for each of the axi-symmetric
-        surfaces
-
-        Parameters
-        ----------
-        - blocks : list[pd.DataFrame]
-            A nested list of dataframes containing the boundary layer
-            quantities for each surface.
-
-        Returns
-        -------
-        None
-        """
+                                 Plot boundary-layer profiles for each axisymmetric surface.
+                                 
+                                 Each DataFrame in `blocks` is expected to contain an 'x' column and the boundary-layer parameters named in `self.BOUNDARY_LAYER_COLUMNS`. The function creates one figure per boundary-layer parameter (excluding 'x' and 'r') and plots that parameter versus axial coordinate for every surface.
+                                 
+                                 Parameters:
+                                     blocks (list[pd.DataFrame]): List of DataFrames, one per surface, containing boundary-layer data.
+                                 
+                                 Returns:
+                                     None
+                                 """
 
         # Close any existing figures to free memory
         plt.close('all')
@@ -537,18 +485,14 @@ class output_visualisation:
     def PlotOutputs(self,
                     plot_individual: bool = False) -> None:
         """
-        Generate all output plots for the analysis.
-
-        Parameters
-        ----------
-        - plot_individual : bool, optional
-            A controlling boolean to determine if plots for each individual
-            streamline should be generated. Default value is False.
-
-        Returns
-        -------
-        None
-        """
+                    Generate and display all analysis plots for the current analysis.
+                    
+                    Loads flowfield data and, if available, geometry and blade outlines to create contour plots;
+                    generates streamline plots (optionally per-streamline) and boundary layer plots when viscous data exists.
+                    
+                    Parameters:
+                        plot_individual (bool): If True, produce individual per-streamline plots in addition to aggregated streamline plots. Default False.
+                    """
 
         # Load in the flowfield into blocks for each streamline and an
         # overall dataframe
@@ -582,17 +526,16 @@ class output_processing:
     def __init__(self,
                  analysis_name: str | None = None):
         """
-        Class Initialisation.
-
-        Parameters
-        ----------
-        - analysis_name : str
-            A string of the analysis name. Must equal the filename extension.
-
-        Returns
-        -------
-        None
-        """
+                 Initialize the output_processing helper, set up repository paths, and locate the forces file for a given analysis.
+                 
+                 When an analysis name is provided, constructs the Submodels forces file path (forces.<analysis_name>) and verifies it exists.
+                 
+                 Parameters:
+                     analysis_name (str | None): Analysis identifier used as the forces file extension; if None, no forces path is set.
+                 
+                 Raises:
+                     FileNotFoundError: If an analysis_name is provided but the corresponding forces.<analysis_name> file does not exist under Submodels.
+                 """
 
         self.analysis_name = analysis_name
 
@@ -617,29 +560,31 @@ class output_processing:
                         forces_data: list[str] | None = None,
                         ) -> dict[str, float | dict[str, float]]:
         """
-        Read the forces.analysis_name file and return the variables and
-        their values.
-
-        Parameters
-        ----------
-        - output_type : int
-            An integer indicating the type of output desired from the method:
-            - '0' : All outputs
-            - '1' : General Output data only
-            - '2' : Element output data
-        - forces_data : list[str], optional
-            A list of strings containing the lines of the forces data read from
-            the console output. If None, the method will read from the
-            forces.analysis_name file.
-
-        Returns
-        -------
-        - output : dict[str, dict[str, float]]
-            A nested dictionary containing:
-            - data : A dictionary containing the general output data
-            - grouped_data : A dictionary containing the element breakdowns
-                             for the duct and centerbody
-        """
+                        Parse forces output lines and return selected summary and element-level force metrics.
+                        
+                        Parameters:
+                            output_type (int): Which results to return:
+                                0 — both general data and grouped element breakdowns (default);
+                                1 — general output data only;
+                                2 — grouped element/axis breakdowns only.
+                            forces_data (list[str] | None): Optional list of lines containing forces output to parse.
+                                If None, the method reads from the instance's forces file path and may raise ValueError
+                                if the path is not defined.
+                        
+                        Returns:
+                            dict[str, float | dict[str, float]]: When output_type is 0, a dictionary with keys
+                            "data" and "grouped_data":
+                                - "data": mapping of named general outputs (e.g., "Total force CT", "Total power CP",
+                                          "EtaP", "Pressure Ratio", "Wetted Area", etc.) to floats.
+                                - "grouped_data": mapping of element/region names (e.g., "Element 2", "Axis Body") to
+                                  dictionaries of their breakdown values (e.g., "CTf", "CTp", "Xtr", etc.) as floats.
+                            When output_type is 1, returns the "data" mapping only. When output_type is 2, returns the
+                            "grouped_data" mapping only.
+                        
+                        Raises:
+                            ValueError: if forces_data is None and the instance has no forces path, or if output_type is not 0, 1, or 2.
+                            OSError: if reading the forces file fails.
+                        """
 
         # Only read the forces data from a file if it is not
         # provided as an argument
@@ -822,19 +767,10 @@ class output_processing:
 
     def GetCTCPEtaP(self) -> tuple[float, float, float]:
         """
-        Read the forces.analysis_name file and return the thrust and power
-        coefficients with the propulsive efficiency.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - tuple[float, float, float]
-            A tuple of the form (CT, CP, EtaP) containing the thrust and power
-            coefficients, together with the propulsive efficiency for the
-            analysed case
+        Extract total thrust coefficient, total power coefficient, and propulsive efficiency from the parsed forces output.
+        
+        Returns:
+            tuple (CT, CP, EtaP): CT is the total thrust coefficient, CP is the total power coefficient, and EtaP is the propulsive efficiency for the analysed case.
         """
 
         data = self.GetAllVariables(1)

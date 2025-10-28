@@ -73,27 +73,25 @@ def GenerateMTFLOBlading(Omega: float,
                          plot : bool,
                          ) -> tuple[list[dict[str, float | np.typing.NDArray[np.floating]], list[list[dict[str, float | np.floating]]]]]:
     """
-    Generate MTFLO blading.
-    The blading parameters are based on Figure 3 in [1].
-
-    Parameters
-    ----------
-    - Omega : float
-        The non-dimensional rotational speed of the rotor, as defined in the MTFLOW documentation in units of Vinl/Lref
-    - ref_blade_angle : float
-        The blade set angle, in radians.
-    - plot : bool
-        A control boolean to determine whether the propeller blade geometry is plotted.
-
-    Returns
-    -------
-    - tuple[list[dict[str, float | np.typing.NDArray[np.floating]]], list[list[dict[str, float | np.floating]]]]:
-        A tuple of two lists:
-        - blading_parameters : list[dict[str, float | np.typing.NDArray[np.floating]]]
-            A list containing dictionaries with the blading parameters.
-        - design_parameters : list[list[dict[str, float | np.floating]]]
-            A list containing dictionaries with the design parameters for each radial station.
-    """
+                         Generate MTFLO blading inputs and associated airfoil design parameterisations for the X22A validation case.
+                         
+                         Parameters:
+                             Omega (float): Non-dimensional rotor rotational rate used in blading parameters (Vinl / Lref scale).
+                             ref_blade_angle (float): Reference blade set angle in radians applied to blade sections.
+                             plot (bool): If True, display a plot of the constructed propeller blade geometry.
+                         
+                         Returns:
+                             tuple:
+                                 - blading_parameters (list[dict[str, float | np.typing.NDArray[np.floating]]]):
+                                     Ordered list of dictionaries describing each blade/strut group (propeller, horizontal strut, diagonal strut).
+                                     Each dictionary contains geometric and setup fields such as 'root_LE_coordinate', 'rotational_rate',
+                                     'ref_blade_angle', 'reference_section_blade_angle', 'blade_count', 'radial_stations', 'chord_length',
+                                     'blade_angle', and 'sweep_angle' (where applicable).
+                                 - design_parameters (list[list[dict[str, float | np.typing.NDArray[np.floating]]]]):
+                                     Nested list of airfoil parameterisation dictionaries for each radial station and for struts.
+                                     The outer list matches the ordering of blading_parameters; each inner list contains the parameterisation
+                                     dictionaries returned by AirfoilParameterisation.FindInitialParameterisation for the corresponding sections.
+                         """
 
     # Start defining the MTFLO blading inputs
     propeller_parameters = {"root_LE_coordinate": 0.1495672948767407, "rotational_rate": Omega, "ref_blade_angle": ref_blade_angle, "reference_section_blade_angle": np.deg2rad(20), "blade_count": 3, "radial_stations": np.array([0,
@@ -258,21 +256,16 @@ def GenerateMTFLOInput(blading_parameters: list[dict[str, float | np.typing.NDAr
                        design_parameters: list[list[dict[str, float | np.floating]]],
                        display_plot: bool) -> None:
     """
-    Generate the MTFLO input file tflow.X22A_validation
-
-    Parameters
-    ----------
-   - blading_parameters : list[dict[str, float | np.typing.NDArray[np.floating]]]
-        A list containing dictionaries with the blading parameters.
-    - design_parameters : list[list[dict[str, float | np.floating]]]
-        A list containing dictionaries with the design parameters for each radial station.
-    - display_plot : bool
-        A control boolean to determine whether the blade data input for MTFLO is plotted.
-
-    Returns
-    -------
-    None
-    """
+                       Create the MTFLO input file for the analysis named by ANALYSIS_NAME (tflow.X22A_validation).
+                       
+                       Parameters:
+                           blading_parameters (list[dict[str, float | np.typing.NDArray[np.floating]]]):
+                               Sequence of dictionaries specifying global blade geometry and metadata for each defined blading element or station.
+                           design_parameters (list[list[dict[str, float | np.typing.NDArray[np.floating]]]]):
+                               Nested list where each inner list contains per-section design dictionaries (airfoil parameterisations and local geometry) for the corresponding radial station.
+                           display_plot (bool):
+                               If true, produce and include a plot of the blade input data alongside the generated input file.
+                       """
 
     fileHandlingMTFLO(analysis_name=ANALYSIS_NAME,
                       ref_length=L_REF).GenerateMTFLOInput(blading_params=blading_parameters,
@@ -282,19 +275,9 @@ def GenerateMTFLOInput(blading_parameters: list[dict[str, float | np.typing.NDAr
 
 def GenerateMTSETGeometry() -> None:
     """
-    Generate the duct and center body geometry of the X-22A and create the MTSET
-    input file.
-
-    Uses a combination of analytical representation, and smoothing
-    interpolations to obtain the axisymmetric geometries.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
+    Generate axisymmetric duct and center body geometries for the X-22A and write the MTSET input file.
+    
+    Constructs the duct upper and lower surfaces from provided coordinate data (converted from inches to meters), reconstructs the lower/af t sections using an elliptical nose and a smoothed aft spline, and builds a smoothed centerbody profile via spline interpolation. Converts the geometries to the MTFLOW/MTSET expected ordering and calls the MTSET file generator to produce walls.X22A_validation. Also visualizes the centerbody profile for verification.
     """
 
     # --------------------
@@ -415,17 +398,10 @@ def GenerateMTSETGeometry() -> None:
 
 def ChangeOMEGA(omega: float) -> None:
     """
-    Rather than generating the tflow file for each advance ratio from scratch,
-    simply change omega in the tflow file.
-
-    Parameters
-    ----------
-    - omega : float
-        The non-dimensional rotational speed to be entered into the tflow input file.
-
-    Returns
-    -------
-    None
+    Update the non-dimensional rotational speed value stored in the tflow input file for the current analysis.
+    
+    Parameters:
+        omega (float): The non-dimensional rotational speed to write into the tflow file.
     """
 
     # Open the tflow.analysis_name file
@@ -471,33 +447,21 @@ def ExecuteParameterSweep(omega: np.typing.NDArray[np.floating],
                           streamwise_points: int = 400,
                           ) -> tuple[np.typing.NDArray[np.floating], np.typing.NDArray[np.floating], np.typing.NDArray[np.floating]]:
     """
-    Perform a parameter sweep over a range of OMEGA, inlet Mach numbers, and Reynolds numbers.
-
-    Parameters
-    ----------
-    - omega : np.typing.NDArray[np.floating]
-        Array of non-dimensional rotational speeds of the rotor.
-    - inlet_mach : np.typing.NDArray[np.floating]
-        Array of inlet Mach numbers.
-    - reynolds_inlet : np.typing.NDArray[np.floating]
-        Array of inlet Reynolds numbers.
-    - reference_angle : float
-        The set angle of the propeller blade
-    - generate_plots : bool, optional
-        If true, generates plots of the input geometry and rotor input data. Default is False.
-    - streamwise_points : int, optional
-        Number of streamwise points for the grid generation. Default is 400.
-
-    Returns
-    -------
-    - tuple
-        - CT_outputs : np.typing.NDArray[np.floating]
-            Array of thrust coefficients.
-        - CP_outputs : np.typing.NDArray[np.floating]
-            Array of power coefficients.
-        - EtaP_outputs : np.typing.NDArray[np.floating]
-            Array of propulsive efficiencies.
-    """
+                          Sweep the solver across provided rotor speeds, inlet Mach numbers, and Reynolds numbers to collect thrust, power, and propulsive efficiency results.
+                          
+                          Parameters:
+                              omega (np.typing.NDArray[np.floating]): Array of non-dimensional rotational speeds to evaluate.
+                              inlet_mach (np.typing.NDArray[np.floating]): Array of inlet Mach numbers corresponding to each omega entry.
+                              reynolds_inlet (np.typing.NDArray[np.floating]): Array of inlet Reynolds numbers corresponding to each omega entry.
+                              reference_angle (float): Reference blade pitch angle (radians) used to generate the baseline blading geometry.
+                              generate_plots (bool): If True, generate diagnostic plots of geometry and inputs. Default is False.
+                              streamwise_points (int): Number of streamwise points used for grid generation. Default is 400.
+                          
+                          Returns:
+                              CT_outputs (np.typing.NDArray[np.floating]): Array of total thrust coefficients for each omega.
+                              CP_outputs (np.typing.NDArray[np.floating]): Array of total power coefficients for each omega.
+                              EtaP_outputs (np.typing.NDArray[np.floating]): Array of propulsive efficiencies for each omega.
+                          """
 
     # Create the MTSET geometry and write the input file walls.ANALYSIS_NAME
     GenerateMTSETGeometry()

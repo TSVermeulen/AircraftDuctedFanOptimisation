@@ -66,17 +66,13 @@ class MTFLO_call:
     def __init__(self,
                  analysis_name: str) -> None:
         """
-        Initialise the MTFLO_call class with the file path and analysis name.
-
-        Parameters
-        ----------
-        - analysis_name : str
-            The name of the analysis case.
-
-        Returns
-        -------
-        None
-        """
+                 Initialize the MTFLO_call instance and locate the MTFLO executable.
+                 
+                 Sets instance attributes for the analysis name, project parent directory, Submodels path, and the expected mtflo.exe path. Raises FileNotFoundError if mtflo.exe is not found at the computed location.
+                 
+                 Parameters:
+                     analysis_name (str): The name of the analysis case.
+                 """
 
         self.analysis_name = analysis_name
 
@@ -94,18 +90,11 @@ class MTFLO_call:
     def StdinWrite(self,
                    command: str) -> None:
         """
-        Simple function to write commands to the subprocess stdin in
-        order to pass commands to MTFLO.
-
-        Parameters
-        ----------
-        - command : str
-            The text-based command to pass to MTFLO.
-
-        Returns
-        -------
-        None
-        """
+                   Write a single command to the MTFLO subprocess stdin.
+                   
+                   Parameters:
+                       command (str): Command text to send to MTFLO; a newline is appended and the stream is flushed.
+                   """
 
         self.process.stdin.write(f"{command} \n")
         self.process.stdin.flush()
@@ -113,18 +102,12 @@ class MTFLO_call:
 
     def GenerateProcess(self) -> None:
         """
-        Create MTFLO subprocess
-
-        Requires that the executable, mtflo.exe, and the input file, tflow.xxx
-        are present in the same directory as this Python file.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Start the MTFLO subprocess and store the resulting Popen object on self.process.
+        
+        Launches the executable at self.process_path with the instance's analysis name as an argument. If the subprocess exits immediately, an OSError is raised to indicate failure to start MTFLO.
+        
+        Raises:
+            OSError: If the subprocess fails to start (process exits immediately).
         """
 
         # Generate the subprocess and write it to self
@@ -143,16 +126,12 @@ class MTFLO_call:
 
     def LoadForcingField(self) -> None:
         """
-        Loads the tflow.xxx input file into MTFLO and checks it has been
-        correctly processed
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Load the tflow.{analysis_name} input into MTFLO, instruct MTFLO to write the tdat output file, and close the MTFLO subprocess.
+        
+        Sends interactive commands to the MTFLO subprocess to enter the field menu, read the parameter file (accepting the default filename), write the flowfield (tdat) file, and quit. If MTFLO has crashed while reading the input, an ImportError is raised. If MTFLO does not exit within 10 seconds after the quit command, the subprocess is terminated forcefully.
+        
+        Raises:
+            ImportError: If MTFLO crashed while loading the tflow input.
         """
 
         # Enter field parameter menu
@@ -192,21 +171,14 @@ class MTFLO_call:
     def FileStatus(self,
                    fpath: Path) -> bool:
         """
-        Simple function to check if the file update/write has finished.
-        Check occurs based on the presence of a file "lock" on the file
-        if/when it is being used by another process.
-
-        Parameters
-        ----------
-        - fpath : Path
-            Filepath of the file to check
-
-        Returns
-        -------
-        - status : bool
-            A status boolean. True if the file is free,
-            and False if it is still being used by another process.
-        """
+                   Check whether a file is currently accessible (not locked by another process).
+                   
+                   Parameters:
+                       fpath (Path): Path to the file to test.
+                   
+                   Returns:
+                       bool: `True` if the file can be opened for reading (not locked), `False` otherwise.
+                   """
 
         try:
             with open(fpath, "rb"):
@@ -217,18 +189,9 @@ class MTFLO_call:
 
     def caller(self) -> None:
         """
-        Full interfacing function between Python and MTFLO.
-
-        Requires that the input file, tflow.xxx, has been made and is
-        available together with the mtflo.exe executable in the local directory.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Orchestrates the full interaction with the MTFLO executable: starts the MTFLO subprocess, loads the forcing field, and waits up to 10 seconds for the generated tdat.{analysis_name} output file to become accessible.
+        
+        The method expects the appropriate tflow input and mtflo executable to be present; it returns after the output file is available or the timeout elapses.
         """
 
         # Create subprocess for the MTFLO tool

@@ -74,26 +74,17 @@ class MTSET_call:
                  streamwise_points: int = None,
                  ) -> None:
         """
-        Initialise the MTSET_call class with the analysis name.
-
-        Parameters
-        ----------
-        - analysis_name : str
-            The name of the analysis case.
-        - grid_e_coeff : float, optional
-            The E coefficient for the exponent of airfoil side points within
-            MTSET. If None, uses the default MTSET value of 0.8.
-        - grid_x_coeff : float, optional
-            The X spacing parameter within MTSET. Larger values yield a more
-            rectangular grid. If None, uses the default MTSET value of 0.8.
-        - streamwise_points : int, optional
-            The number of streamwise points. If None, uses the default
-            value of 200.
-
-        Returns
-        -------
-        None
-        """
+                 Initialize MTSET_call for a specific analysis, configuring grid parameters and locating required Submodels files.
+                 
+                 Parameters:
+                     analysis_name (str): Analysis case identifier used to name input/output files.
+                     grid_e_coeff (float, optional): Exponent coefficient for airfoil-side grid clustering; defaults to 0.8 when None.
+                     grid_x_coeff (float, optional): X-spacing factor controlling grid rectangularity; defaults to 0.8 when None.
+                     streamwise_points (int, optional): Number of streamwise grid points; defaults to 200 when None or when provided value is <= 141.
+                 
+                 Raises:
+                     FileNotFoundError: If the MTSET executable (Submodels/mtset.exe) cannot be found.
+                 """
 
         self.analysis_name = analysis_name
 
@@ -122,18 +113,11 @@ class MTSET_call:
     def StdinWrite(self,
                    command: str) -> None:
         """
-        Simple function to write commands to the subprocess stdin in order
-        to pass commands to MTSET.
-
-        Parameters
-        ----------
-        - command : str
-            The text-based command to pass to MTSET
-
-        Returns
-        -------
-        None
-        """
+                   Write a command string to the MTSET subprocess stdin.
+                   
+                   Parameters:
+                       command (str): Text command to send to MTSET; a newline is appended and the stdin is flushed.
+                   """
 
         self.process.stdin.write(f"{command} \n")
         self.process.stdin.flush()
@@ -141,20 +125,9 @@ class MTSET_call:
 
     def GenerateProcess(self) -> None:
         """
-        Create MTSET subprocess
-
-        Simple function to create an MTSET subprocress using the defined
-        executable path and analysis name in the class initialisation.
-        The defined subprocess has the inputs, outputs, and error file
-        handles sent to PIPE for direct interaction within the Python code.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Create and start the MTSET subprocess and assign it to `self.process`.
+        
+        Starts the MTSET executable using the instance's configured `process_path` and `analysis_name`, with stdin/stdout connected for interaction. Raises `OSError` if the subprocess fails to start.
         """
 
         # Generate subprocess
@@ -173,17 +146,10 @@ class MTSET_call:
 
     def WaitForMainMenu(self) -> list[str]:
         """
-        Wait for MTSET to return to the main menu.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - interface_output : list[str]
-            A list containing the output collected while waiting for MTSET to
-            return to the main menu.
+        Wait until the MTSET subprocess returns to its main menu and collect its output lines.
+        
+        Returns:
+            interface_output (list[str]): Lines read from the MTSET subprocess stdout up to the main-menu marker (`Q uit` at line start) or until the process exits.
         """
 
         interface_output = []
@@ -202,22 +168,9 @@ class MTSET_call:
 
     def GridGenerator(self) -> None:
         """
-        Automatic grid generator and grid refinement
-
-        Function to handle the loading of the axisymmetric bodies and
-        generation of an initial numerical grid.
-
-        As a lower limit, the walls.xxx file is expected to have at least 1
-        body, but no upper limit. In practice, there will be 2 bodies
-        (duct and center body).
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Initialize the MTSET grid for this analysis by loading the walls file, determining element count, accepting default spacings, and applying grid modification parameters.
+        
+        Reads self.wallspath to determine how many elements MTSET should load, sends the necessary stdin commands to accept spacing defaults for each element, enters the grid modification menu to configure streamline bunching, streamline count, airfoil-side exponent, x-spacing factor, number of streamwise points, and the quasi-normal toggle, then exits the modification and spacing routines.
         """
 
         # Load the walls.xxx file and count number of elements to be loaded
@@ -284,21 +237,9 @@ class MTSET_call:
 
     def GridSmoothing(self) -> None:
         """
-        Elliptic grid smoothing function
-
-        Performs elliptic grid smoothing on the created grid until converged.
-        Convergence is measured by checking the last pass in the smoothing
-        process for the presence of Dmax in the terminal output.
-        If Dmax is no longer present within the grid, set smoothing to false
-        and exit the routine.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Perform elliptic grid smoothing on the current grid until convergence or a maximum of 30 passes.
+        
+        Issues the elliptic smoothing command repeatedly and reads MTSET output; stops early when the line following the final-pass marker 'Pass          10' does not contain 'Dmax', indicating no further smoothing is required.
         """
 
         # Control smoothing process, including detection when further
@@ -325,25 +266,9 @@ class MTSET_call:
 
     def FileGenerator(self) -> None:
         """
-        Generation of required files and outputs from MTSET to use in
-        further analyses
-
-        This is a very simple function to handle the end-of-procedure steps in
-        MTSET, generating the output file. This output files can then be used
-        in later analyses.
-
-        tdat.xxx is a (binary) solution storage file, containing an
-        incompressible, inviscid flow solution as starting point for the MTFLO
-        field parameter specification or MTSOL solver. This file is created
-        using a standard, built-in function within MTSET.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Write MTSET's tdat.<analysis_name> output file and ensure the MTSET process terminates.
+        
+        This issues the MTSET write command to produce the binary tdat file used as a starting solution for downstream analyses, then waits up to 10 seconds for the MTSET subprocess to exit and forcefully kills it if it remains running.
         """
 
         # Create tdat.xxx file
@@ -361,19 +286,9 @@ class MTSET_call:
 
     def caller(self) -> None:
         """
-        Execute the MTSET software to generate the computational grid for the
-        case being considered.
-
-        Requires that the input file, walls.analysis_name,
-        has been made and is available.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Orchestrates MTSET invocations to produce the tdat.{analysis_name} grid output file.
+        
+        This removes an existing tdat output (if present), starts the MTSET subprocess, runs grid generation and smoothing, triggers file writing, and waits (up to 10 seconds) for the resulting tdat.{analysis_name} file to appear. Requires that the input walls.{analysis_name} file already exists; creates or overwrites the tdat.{analysis_name} file as a side effect.
         """
 
         # Delete the tdat file, if it already existed.

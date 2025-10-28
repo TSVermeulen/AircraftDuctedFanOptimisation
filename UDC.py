@@ -151,73 +151,25 @@ class UDC:
                  **kwargs
                  ) -> None:
         """
-        Initialize the UDC class.
-
-        This method sets up the initial state of the class.
-
-        Parameters
-        ----------
-        - operating_conditions : dict
-            A dictionary containing at least the following entries: Inlet_Mach,
-            Inlet_Reynolds, N_crit, i.e. the inlet Mach number,
-            Reynolds number, and critical amplification factor N
-        - ref_length : float
-            Reference length used to non-dimensionalise all geometric
-            parameters. By convention, this is equal to the fan diameter.
-        - analysis_name : str
-            String of the casename
-        - run_viscous : bool, optional
-            Optional control boolean to determine if a viscous or inviscid
-            analysis should be performed. Default is True.
-        - **kwargs : dict, optional
-            Additional keyword arguments.
-            - seed
-            - centrebody_params : dict
-                Dictionary containing parameters for the centerbody.
-            - duct_params : dict
-                Dictionary containing parameters for the duct.
-            - blading_parameters : list[dict]
-                List containing the blading parameters for each stage.
-                Each dictionary should include the following keys:
-                    - "root_LE_coordinate": The leading edge coordinate at the
-                                            root of the blade.
-                    - "rotational_rate": The rotational rate of the blade.
-                    - "blade_count": The number of blades.
-                    - "radial_stations": List of the radial stations along the
-                                         blade span.
-                    - "chord_length": List of the chord length distribution
-                                      along the blade span.
-                    - "sweep_angle": List of the sweep angle distribution
-                                     along the blade span.
-                    - "blade_angle": List of the blade angle distribution
-                                     along the blade span.
-                    - "ref_blade_angle": The measured set angle at the
-                                         reference section (in radians).
-                    - "reference_section_blade_angle": The actual reference
-                                                       blade angle at the
-                                                       reference section
-                                                       (in radians).
-            - design_parameters : list[list[dict]]
-                List containing an equal number of nested lists as there are
-                stages. Each nested list contains an equal number of
-                dictionaries as there are radial stations.
-                Each dictionary must contain the following keys:
-                    - "b_0", "b_2", "b_8", "b_15", "b_17": Coefficients for the
-                                                           airfoil
-                                                           parameterisation.
-                    - "x_t", "y_t", "x_c", "y_c": Coordinates for the airfoil
-                                                  parameterisation.
-                    - "z_TE", "dz_TE": Trailing edge parameters.
-                    - "r_LE": Leading edge radius.
-                    - "trailing_wedge_angle": Trailing wedge angle.
-                    - "trailing_camberline_angle": Trailing camberline angle.
-                    - "leading_edge_direction": Leading edge direction.
-                    - "Chord Length": The chord length of the blade.
-
-        Returns
-        -------
-        None
-        """
+                 Create a UDC instance that orchestrates MTFLOW-based evaluations.
+                 
+                 Parameters:
+                     operating_conditions (dict): Environment/state values required by solvers; must include at least
+                         "Inlet_Mach", "Inlet_Reynolds", and "N_crit".
+                     ref_length (float): Reference length used to nondimensionalize geometry (conventionally fan diameter).
+                     analysis_name (str): Human-readable name or case identifier for this analysis.
+                     run_viscous (bool): If True, perform viscous analysis; if False, run inviscid analyses.
+                     **kwargs: Optional configuration dictionaries passed through and stored for later input generation.
+                         Common keys:
+                             - seed
+                             - centrebody_params (dict)
+                             - duct_params (dict)
+                             - blading_parameters (list[dict])
+                             - design_parameters (list[list[dict]])
+                 
+                 Note:
+                     The optional kwargs are preserved on the instance for use by downstream input-generation and solver calls.
+                 """
 
         # Unpack class inputs
         self.operating_conditions = operating_conditions
@@ -238,34 +190,18 @@ class UDC:
                **kwargs
                ) -> tuple[ExitFlag, dict[str, float | dict[str, float]]]:
         """
-        Executes a complete MTSET-MTFLO-MTSOL evaluation, while handling
-        grid issues and choking issues.
-
-        Parameters
-        ----------
-        - external_inputs : bool, optional
-            A boolean controlling the generation of the MTFLO and MTSET input
-            files. If true, assumes walls.analysis_name and tflow.analysis_name
-            have been generated outside of UDC. This is useful for debugging or
-            validation against existing, external data.
-        - output_type : OutputType, optional
-            An enum to determine which output files to generate.
-            OutputType.FORCES_ONLY generates only the forces file, while
-            OutputType.ALL_FILES generates all files.
-        - grid_checked : bool, optional
-            A boolean to indicate if the grid for the case being run has been
-            checked already. This speeds up batch analyses as it skips the
-            grid checking routine.
-
-        Returns
-        -------
-        - tuple[ExitFlag, dict]
-            A tuple containing:
-            - exit_flag : ExitFlag
-                The exit flag of the MTFLOW analysis.
-            - forces_data : dict[str, float | dict[str, float]]
-                A dictionary containing the forces data from the MTSOL analysis.
-        """
+               Coordinate the MTSET→MTFLO→MTSOL workflow, performing input generation, grid checks/refinement, solver execution, and collection of forces output.
+               
+               Parameters:
+                   external_inputs (bool): If True, assume MTSET/MTFLO inputs already exist and skip generating them.
+                   output_type (OutputType): Controls which output files MTSOL should produce (e.g., FORCE_ONLY vs ALL_FILES).
+                   grid_checked (bool): If True, skip the grid-validation run and treat the grid as already verified.
+               
+               Returns:
+                   tuple[ExitFlag, dict[str, float | dict[str, float]]]:
+                       exit_flag: ExitFlag indicating the overall result of the workflow.
+                       forces_data: Dictionary of forces output from MTSOL (may be empty if no forces were produced).
+               """
 
         # --------------------
         # Change working directory to the submodels folder using the

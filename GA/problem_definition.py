@@ -133,20 +133,12 @@ class OptimisationProblem(ElementwiseProblem):
                  verbose: bool = False,
                  **kwargs) -> None:
         """
-        Initialisation of the OptimisationProblem class.
-
-        Parameters
-        ----------
-        - verbose : bool, optional
-            Bool to determine if error messages should be printed to the
-            console while running.
-        - **kwargs : dict[str, Any]
-            Additional keyword arguments.
-
-        Returns
-        -------
-        None
-        """
+                 Initializes the OptimisationProblem, configuring problem dimensions, file paths, design-vector interface, and deferring heavy submodule imports until first use.
+                 
+                 Parameters:
+                     verbose (bool): If True, print error messages and diagnostic information to the console.
+                     **kwargs: Additional keyword arguments forwarded to the parent ElementwiseProblem initializer.
+                 """
 
         self.verbose = verbose
 
@@ -212,17 +204,12 @@ class OptimisationProblem(ElementwiseProblem):
 
     def SetAnalysisName(self) -> None:
         """
-        Generate a unique analysis name and write it to self.
-        This is required to enable multi-threading of the optimisation problem,
-        since each evaluation of UDC requires a unique set of files.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Create and store a unique analysis name for the current evaluation.
+        
+        The name is written to self.analysis_name and formatted as "<MMDDHHMMSS>_<pid>_<uuid>",
+        where the timestamp uses self.timestamp_format, pid is the process ID modulo 10000,
+        and uuid is a 12-character hex identifier. The resulting name length is designed
+        to remain within UDC's 32-character limit.
         """
 
         # Generate a timestamp string in the format MMDDHHMMSS
@@ -247,16 +234,9 @@ class OptimisationProblem(ElementwiseProblem):
 
     def ComputeReynolds(self) -> None:
         """
-        A simple function to compute the inlet Reynolds number,
-        and write it to the oper dictionary.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Compute and store the inlet Reynolds number in self.oper.
+        
+        Calculates Reynolds number using inlet velocity, reference length, and the atmosphere kinematic viscosity, then stores the result as a float in self.oper['Inlet_Reynolds'].
         """
 
         # Compute the inlet Reynolds number and write it to self.oper
@@ -268,16 +248,9 @@ class OptimisationProblem(ElementwiseProblem):
 
     def ComputeOmega(self) -> None:
         """
-        A simple function to compute the non-dimensional UDC rotational rate,
-        and write it to the blading parameters.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Compute and store non-dimensional rotational rates for each blade section.
+        
+        For each entry in self.blade_blading_parameters, set "RPS" to the first element of "RPS_lst" and set "rotational_rate" using the instance reference length (self.Lref) and inlet velocity (self.oper["Vinl"]).
         """
 
         # Pre-calculate the common factor to avoid repeated computation
@@ -295,21 +268,9 @@ class OptimisationProblem(ElementwiseProblem):
 
     def CleanUpFiles(self) -> None:
         """
-        Archive the UDC statefile to a separate folder and clean up files.
-
-        This method:
-        1. Moves the tdat statefile to a persistent archive folder, if desired.
-        2. Removes all temporary UDC input/output files.
-
-        The output files can always be regenerated from the statefile.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        None
+        Move the UDC tdat statefile to the archive (if enabled) and remove temporary UDC input/output files.
+        
+        If ARCHIVE_STATEFILES is enabled and a tdat statefile exists, the file is moved to the configured dump folder. All other templated UDC files are removed; they can be regenerated from the archived statefile if needed.
         """
 
         # Construct filepaths once to reduce string operations
@@ -337,25 +298,16 @@ class OptimisationProblem(ElementwiseProblem):
     def GenerateUDCInputs(self,
                           x: dict[str, float | int]) -> bool:
         """
-        Generates the input files required for the UDC simulation.
-        It generates two input files:
-        - walls.analysis_name: The MTSET input file.
-        - tflow.analysis_name: The MTFLO blading input file.
-
-        Includes validation of the design vector is performed, since an
-        infeasible design vector will raise a ValueError (somewhere) in the
-        input generation method.
-
-        Parameters
-        ----------
-        - x : dict[str, any]
-            The pymoo design vector dictionary.
-
-        Returns
-        -------
-        - output_generated: bool
-            - True if the design vector is feasible, false otherwise.
-        """
+                          Generate the UDC input files (MTSET and MTFLO) for the given design vector.
+                          
+                          Deconstructs the design vector, computes non-dimensional rotational rates, and writes the MTSET (axisymmetric geometries) and MTFLO (blading and design parameters) input files for the current analysis_name and reference length. On success, instance attributes for centerbody, duct, blade design and blading parameters, and Lref are updated. If the design is infeasible or an error occurs, attributes are reset to configured fallback values and no files are produced.
+                          
+                          Parameters:
+                              x (dict[str, float | int]): The pymoo design vector dictionary.
+                          
+                          Returns:
+                              bool: `true` if both input files were successfully generated and the design is feasible, `false` otherwise.
+                          """
 
         # Generate the MTSET input file containing the axisymmetric geometries
         # and the MTFLO blading input file
@@ -419,25 +371,12 @@ class OptimisationProblem(ElementwiseProblem):
                   *args,
                   **kwargs) -> None:
         """
-        Element-wise evaluation function for a single-point optimisation
-        problem.
-
-        Parameters
-        ----------
-        - x : dict[str, float | int]
-            The pymoo design vector dictionary.
-        - out : dict[str, np.typing.NDArray[np.floating]]
-            The pymoo elementwise evaluation output dictionary.
-        - *args : tuple
-            Additional arguments.
-        - **kwargs : dict[str, Any]
-            Additional keyword arguments.
-
-        Returns
-        -------
-        - None
-            The output dictionary is modified in-place.
-        """
+                  Evaluate a single design vector: generate UDC inputs, run the UDC solver (or use crash defaults), compute objectives and constraints, and clean up generated files.
+                  
+                  Parameters:
+                      x: The pymoo design vector dictionary to evaluate.
+                      out: The pymoo element-wise evaluation output dictionary; updated in-place with objective and constraint values.
+                  """
 
         # Generate a unique analysis name
         self.SetAnalysisName()
