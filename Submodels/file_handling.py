@@ -251,7 +251,7 @@ class fileHandlingMTSET:
         self.parameterisation = AirfoilParameterisation()
                         
 
-    def GetGridSize(self) -> list[float, float, float, float]:
+    def GetGridSize(self) -> list[float]:
         """
         Determine grid size - x & y coordinates of grid boundary. 
         Non-dimensionalises all geometry based on the reference length, 
@@ -263,7 +263,7 @@ class fileHandlingMTSET:
 
         Returns
         -------
-        - list[float, float, float, float]
+        - list[float]
             A list containing the grid boundaries in the format 
             [XFRONT, XREAR, YBOT, YTOP]
         """
@@ -342,17 +342,17 @@ class fileHandlingMTSET:
         
         
     def GenerateMTSETInput(self,
-                           xy_centerbody: Optional[tuple[np.typing.NDArray[np.floating]]] = None,
-                           xy_duct: Optional[tuple[np.typing.NDArray[np.floating]]] = None,
+                           xy_centerbody: Optional[np.typing.NDArray[np.floating]] = None,
+                           xy_duct: Optional[np.typing.NDArray[np.floating]] = None,
                            ) -> None:
         """
         Write the MTSET input file walls.xxx for the given case. 
 
         Parameters
         ----------
-        - xy_centerbody : tuple[np.typing.NDArray[np.floating]], optional
+        - xy_centerbody : Optional[np.typing.NDArray[np.floating]], optional
             Tuple containing the x and y coordinates of the centerbody profile.
-        - xy_duct : tuple[np.typing.NDArray[np.floating]], optional
+        - xy_duct : Optional[np.typing.NDArray[np.floating]], optional
             Tuple containing the x and y coordinates of the duct profile.
 
         Returns
@@ -790,7 +790,7 @@ class fileHandlingMTFLO:
                                 axis=0), 
                  label=f"R={round(radial_point, 2)} m")
         handles, labels = plt.gca().get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
+        by_label = dict(zip(labels, handles, strict=True))
         plt.legend(by_label.values(), by_label.keys(), 
                    loc='upper left', bbox_to_anchor=(1,1))
         plt.tight_layout()
@@ -802,7 +802,7 @@ class fileHandlingMTFLO:
         plt.plot(x_points, circumferential_thickness, 
                  label=f"R={round(radial_point, 2)} m")
         handles, labels = plt.gca().get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
+        by_label = dict(zip(labels, handles, strict=True))
         plt.legend(by_label.values(), by_label.keys(), 
                    loc='upper left', bbox_to_anchor=(1,1))
         plt.tight_layout()
@@ -814,7 +814,7 @@ class fileHandlingMTFLO:
         plt.plot(m_prime / m_prime[-1], np.degrees(np.atan(blade_slope)), 
                  label=f"R={round(radial_point, 2)} m")
         handles, labels = plt.gca().get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
+        by_label = dict(zip(labels, handles, strict=True))
         plt.legend(by_label.values(), by_label.keys(), 
                    loc='upper left', bbox_to_anchor=(1,1))
         plt.tight_layout()
@@ -826,7 +826,7 @@ class fileHandlingMTFLO:
         plt.plot(m_prime / m_prime[-1], np.degrees(theta), 
                  label=f"R={round(radial_point, 2)} m")
         handles, labels = plt.gca().get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
+        by_label = dict(zip(labels, handles, strict=True))
         plt.legend(by_label.values(), by_label.keys(), 
                    loc='upper left', bbox_to_anchor=(1,1))
         plt.tight_layout()
@@ -838,7 +838,7 @@ class fileHandlingMTFLO:
         plt.plot(m_prime / m_prime[-1], blade_slope, 
                  label=f"R={round(radial_point, 2)} m")
         handles, labels = plt.gca().get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
+        by_label = dict(zip(labels, handles, strict=True))
         plt.legend(by_label.values(), by_label.keys(), 
                    loc='upper left', bbox_to_anchor=(1,1))
         plt.tight_layout()

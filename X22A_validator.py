@@ -48,8 +48,7 @@ ensure_repo_paths()
 # Import interfacing modules
 from Submodels.Parameterisations import AirfoilParameterisation # type: ignore
 from Submodels.file_handling import fileHandlingMTFLO, fileHandlingMTSET # type: ignore
-from Submodels.output_handling import output_processing # type: ignore
-from Submodels.MTSOL_call import MTSOL_call # type: ignore
+from Submodels.MTSOL_call import MTSOL_call, ExitFlag # type: ignore
 from Submodels.MTSET_call import MTSET_call # type: ignore
 from Submodels.MTFLO_call import MTFLO_call # type: ignore
 
@@ -548,7 +547,8 @@ def ExecuteParameterSweep(omega: np.typing.NDArray[np.floating],
                                                          generate_output=True)
 
             # Extract outputs
-            if exit_flag in (-1, 3, 1):  # SUCCESS, COMPLETED, NON_CONVERGENCE
+            if exit_flag in (ExitFlag.SUCCESS, 
+                             ExitFlag.COMPLETED, ExitFlag.NON_CONVERGENCE): 
                 CT = output_data['data']['Total force CT']
                 CP = output_data['data']['Total power CP']
                 etaP = output_data['data']['EtaP']

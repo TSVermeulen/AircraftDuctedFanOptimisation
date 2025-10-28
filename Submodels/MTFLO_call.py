@@ -168,7 +168,7 @@ class MTFLO_call:
         # If error occured, MTFLO will have crashed, so we can check success
         # by checking if the subprocess is still alive
         if self.process.poll() is not None:
-            raise ImportError(f"Issue with tflow input file, MTFLO crashed") from None
+            raise ImportError("Issue with tflow input file, MTFLO crashed") from None
 
         # Exit the field parameter menu
         self.StdinWrite("")
