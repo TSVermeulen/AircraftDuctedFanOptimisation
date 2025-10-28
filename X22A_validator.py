@@ -22,11 +22,12 @@ Versioning
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@student.tudelft.nl
 Student ID 4995309
-Version: 1.0
+Version: 1.2
 
 Changelog:
 - V1.0: Initial complete validated version.
 - V1.1: Added documentation and type hinting.
+- V1.2: Updated documentation and updated interface with UDC to reflect MTSOL V2.0 interface
 """
 
 # Import standard libraries
@@ -47,8 +48,7 @@ ensure_repo_paths()
 # Import interfacing modules
 from Submodels.Parameterisations import AirfoilParameterisation # type: ignore
 from Submodels.file_handling import fileHandlingMTFLO, fileHandlingMTSET # type: ignore
-from Submodels.output_handling import output_processing # type: ignore
-from Submodels.MTSOL_call import MTSOL_call # type: ignore
+from Submodels.MTSOL_call import MTSOL_call, ExitFlag # type: ignore
 from Submodels.MTSET_call import MTSET_call # type: ignore
 from Submodels.MTFLO_call import MTFLO_call # type: ignore
 
@@ -71,7 +71,7 @@ L_REF = FAN_DIAMETER  # m, reference length for use by MTFLOW
 def GenerateMTFLOBlading(Omega: float,
                          ref_blade_angle: float,
                          plot : bool,
-                         ) -> tuple[list, list]:
+                         ) -> tuple[list[dict[str, float | np.typing.NDArray[np.floating]], list[list[dict[str, float | np.floating]]]]]:
     """
     Generate MTFLO blading.
     The blading parameters are based on Figure 3 in [1].
@@ -87,11 +87,11 @@ def GenerateMTFLOBlading(Omega: float,
 
     Returns
     -------
-    - (list, list):
+    - tuple[list[dict[str, float | np.typing.NDArray[np.floating]]], list[list[dict[str, float | np.floating]]]]:
         A tuple of two lists:
-        - blading_parameters : list
+        - blading_parameters : list[dict[str, float | np.typing.NDArray[np.floating]]]
             A list containing dictionaries with the blading parameters.
-        - design_parameters : list
+        - design_parameters : list[list[dict[str, float | np.floating]]]
             A list containing dictionaries with the design parameters for each radial station.
     """
 
@@ -185,7 +185,7 @@ def GenerateMTFLOBlading(Omega: float,
             x_mid_arr[section] = (x_LE + x_TE) / 2
             x_LE_arr[section] = x_LE
             x_TE_arr[section] = x_TE
-            plt.plot([x_LE, x_TE], [blading_parameters[0]["radial_stations"][section], blading_parameters[0]["radial_stations"][section]], label=f"r={round(blading_parameters[0]["radial_stations"][section], 2)} m")
+            plt.plot([x_LE, x_TE], [blading_parameters[0]['radial_stations'][section], blading_parameters[0]['radial_stations'][section]], label=f"r={round(blading_parameters[0]['radial_stations'][section], 2)} m")
 
         plt.xlabel("Axial Location [m]")
         plt.ylabel("Radial location [m]")
@@ -223,27 +223,28 @@ def GenerateMTFLOBlading(Omega: float,
 
     # Compute parameterisation for the airfoil section at r=0.2R
     # Note that we keep this section constant for r=0.1R and r=0.15R and equal to that of r=0.2R
-    R01_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R02_fpath)
+    airfoil_param = AirfoilParameterisation()
+    R01_section = airfoil_param.FindInitialParameterisation(reference_file=R02_fpath)
     # Compute parameterisation for the airfoil section at r=0.3R
-    R03_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R03_fpath)
+    R03_section = airfoil_param.FindInitialParameterisation(reference_file=R03_fpath)
     # Compute parameterisation for the airfoil section at r=0.4R
-    R04_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R04_fpath)
+    R04_section = airfoil_param.FindInitialParameterisation(reference_file=R04_fpath)
     # Compute parameterisation for the mid airfoil section
-    R05_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R05_fpath)
+    R05_section = airfoil_param.FindInitialParameterisation(reference_file=R05_fpath)
     # Compute parameterisation for the airfoil section at r=0.6R
-    R06_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R06_fpath)
+    R06_section = airfoil_param.FindInitialParameterisation(reference_file=R06_fpath)
     # Compute parameterisation for the airfoil section at r=0.7R
-    R07_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R07_fpath)
+    R07_section = airfoil_param.FindInitialParameterisation(reference_file=R07_fpath)
     # Compute parameterisation for the airfoil section at r=0.8R
-    R08_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R08_fpath)
+    R08_section = airfoil_param.FindInitialParameterisation(reference_file=R08_fpath)
     # Compute parameterisation for the airfoil section at r=0.9R
-    R09_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R09_fpath)
+    R09_section = airfoil_param.FindInitialParameterisation(reference_file=R09_fpath)
     # Compute parameterisation for the tip airfoil section
-    R10_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=R10_fpath)
+    R10_section = airfoil_param.FindInitialParameterisation(reference_file=R10_fpath)
     # Compute parameterisation for the horizontal struts
-    Hstrut_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=Hstrut_fpath)
+    Hstrut_section = airfoil_param.FindInitialParameterisation(reference_file=Hstrut_fpath)
     # Compute parameterisation for the diagonal struts
-    Dstrut_section = AirfoilParameterisation().FindInitialParameterisation(reference_file=Dstrut_fpath)
+    Dstrut_section = airfoil_param.FindInitialParameterisation(reference_file=Dstrut_fpath)
 
     # Construct blading list
     design_parameters = [[R01_section, R01_section, R03_section, R04_section, R05_section, R06_section, R07_section, R08_section, R09_section, R10_section],
@@ -253,17 +254,17 @@ def GenerateMTFLOBlading(Omega: float,
     return blading_parameters, design_parameters
 
 
-def GenerateMTFLOInput(blading_parameters: list,
-                       design_parameters: list,
+def GenerateMTFLOInput(blading_parameters: list[dict[str, float | np.typing.NDArray[np.floating]]],
+                       design_parameters: list[list[dict[str, float | np.floating]]],
                        display_plot: bool) -> None:
     """
     Generate the MTFLO input file tflow.X22A_validation
 
     Parameters
     ----------
-   - blading_parameters : list
+   - blading_parameters : list[dict[str, float | np.typing.NDArray[np.floating]]]
         A list containing dictionaries with the blading parameters.
-    - design_parameters : list
+    - design_parameters : list[list[dict[str, float | np.floating]]]
         A list containing dictionaries with the design parameters for each radial station.
     - display_plot : bool
         A control boolean to determine whether the blade data input for MTFLO is plotted.
@@ -281,7 +282,19 @@ def GenerateMTFLOInput(blading_parameters: list,
 
 def GenerateMTSETGeometry() -> None:
     """
-    Generate the duct and center body geometry. Uses a combination of analytical representation, and smoothing interpolations to obtain the axisymmetric geometries.
+    Generate the duct and center body geometry of the X-22A and create the MTSET
+    input file.
+
+    Uses a combination of analytical representation, and smoothing
+    interpolations to obtain the axisymmetric geometries.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
 
     # --------------------
@@ -359,7 +372,7 @@ def GenerateMTSETGeometry() -> None:
 
 
     CENTERBODY_VALUES = {"b_0": 0.05, "b_2": 0.125, "b_8": 7.52387039e-02, "b_15": 7.46448823e-01, "b_17": 0.8, 'x_t': 0.29842005729819904, 'y_t': 0.12533559300869632, 'x_c': 0.3, 'y_c': 0., 'z_TE': 0., 'dz_TE': 0.00277173368735548, 'r_LE': -0.06946118699675888, 'trailing_wedge_angle': 0.27689037361278407, 'trailing_camberline_angle': 0., 'leading_edge_direction': 0., "Chord Length": 1.5, "Leading Edge Coordinates": (0., 0.)}
-    
+
     plt.figure("cb geometry", figsize=get_figsize(wf=0.75))
     naca_x, naca_y, _, _, = AirfoilParameterisation().ComputeProfileCoordinates(CENTERBODY_VALUES)
     naca_x *= CENTERBODY_VALUES["Chord Length"]
@@ -409,6 +422,10 @@ def ChangeOMEGA(omega: float) -> None:
     ----------
     - omega : float
         The non-dimensional rotational speed to be entered into the tflow input file.
+
+    Returns
+    -------
+    None
     """
 
     # Open the tflow.analysis_name file
@@ -522,14 +539,22 @@ def ExecuteParameterSweep(omega: np.typing.NDArray[np.floating],
                     }
 
             # Execute MTSOL
-            MTSOL_call(operating_conditions=oper,
-                    analysis_name=ANALYSIS_NAME,
-                    ).caller(run_viscous=True,
-                                generate_output=True)
+            # We are only interested in the output data here,
+            # not the exit flag(s)
+            exit_flag, output_data = MTSOL_call(operating_conditions=oper,
+                                                analysis_name=ANALYSIS_NAME,
+                                                ).caller(run_viscous=True,
+                                                         generate_output=True)
 
-            # Collect outputs from the forces.xxx file
-            CT, CP, etaP = output_processing(ANALYSIS_NAME).GetCTCPEtaP()
-            print(f"Omega: {omega[i]}, CT: {CT}, CP: {CP}, etaP: {etaP}")
+            # Extract outputs
+            if exit_flag in (ExitFlag.SUCCESS, 
+                             ExitFlag.COMPLETED, ExitFlag.NON_CONVERGENCE): 
+                CT = output_data['data']['Total force CT']
+                CP = output_data['data']['Total power CP']
+                etaP = output_data['data']['EtaP']
+                print(f"Omega: {omega[i]}, TC: {CT}, CP: {CP}, etaP: {etaP}")
+            else:
+                CT = CP = etaP = 0
 
             CT_outputs[i] = CT
             CP_outputs[i] = CP

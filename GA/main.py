@@ -58,7 +58,7 @@ from utils import ensure_repo_paths, calculate_n_reference_points #type: ignore
 ensure_repo_paths()
 
 import config  #type: ignore
-from problem_definition import OptimizationProblem #type: ignore
+from problem_definition import OptimisationProblem #type: ignore
 from init_population import InitPopulation #type: ignore
 from termination_conditions import GetTerminationConditions #type: ignore
 from repair import RepairIndividuals #type: ignore
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         from multi_point_problem_definition import MultiPointOptimizationProblem # type: ignore
         problem = MultiPointOptimizationProblem(seed=config.GLOBAL_SEED)
     else:
-        problem = OptimizationProblem(seed=config.GLOBAL_SEED)
+        problem = OptimisationProblem(seed=config.GLOBAL_SEED)
 
     # Create the reference directions to be used for the optimisation
     ref_dirs = get_reference_directions("energy",

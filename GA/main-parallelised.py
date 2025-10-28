@@ -59,7 +59,7 @@ ensure_repo_paths()
 
 # Import interface submodels and other dependencies
 import config #type: ignore
-from problem_definition import OptimizationProblem #type: ignore
+from problem_definition import OptimisationProblem #type: ignore
 from init_population import InitPopulation #type: ignore
 from termination_conditions import GetTerminationConditions #type: ignore
 from repair import RepairIndividuals #type: ignore
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
         """ Initialise the optimisation problem and algorithm """
         # Initialise the optimisation problem by passing the configuration and the starmap interface of the thread_pool
-        problem = OptimizationProblem(elementwise_runner=runner,
+        problem = OptimisationProblem(elementwise_runner=runner,
                                       seed=config.GLOBAL_SEED)
 
         # Initialise the algorithm

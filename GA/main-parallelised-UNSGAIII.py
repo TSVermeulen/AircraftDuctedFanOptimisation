@@ -60,7 +60,7 @@ ensure_repo_paths()
 
 # Import interface submodels and other dependencies
 import config # type: ignore
-from problem_definition import OptimizationProblem # type: ignore
+from problem_definition import OptimisationProblem # type: ignore
 from init_population import InitPopulation # type: ignore
 from termination_conditions import GetTerminationConditions # type: ignore
 from repair import RepairIndividuals # type: ignore
@@ -103,7 +103,7 @@ if __name__ == "__main__":
             problem = MultiPointOptimizationProblem(elementwise_runner=runner,
                                                     seed=config.GLOBAL_SEED)
         else:
-            problem = OptimizationProblem(elementwise_runner=runner,
+            problem = OptimisationProblem(elementwise_runner=runner,
                                           seed=config.GLOBAL_SEED)
 
         # Create the reference directions to be used for the optimisation
