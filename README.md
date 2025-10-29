@@ -1,13 +1,18 @@
 # The Unified Ducted Fan Code and Ducted Fan Optimisation Framework
-This GitHub repository contains the codebase developed for the Unified Ducted fan Code (UDC) and its implementation into a ducted fan optimisation framework using the Unified Non-dominated Sorting Genetic Algorithm III (U-NSGA-III), as part of the MSc thesis titled "A Framework for Medium-Fidelity Ducted Fan Design Optimisation" by T.S. Vermeulen at Delft University of Technology, Faculty of Aerospace Engineering.
+This GitHub repository contains the codebase developed for the Unified Ducted fan Code (UDC) and its implementation into a ducted fan optimisation framework using the Unified Non-dominated Sorting Genetic Algorithm III (U-NSGA-III), as started in work of the MSc thesis titled "A Framework for Medium-Fidelity Ducted Fan Design Optimisation" by T.S. Vermeulen at Delft University of Technology, Faculty of Aerospace Engineering.
+
+The developed UDC and optimisation framework are maintained and updated by the original author in preparation for the Turbo Expo 2026. 
+
+## License
+Copyright Notice and Disclaimer. The software [or “portions of the software”] incorporated
+herein is MTFLOW Software, © MIT 1997 used with permission. All Rights Reserved.
 
 ## Description
-
-This thesis builds on the MTFLOW software developed by M. Drela to create a fast, robust, and accurate ducted fan analysis code. This code is implemented in the U-NSGA-III algorithm to enable design explorations for different operating conditions, objectives, and constraints. This repository also contains the validation data used to validate the implementation against experimental wind tunnel data of the X-22A ducted propulsor. This wind tunnel data is reported in NASA-TN-D-4142. The validation data is contained in the validation folder. 
+This code builds on the MTFLOW software developed by M. Drela to create a fast, robust, and accurate ducted fan analysis code. This code is implemented in the U-NSGA-III algorithm to enable design explorations for different operating conditions, objectives, and constraints. This repository also contains the validation data used to validate the implementation against experimental wind tunnel data of the X-22A ducted propulsor. This wind tunnel data is reported in NASA-TN-D-4142. The validation data is contained in the validation folder. 
 
 For a detailed description of the developed methods and results, the reader is referred to the thesis, which is publicly available [here](https://repository.tudelft.nl/), and in the misc folder of this repository
 
-As per the License for MTFLOW, the MTFLOW codes cannot be freely distributed.
+As per the license for MTFLOW, the MTFLOW codes cannot be freely distributed.
 Should the reader wish to use the developed frameworks in this thesis, they need to request a license for MTFLOW directly from the MIT Technology Licensing Office. This can be done here: https://tlo.mit.edu/industry-entrepreneurs/available-technologies/mtflow-software-multielement-through-flow
 
 The code in this repository is designed to work on Windows. For a Linux/Unix-like system, the MTFLOW executable filenames, filepaths, and file block checking need to be adjusted accordingly.
