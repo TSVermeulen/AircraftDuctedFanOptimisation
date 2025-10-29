@@ -911,7 +911,8 @@ class MTSOL_call:
     def HandleExitFlag(self,
                        exit_flag: ExitFlag,
                        handle_type : str,
-                       update_statefile : bool = False,
+                       generate_output : bool = False,
+                       output_type : OutputType = OutputType.FORCES_ONLY,
                        ) -> None:
         """
         Handle the exit flag of the solver execution.
@@ -924,8 +925,12 @@ class MTSOL_call:
             A string indicating the type of solve:
                 - 'Inviscid'
                 - 'Viscous'
-        - update_statefile: bool, optional
-            A control boolean to determine if the state file should be updated.
+        - generate_output: bool, optional
+            A control boolean to determine if the outputs should be generated.
+        - output_type: OutputType, optional
+            An enum to determine which outputs to generate.
+            OutputType.FORCES_ONLY generates only the forces data,
+            while OutputType.ALL_FILES generates all files.
 
         Returns
         -------
@@ -934,12 +939,11 @@ class MTSOL_call:
 
         #If solver does not converge, call the non-convergence handler function.
         if exit_flag == ExitFlag.NON_CONVERGENCE:
-            if update_statefile:
-                self.WriteStateFile()
             if handle_type == 'Inviscid':
                 return
-            else:
-                self.HandleNonConvergence()
+            if generate_output:
+                self.WriteStateFile()
+                self.HandleNonConvergence()    
 
         # Else if the solver has crashed, restart MTSOL from the last saved
         # statefile IF the crash occurred during a viscous solve. Otherwise,
@@ -951,11 +955,13 @@ class MTSOL_call:
                 self.GenerateProcess()
                 return
 
-        # Else if the solver has finished, update the statefile.
+        # Else if the solver has finished, update the statefile, and generate
+        # the outputs
         elif exit_flag in (ExitFlag.COMPLETED, ExitFlag.SUCCESS,
                            ExitFlag.NOT_PERFORMED, ExitFlag.CHOKING):
-            if update_statefile:
-                self.WriteStateFile()
+            self.WriteStateFile()
+            if generate_output:
+                self.GenerateSolverOutput(output_type=output_type)
             return
 
         else:
@@ -1149,23 +1155,18 @@ class MTSOL_call:
                 exit_flag_invisc = ExitFlag.CRASH
             finally:
                 # Handle solver based on exit flag
+                # handle_type='Inviscid' bypasses the non-convergence loop.
+                # This is intentional for a viscous run, as it speeds up the 
+                # solution process substantially. However, for an inviscid-only 
+                # run, we do need to perform this loop.
+                exit_flag_handler = 'Inviscid' if run_viscous else 'Viscous'
+
                 self.HandleExitFlag(exit_flag_invisc,
-                                    handle_type='Inviscid',
-                                    update_statefile=generate_output)
+                                    handle_type=exit_flag_handler,
+                                    generate_output=generate_output,
+                                    output_type=output_type)
                 total_exit_flag = exit_flag_invisc
 
-                if generate_output:
-                    # Generate the requested solver outputs based on output_type
-                    self.GenerateSolverOutput(output_type=output_type)
-
-            if not run_viscous:
-                # handle_type="inviscid" bypasses the non-convergence loop.
-                # This is intentional for a viscous run,
-                # as it speeds up the solution process substantially.
-                # However, for an inviscid run, we do need to perform this loop.
-                self.HandleExitFlag(total_exit_flag,
-                                    handle_type="Viscous",
-                                    update_statefile=generate_output)
 
             # Only run a viscous solve if required by the user
             # Theoretically there is the chance a viscous run may be started on
@@ -1209,12 +1210,8 @@ class MTSOL_call:
                                           key=lambda flag: flag.value)
                     self.HandleExitFlag(total_exit_flag,
                                         handle_type='Viscous',
-                                        update_statefile=generate_output)
-
-
-                    if generate_output:
-                        # Generate the requested solver outputs
-                        self.GenerateSolverOutput(output_type=output_type)
+                                        generate_output=generate_output,
+                                        output_type=output_type)
 
                     # Check feasibility of the viscous efficiency. If not, set
                     # the exit flag to crash to enable appropriate downstream

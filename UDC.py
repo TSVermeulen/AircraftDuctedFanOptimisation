@@ -338,7 +338,7 @@ class UDC:
 
                 if grid_checked:
                     exit_flag = ExitFlag.SUCCESS
-                    forces_data = {}  # Empty dict to ensure forces_data exists
+                    #forces_data = {}  # Empty dict to ensure forces_data exists
                     break
 
                 exit_flag, forces_data  = MTSOL_call(operating_conditions={"Inlet_Mach": 0.15,
