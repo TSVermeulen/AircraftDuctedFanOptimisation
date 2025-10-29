@@ -54,18 +54,18 @@ class DesignVector:
     BP_3434_bounds = {"b_0": (0.05, 0.1),
                       "b_2": (0.125, 0.3),
                       "b_8": (0.05, 0.7),
-                      "b_15": (0.7, 0.95),
-                      "b_17": (0.7, 0.95),
+                      "b_15": (0, 0.9),
+                      "b_17": (0, 0.9),
                       "x_t": (0.15, 0.4),
                       "y_t": (0.02, 0.3),
                       "x_c": (0.2, 0.5),
-                      "y_c": (0, 0.15),
-                      "z_TE": (0, 0.05),
-                      "dz_TE": (0, 0.005),
+                      "y_c": (0, 0.2),
+                      "z_TE": (0, 0.01),
+                      "dz_TE": (0, 0.001),
                       "r_LE": (-0.2, -0.001),
-                      "trailing_wedge_angle": (0.001, 0.4),
-                      "trailing_camberline_angle": (0.001, 0.2),
-                      "leading_edge_direction": (0.001, 0.2)}
+                      "trailing_wedge_angle": (0.001, 0.3),
+                      "trailing_camberline_angle": (0.05, 0.1),
+                      "leading_edge_direction": (0.05, 0.2)}
 
     # Initialize the profile vars as None
     _cached_profile_vars: ClassVar[list | None] = None

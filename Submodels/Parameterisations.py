@@ -443,6 +443,7 @@ class AirfoilParameterisation:
         # relative location of the inflection point
         b_15_coordinate = (airfoil_params["b_15"] - \
                            airfoil_params["x_t"]) / (1 - airfoil_params["x_t"])
+        b_15_coordinate = airfoil_params['b_15']
 
         # Construct leading edge x coefficients
         x_leading_edge_thickness_coeff = np.array([0,
@@ -459,14 +460,14 @@ class AirfoilParameterisation:
         x_trailing_edge_thickness_coeff = np.array([airfoil_params["x_t"],
                                                     (7 * airfoil_params["x_t"] + (9 * airfoil_params["b_8"] ** 2) / (2 * airfoil_params["r_LE"])) / 4,
                                                     3 * airfoil_params["x_t"] + (15 * airfoil_params["b_8"] ** 2) / (4 * airfoil_params["r_LE"]),
-                                                    b_15_coordinate,
+                                                    airfoil_params['b_15'],
                                                     1])
 
         # Construct trailing edge y coefficients
         y_trailing_edge_thickness_coeff = np.array([airfoil_params["y_t"],
                                                     airfoil_params["y_t"],
                                                     (airfoil_params["y_t"] + airfoil_params["b_8"]) / 2,
-                                                    airfoil_params["dz_TE"] + (1 - b_15_coordinate) * np.tan(airfoil_params["trailing_wedge_angle"]),
+                                                    airfoil_params["dz_TE"] + (1 - airfoil_params['b_15']) * np.tan(airfoil_params["trailing_wedge_angle"]),
                                                     airfoil_params["dz_TE"]])
 
         return x_leading_edge_thickness_coeff, y_leading_edge_thickness_coeff, x_trailing_edge_thickness_coeff, y_trailing_edge_thickness_coeff
@@ -520,18 +521,21 @@ class AirfoilParameterisation:
 
         # First use the provided parameter values to construct the relative locations of the control points
         b_17_coordinate = (airfoil_params["b_17"] - airfoil_params["x_c"]) / (1 - airfoil_params["x_c"])
+        b_17_coordinate = airfoil_params["b_17"]
         b_0_coordinate = airfoil_params["b_0"] * airfoil_params["x_c"]
+        b_0_coordinate = airfoil_params["b_0"]
         b_2_coordinate = airfoil_params["b_2"] * airfoil_params["x_c"]
+        b_2_coordinate = airfoil_params["b_2"]
 
         # Construct leading edge x coefficients
         x_leading_edge_camber_coeff = np.array([0,
-                                                b_0_coordinate,
-                                                b_2_coordinate,  # b_0 and b_2 are inherently bounded to be 0 < b_0 < b_2
+                                                airfoil_params["b_0"],
+                                                airfoil_params["b_2"],  # b_0 and b_2 are inherently bounded to be 0 < b_0 < b_2
                                                 airfoil_params["x_c"]])
 
         # Construct leading edge y coefficients
         y_leading_edge_camber_coeff = np.array([0,
-                                                b_0_coordinate * np.tan(airfoil_params["leading_edge_direction"]),
+                                                airfoil_params["b_0"] * np.tan(airfoil_params["leading_edge_direction"]),
                                                 airfoil_params["y_c"],
                                                 airfoil_params["y_c"]])
 
@@ -539,14 +543,14 @@ class AirfoilParameterisation:
         x_trailing_edge_camber_coeff = np.array([airfoil_params["x_c"],
                                                  (3 * airfoil_params["x_c"] - airfoil_params["y_c"] * _cot(airfoil_params["leading_edge_direction"])) / 2,
                                                  (-8 * airfoil_params["y_c"] * _cot(airfoil_params["leading_edge_direction"]) + 13 * airfoil_params["x_c"]) / 6,
-                                                 b_17_coordinate,
+                                                 airfoil_params["b_17"],
                                                  1])
 
         # Construct trailing edge y coefficients
         y_trailing_edge_camber_coeff = np.array([airfoil_params["y_c"],
                                                  airfoil_params["y_c"],
                                                  5 * airfoil_params["y_c"] / 6,
-                                                 airfoil_params["z_TE"] + (1 - b_17_coordinate) * np.tan(airfoil_params["trailing_camberline_angle"]),
+                                                 airfoil_params["z_TE"] + (1 - airfoil_params["b_17"]) * np.tan(airfoil_params["trailing_camberline_angle"]),
                                                  airfoil_params["z_TE"]])
 
         return x_leading_edge_camber_coeff, y_leading_edge_camber_coeff, x_trailing_edge_camber_coeff, y_trailing_edge_camber_coeff
@@ -1142,7 +1146,7 @@ if __name__ == "__main__":
     call_class = AirfoilParameterisation()
 
     start_time = time.time()
-    inputfile = Path(__file__).resolve().parent / 'Test Airfoils/duct.dat'
+    inputfile = Path(__file__).resolve().parent / 'Test Airfoils/n6509.dat'
     airf_params = call_class.FindInitialParameterisation(inputfile)
     end_time = time.time()
     print(f"Execution of FindInitialParameterisation({inputfile}) took {end_time-start_time} seconds")
