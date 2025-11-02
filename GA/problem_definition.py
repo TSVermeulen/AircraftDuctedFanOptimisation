@@ -199,10 +199,10 @@ class OptimisationProblem(ElementwiseProblem):
         # Use lazy-loaded modules (initialised at first use)
         # Prevents circular imports and speeds up initial loading time.
         if not hasattr(self, "_lazy_modules_loaded"):
-            from UDC import UDC
-            from Submodels.output_handling import output_processing
-            from Submodels.file_handling import fileHandlingMTSET
-            from Submodels.file_handling import fileHandlingMTFLO
+            from UDC import UDC  # type: ignore
+            from Submodels.output_handling import output_processing  # type: ignore
+            from Submodels.file_handling import fileHandlingMTSET  # type: ignore
+            from Submodels.file_handling import fileHandlingMTFLO  # type: ignore
             self._UDC = UDC
             self._output_processing = output_processing
             self._fileHandlingMTSET = fileHandlingMTSET
@@ -466,17 +466,19 @@ class OptimisationProblem(ElementwiseProblem):
                                                               output_type=OutputType.FORCES_ONLY)
 
                 # Check outputs in case of crashes
-                if exit_flag in (ExitFlag.CHOKING, ExitFlag.CRASH):
-                    UDC_outputs = self.CRASH_OUTPUTS
+                if exit_flag not in (ExitFlag.SUCCESS,
+                                     ExitFlag.NON_CONVERGENCE,
+                                     ExitFlag.COMPLETED):
+                    UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
 
             except Exception as e:
                 if self.verbose:
                     print(f"[UDC_ERROR] case={self.analysis_name}: {e}")
-                UDC_outputs = self.CRASH_OUTPUTS
+                UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
         else:
             # If the design is infeasible, we load the crash outputs
             # This is a predefined dictionary with all outputs set to 0.
-            UDC_outputs = self.CRASH_OUTPUTS
+            UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
 
         # Obtain objective(s)
         # The out dictionary is updated in-place

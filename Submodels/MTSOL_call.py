@@ -211,7 +211,8 @@ class MTSOL_call:
     def StdinWrite(self,
                    command: str) -> None:
         """
-        Simple function to write commands to the subprocess stdin in order to pass commands to MTSOL
+        Simple function to write commands to the subprocess stdin in order to
+        pass commands to MTSOL
 
         Parameters
         ----------
@@ -493,7 +494,9 @@ class MTSOL_call:
 
             # Read the output from the output thread
             try:
-                adaptive_timeout = min(0.025 * (1 + int((time.monotonic() - timer_start) // 5)), 0.25)
+                adaptive_timeout = min(0.025 * (1 + int((time.monotonic() - \
+                                                         timer_start) // 5)),
+                                       0.25)
                 line = self.output_queue.get(timeout=adaptive_timeout)
             except queue.Empty:
                 if self.process.poll() is not None:
@@ -585,15 +588,18 @@ class MTSOL_call:
                              output_type: OutputType = OutputType.FORCES_ONLY) -> None:
         """
         Generate all outputs for the current analysis.
-        If a viscous analysis was performed, the boundary layer data is also dumped to the corresponding file.
-        Requires that MTSOL is in the main menu when starting this function.
+        If a viscous analysis was performed, the boundary layer data is also
+        dumped to the corresponding file. Requires that MTSOL is in the main
+        menu when starting this function.
 
         Parameters
         ----------
         - output_type : OutputType
             An enum to determine which outputs need to be generated:
-                - OutputType.FORCES_ONLY: Generate only the forces data. (default)
-                - OutputType.ALL_FILES: Generate all outputs (forces, flowfield, boundary_layer)
+                - OutputType.FORCES_ONLY: Generate only the forces data.
+                                          (default)
+                - OutputType.ALL_FILES: Generate all outputs (forces, flowfield,
+                                        boundary_layer)
 
         Returns
         -------
@@ -646,8 +652,7 @@ class MTSOL_call:
                 forces_output.append(line)
 
         self.forces_data = forces_output
-        self.forces_data_dict = self.output_processing_class.GetAllVariables(output_type=0,
-                                                                             forces_data=forces_output)
+        self.forces_data_dict = self.output_processing_class.GetAllVariables(forces_data=forces_output)
 
         # Handle the case where all outputs are to be handled
         if output_type == OutputType.ALL_FILES:
@@ -781,8 +786,7 @@ class MTSOL_call:
             iter_counter += 1
 
         # Convert all output lists into dictionaries
-        forces_outputs_dicts = [self.output_processing_class.GetAllVariables(output_type=0,
-                                                                             forces_data=output)
+        forces_outputs_dicts = [self.output_processing_class.GetAllVariables(forces_data=output)
                                 for output in forces_outputs]
 
         # Define helper functions to compute average from list of dictionaries
@@ -790,7 +794,8 @@ class MTSOL_call:
                         count_dict: dict[str, Any],
                         input_dict: dict[str, Any]) -> None:
             """
-            Populate a sum and count dictionary from the input dictionary recursively for averaging.
+            Populate a sum and count dictionary from the input dictionary
+            recursively for averaging.
 
             Parameters
             ----------
@@ -844,15 +849,13 @@ class MTSOL_call:
                     avg_dict[key] = sum_dict[key] / count_dict[key]
             return avg_dict
 
-        # Now compute the average dictionary
+        # Now compute the average dictionary and write the averaged values to
+        # the forces dictionary attribute
         sums = {}
         counts = {}
         for output in forces_outputs_dicts:
             _accumulate(sums, counts, output)
-        averages = _compute_average(sums, counts)
-
-        # Write the averaged values to the forces dictionary attribute
-        self.forces_data_dict = averages
+        self.forces_data_dict = _compute_average(sums, counts)
 
 
     def CheckInviscidOutput(self) -> bool:
@@ -876,7 +879,7 @@ class MTSOL_call:
 
         try:
             # Extract the efficiency from the forces output
-            eta = self.GetEtaOutput()
+            eta = self.forces_data_dict["data"]["EtaP"]
             # Return appropriate bool depending on found efficiency
             return 0 < eta < 1.
         except Exception:
@@ -900,9 +903,7 @@ class MTSOL_call:
         """
 
         try:
-            output = self.output_processing_class.GetAllVariables(output_type=0,
-                                                                  forces_data=self.forces_data)
-            eta = output["data"]["EtaP"]
+            eta = self.forces_data_dict["data"]["EtaP"]
         except Exception:
             eta = 0
         return eta
@@ -943,7 +944,7 @@ class MTSOL_call:
                 return
             if generate_output:
                 self.WriteStateFile()
-                self.HandleNonConvergence()    
+                self.HandleNonConvergence()
 
         # Else if the solver has crashed, restart MTSOL from the last saved
         # statefile IF the crash occurred during a viscous solve. Otherwise,
@@ -1156,8 +1157,8 @@ class MTSOL_call:
             finally:
                 # Handle solver based on exit flag
                 # handle_type='Inviscid' bypasses the non-convergence loop.
-                # This is intentional for a viscous run, as it speeds up the 
-                # solution process substantially. However, for an inviscid-only 
+                # This is intentional for a viscous run, as it speeds up the
+                # solution process substantially. However, for an inviscid-only
                 # run, we do need to perform this loop.
                 exit_flag_handler = 'Inviscid' if run_viscous else 'Viscous'
 
@@ -1250,7 +1251,7 @@ class MTSOL_call:
 if __name__ == "__main__":
     import time
 
-    analysisName = "1024205412_7880_135ad8f9117a"
+    analysisName = "1031205207_4620_1a331d5f4aed"
     oper = {"Inlet_Mach": 0.125,
             "Inlet_Reynolds": 5112279,
             "N_crit": 9,
