@@ -692,10 +692,7 @@ class output_processing:
                                       'Xtr': 0.00000}}
 
         # Use regex to extract values from the line.
-        # Only search for the data if desired based on the output_type
-        # integer provided.
         for idx, line in enumerate(forces_file_contents):
-
             if idx == 0:
                 continue
 
@@ -704,37 +701,26 @@ class output_processing:
                 if match is not None:
                     data["Total power CP"] = float(match.group(1))
                     data["EtaP"] = float(match.group(2))
-                else:
-                    data["Total power CP"] = 0
-                    data["EtaP"] = 0
 
             elif idx == 4:
                 match = re.search(total_CT_pattern, line)
                 if match is not None:
                     data["Total force CT"] = float(match.group(1))
-                else:
-                    data["Total force CT"] = 0
 
             elif idx == 5:
                 match = re.search(top_CTV_pattern, line)
                 if match is not None:
                     data["Element 2 top CTV"] = float(match.group(1))
-                else:
-                    data["Element 2 top CTV"] = 0
 
             elif idx == 6:
                 match = re.search(bot_CTV_pattern, line)
                 if match is not None:
                     data["Element 2 bot CTV"] = float(match.group(1))
-                else:
-                    data["Element 2 bot CTV"] = 0
 
             elif idx == 7:
                 match = re.search(axis_body_CTV_pattern, line)
                 if match is not None:
                     data["Axis body CTV"] = float(match.group(1))
-                else:
-                    data["Axis body CTV"] = 0
 
             elif idx == 9:
                 viscous_inviscid_match = re.search(viscous_inviscid_pattern,
@@ -742,9 +728,6 @@ class output_processing:
                 if viscous_inviscid_match is not None:
                     data["Viscous CTv"] = float(viscous_inviscid_match.group(1))
                     data["Inviscid CTi"] = float(viscous_inviscid_match.group(2))
-                else:
-                    data["Viscous CTv"] = 0
-                    data["Inviscid CTi"] = 0
 
             elif idx == 10:
                 friction_pressure_match = re.search(friction_pressure_pattern,
@@ -752,9 +735,6 @@ class output_processing:
                 if friction_pressure_match is not None:
                     data["Friction CTf"] = float(friction_pressure_match.group(1))
                     data["Pressure CTp"] = float(friction_pressure_match.group(2))
-                else:
-                    data["Friction CTf"] = 0
-                    data["Pressure CTp"] = 0
 
             elif idx == 11:
                 match = re.search(element_breakdown_pattern, line)
@@ -767,11 +747,6 @@ class output_processing:
                                                 "CTp": CTp,
                                                 "top Xtr": top_Xtr,
                                                 "bot Xtr": bot_Xtr}
-                else:
-                    grouped_data["Element 2"] = {"CTf": 0,
-                                                "CTp": 0,
-                                                "top Xtr": 0,
-                                                "bot Xtr": 0}
 
             elif idx == 12:
                 match = re.search(axis_body_breakdown_pattern, line)
@@ -782,24 +757,16 @@ class output_processing:
                     grouped_data["Axis Body"] = {"CTf": CTf,
                                                 "CTp": CTp,
                                                 "Xtr": Xtr}
-                else:
-                    grouped_data["Axis Body"] = {"CTf": 0,
-                                                "CTp": 0,
-                                                "Xtr": 0}
 
             elif idx == 14:
                 match = re.search(P_ratio_pattern, line)
                 if match is not None:
                     data["Pressure Ratio"] = float(match.group(1))
-                else:
-                    data["Pressure Ratio"] = 0
 
             elif idx == 21:
                 match = re.search(wetted_area_pattern, line)
                 if match is not None:
                     data["Wetted Area"] = float(match.group(1))
-                else:
-                    data["Wetted Area"] = 0
 
         # Construct the output dictionary
         output = {'data': data, 'grouped_data': grouped_data}
