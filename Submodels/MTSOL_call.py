@@ -963,6 +963,8 @@ class MTSOL_call:
             self.WriteStateFile()
             if generate_output:
                 self.GenerateSolverOutput(output_type=output_type)
+            else:
+                self.GenerateSolverOutput(output_type=OutputType.FORCES_ONLY)
             return
 
         else:
