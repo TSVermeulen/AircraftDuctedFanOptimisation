@@ -685,7 +685,7 @@ class output_processing:
                 'Element 2 bot CTV': 0.00000, 'Axis body CTV': 0.00000,
                 'Viscous CTv': 0.00000, 'Inviscid CTi': 0.00000,
                 'Friction CTf': 0.00000, 'Pressure CTp': 0.00000,
-                'Pressure Ratio': 0.00000}
+                'Pressure Ratio': 0.00000, 'Wetted Area': 0.00000}
         grouped_data = {'Element 2': {'CTf': 0.00000, 'CTp': 0.00000,
                                       'top Xtr': 0.00000, 'bot Xtr': 0.00000},
                         'Axis Body': {'CTf': 0.00000, 'CTp': 0.00000,
