@@ -817,5 +817,5 @@ if __name__ == "__main__":
     # Example usage for the output_processing class
     start = time.monotonic()
     test = output_processing(analysis_name='f')
-    test.GetAllVariables(0)
+    test.GetAllVariables()
     print(time.monotonic() - start)
