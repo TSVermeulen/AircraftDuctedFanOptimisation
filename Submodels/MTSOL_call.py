@@ -626,6 +626,9 @@ class MTSOL_call:
             # First check if the subprocess has terminated to ensure fail fast
             # if this is the case
             if self.process.poll() is not None:
+                # If the solver crashes while generating the outputs, 
+                # wipe the stored results. 
+                self.forces_data = None
                 return
 
             # Read the output from the output thread
@@ -634,6 +637,9 @@ class MTSOL_call:
                 line = self.output_queue.get(timeout=adaptive_timeout)
             except queue.Empty:
                 if self.process.poll() is not None:
+                    # If the solver crashes while reading the outputs, wipe the 
+                    # stored results.
+                    self.forces_data = None
                     return
                 time.sleep(0.01)
                 line = ""
@@ -780,7 +786,8 @@ class MTSOL_call:
 
             # Generate solver outputs
             self.GenerateSolverOutput(output_type=OutputType.FORCES_ONLY)
-            forces_outputs.append(self.forces_data)
+            if self.forces_data is not None:
+                forces_outputs.append(self.forces_data)
 
             # Increase iteration counter by step size
             iter_counter += 1

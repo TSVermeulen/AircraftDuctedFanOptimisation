@@ -466,9 +466,13 @@ class OptimisationProblem(ElementwiseProblem):
                                                               output_type=OutputType.FORCES_ONLY)
 
                 # Check outputs in case of crashes
-                if exit_flag not in (ExitFlag.SUCCESS,
-                                     ExitFlag.NON_CONVERGENCE,
-                                     ExitFlag.COMPLETED):
+                if exit_flag == ExitFlag.CRASH:# or \
+                # UDC_outputs.keys() != self.CRASH_OUTPUTS.keys():
+                #     if UDC_outputs.keys() != self.CRASH_OUTPUTS.keys():
+                #         error_code = "MISSING_OUTPUTS"
+                #         print(f"[{error_code}] case={self.analysis_name}: \
+                #               Incomplete outputs received from UDC.")
+                #         print("Design vector:", x)
                     UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
 
             except Exception as e:
@@ -521,5 +525,7 @@ if __name__ == "__main__":
 
     # Create an output dictionary to store the results
     output = {}
+
+    ref_vector = {'x0': np.float64(0.05), 'x1': np.float64(0.1490905032828976), 'x2': np.float64(0.062219857771399295), 'x3': np.float64(0.9), 'x4': np.float64(0.7046477645216163), 'x5': np.float64(0.18024639981891005), 'x6': np.float64(0.055343872591593624), 'x7': np.float64(0.2047246900784671), 'x8': np.float64(0.011388700499901186), 'x9': np.float64(0.0012034884647541763), 'x10': np.float64(0.00033321467756755374), 'x11': np.float64(-0.08420865994789903), 'x12': np.float64(0.08715196721616161), 'x13': np.float64(0.05), 'x14': np.float64(0.2), 'x15': np.float64(1.0375229659744198), 'x16': np.float64(0.11042233661899682), 'x17': np.float64(0.05762388931051207), 'x18': np.float64(0.2784116432805875), 'x19': np.float64(0.05169553677797759), 'x20': np.float64(0.9), 'x21': np.float64(0.9), 'x22': np.float64(0.24805640272621107), 'x23': np.float64(0.08956183914268077), 'x24': np.float64(0.5), 'x25': np.float64(0.02085636332432073), 'x26': np.float64(0.001023346722805211), 'x27': np.float64(0.0009899778194866766), 'x28': np.float64(-0.07135797605731306), 'x29': np.float64(0.25834267502378727), 'x30': np.float64(0.07560184649348815), 'x31': np.float64(0.12783470691622653), 'x32': np.float64(0.050426062577640006), 'x33': np.float64(0.15112736008158933), 'x34': np.float64(0.05000311953878328), 'x35': np.float64(0.3963365291605321), 'x36': np.float64(0.6325098176114659), 'x37': np.float64(0.2634821609775609), 'x38': np.float64(0.10595146244216813), 'x39': np.float64(0.4093045767194373), 'x40': np.float64(0.016425026135762945), 'x41': np.float64(0.0003101921903649612), 'x42': np.float64(0.0009609128983365676), 'x43': np.float64(-0.052149118509139836), 'x44': np.float64(0.2509506275676825), 'x45': np.float64(0.05), 'x46': np.float64(0.1998184571597516), 'x47': np.float64(0.057618870259595584), 'x48': np.float64(0.13976944816492412), 'x49': np.float64(0.05232064486125312), 'x50': np.float64(0.9), 'x51': np.float64(0.8993644137504563), 'x52': np.float64(0.22315430955119261), 'x53': np.float64(0.050889250908926376), 'x54': np.float64(0.2584605433567202), 'x55': np.float64(0.023017553924105264), 'x56': np.float64(0.0008756138929334285), 'x57': np.float64(0.0006507935166340175), 'x58': np.float64(-0.03621641050217742), 'x59': np.float64(0.21042496825608198), 'x60': np.float64(0.08940587965047296), 'x61': np.float64(0.11155815907022998), 'x62': np.float64(0.06775634039933327), 'x63': np.float64(0.125), 'x64': np.float64(0.06284276384074872), 'x65': np.float64(0.8950283826589028), 'x66': np.float64(0.6061431026179809), 'x67': np.float64(0.3377771173046672), 'x68': np.float64(0.02000012430363885), 'x69': np.float64(0.36681928632681277), 'x70': np.float64(0.010379726400129), 'x71': np.float64(0.0), 'x72': np.float64(0.0003729077270562264), 'x73': np.float64(-0.051940648373555144), 'x74': np.float64(0.04746156250860716), 'x75': np.float64(0.05), 'x76': np.float64(0.074221165707054), 'x77': np.float64(0.14776418438341585), 'x78': np.float64(0.15242898321524867), 'x79': 9, 'x80': np.float64(45.0), 'x81': np.float64(1.9496928723106846), 'x82': np.float64(0.20341527657076233), 'x83': np.float64(0.28537138165826187), 'x84': np.float64(0.2848770275290754), 'x85': np.float64(0.2629067771252505), 'x86': np.float64(0.04936485394061665), 'x87': np.float64(0.10641260540883675), 'x88': np.float64(0.10277339267995997), 'x89': np.float64(0.6771323426340188), 'x90': np.float64(0.7733880786537577), 'x91': np.float64(0.3378696740722167)}
     test._evaluate(ref_vector, output)
     print(output)

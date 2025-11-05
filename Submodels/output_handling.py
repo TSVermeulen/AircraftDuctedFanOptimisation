@@ -690,6 +690,9 @@ class output_processing:
                                       'top Xtr': 0.00000, 'bot Xtr': 0.00000},
                         'Axis Body': {'CTf': 0.00000, 'CTp': 0.00000,
                                       'Xtr': 0.00000}}
+        
+        data = {}
+        grouped_data = {}
 
         # Use regex to extract values from the line.
         for idx, line in enumerate(forces_file_contents):
