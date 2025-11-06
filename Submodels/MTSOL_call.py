@@ -325,9 +325,8 @@ class MTSOL_call:
         """
         Set the operating conditions for the MTSOL analysis.
 
-        Sets the inlet Mach number and critical amplification factor,
-        and sets the Reynolds number equal to zero to ensure an inviscid
-        case is obtained.
+        Sets the inlet Mach number, and sets the Reynolds number equal to zero 
+        to ensure an inviscid case is obtained.
 
         Parameters
         ----------
@@ -343,12 +342,6 @@ class MTSOL_call:
 
         # Write inlet Mach number
         self.StdinWrite(f"M {self.operating_conditions['Inlet_Mach']}")
-
-        # Wait for completion of processing operating condition change
-        self.WaitForCompletion(completion_type=CompletionType.PARAM_CHANGE)
-
-        # Set critical amplification factor to N=9 rather than the default N=7
-        self.StdinWrite(f"N {self.operating_conditions['N_crit']}")
 
         # Wait for completion of processing operating condition change
         self.WaitForCompletion(completion_type=CompletionType.PARAM_CHANGE)
@@ -387,6 +380,12 @@ class MTSOL_call:
 
         # Enter the Modify solution parameters menu
         self.StdinWrite("m")
+
+        # Set critical amplification factor to N=9 rather than the default N=7
+        self.StdinWrite(f"N {self.operating_conditions['N_crit']}")
+
+        # Wait for completion of processing operating condition change
+        self.WaitForCompletion(completion_type=CompletionType.PARAM_CHANGE)
 
         # Set the viscous Reynolds number, calculated using the length self.LREF
         self.StdinWrite(f"R {self.operating_conditions['Inlet_Reynolds']}")
@@ -561,7 +560,7 @@ class MTSOL_call:
                 return ExitFlag.CRASH
 
         # If timer ran out while waiting for completion, assume the solver
-        # has crashed/hung
+        # has hung
         return ExitFlag.NON_CONVERGENCE
 
 
@@ -645,7 +644,7 @@ class MTSOL_call:
                 line = ""
                 continue
 
-            if line.startswith(' Case name:'):
+            if line.startswith('  Total power'):
                 started_reading = True
                 forces_output.append(line)
             elif line.startswith('                    CPK1'):
