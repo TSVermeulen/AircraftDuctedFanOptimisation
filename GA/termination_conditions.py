@@ -52,12 +52,12 @@ def GetTerminationConditions():
         # Set termination conditions for a single objective optimisation
         term_conditions = TerminationCollection(RobustTermination(SingleObjectiveSpaceTermination(tol=1E-5,
                                                                                                   only_feas=True),
-                                                                                                  period=15),  # Change in objective value termination condition
+                                                                                                  period=30),  # Change in objective value termination condition
                                                 get_termination("n_gen", config.MAX_GENERATIONS),  # Maximum generation count termination condition
                                                 RobustTermination(DesignSpaceTermination(tol=1E-3),
-                                                                  period=15),  # Maximum change in design vector termination condition
+                                                                  period=30),  # Maximum change in design vector termination condition
                                                 RobustTermination(ConstraintViolationTermination(tol=1E-8, terminate_when_feasible=False),
-                                                                  period=15)  # Maximum change in constriant violation termination condition
+                                                                  period=30)  # Maximum change in constriant violation termination condition
                                                 )
     else:
         # Set termination conditions for a multiobjective optimisation

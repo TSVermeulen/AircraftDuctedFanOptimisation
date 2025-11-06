@@ -62,6 +62,24 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Define regex patterns for processing of results at module level
+# Define a unified number pattern
+_NUMBER_PATTERN = r"(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[+-]?Infinity)"
+
+# Define regex patterns.
+_RE_CP_ETAP = re.compile(fr"CP\s*=\s*({_NUMBER_PATTERN})\s+EtaP\s*=\s*({_NUMBER_PATTERN})")
+_RE_TOTAL_CT = re.compile(fr"Total force\s+CT\s*=\s*({_NUMBER_PATTERN})")
+_RE_TOP_CTV = re.compile(fr"top CTV\s*=\s*({_NUMBER_PATTERN})")
+_RE_BOT_CTV = re.compile(fr"bot CTv\s*=\s*({_NUMBER_PATTERN})")
+_RE_AXIS_BODY_CTV = re.compile(fr"Axis body\s+CTv\s*=\s*({_NUMBER_PATTERN})")
+_RE_VISC_INV = re.compile(fr"CTv\s*=\s*({_NUMBER_PATTERN})\s+CTi\s*=\s*({_NUMBER_PATTERN})")
+_RE_FRIC_PRESS = re.compile(fr"CTf\s*=\s*({_NUMBER_PATTERN})\s+CTp\s*=\s*({_NUMBER_PATTERN})")
+_RE_ELEMENT_BREAKDOWN = re.compile(fr"CTf\s*=\s*({_NUMBER_PATTERN})\s+CTp\s*=\s*({_NUMBER_PATTERN})"
+                                   fr"\s+top Xtr\s*=\s*({_NUMBER_PATTERN})\s+bot Xtr\s*=\s*({_NUMBER_PATTERN})")
+_RE_AXIS_BODY_BREAKDOWN = re.compile(fr"CTf\s*=\s*({_NUMBER_PATTERN})\s+CTp\s*=\s*({_NUMBER_PATTERN})\s+Xtr\s*=\s*({_NUMBER_PATTERN})")
+_RE_P_RATIO = re.compile(fr"Pexit/Po\s*=\s*({_NUMBER_PATTERN})")
+_RE_WETTED_AREA = re.compile(fr"Total\s*:\s*({_NUMBER_PATTERN})")
+
 
 class output_visualisation:
     """
@@ -660,25 +678,6 @@ class output_processing:
         forces_file_contents = [s for s in forces_file_contents if s.strip()]
         forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
 
-        # Define a unified number pattern
-        number_pattern = r"(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[+-]?Infinity)"
-
-        # Define regex patterns.
-        total_CP_etaP_pattern = re.compile(fr"CP\s*=\s*({number_pattern})\s+EtaP\s*=\s*({number_pattern})")
-        total_CT_pattern = re.compile(fr"Total force\s+CT\s*=\s*({number_pattern})")
-        top_CTV_pattern = re.compile(fr"top CTV\s*=\s*({number_pattern})")
-        bot_CTV_pattern = re.compile(fr"bot CTv\s*=\s*({number_pattern})")
-        axis_body_CTV_pattern = re.compile(fr"Axis body\s+CTv\s*=\s*({number_pattern})")
-        viscous_inviscid_pattern = re.compile(fr"CTv\s*=\s*({number_pattern})\s+CTi\s*=\s*({number_pattern})")
-        friction_pressure_pattern = re.compile(fr"CTf\s*=\s*({number_pattern})\s+CTp\s*=\s*({number_pattern})")
-        element_breakdown_pattern = re.compile(
-            fr"CTf\s*=\s*({number_pattern})\s+CTp\s*=\s*({number_pattern})"
-            fr"\s+top Xtr\s*=\s*({number_pattern})\s+bot Xtr\s*=\s*({number_pattern})"
-        )
-        axis_body_breakdown_pattern = re.compile(fr"CTf\s*=\s*({number_pattern})\s+CTp\s*=\s*({number_pattern})\s+Xtr\s*=\s*({number_pattern})")
-        P_ratio_pattern = re.compile(fr"Pexit/Po\s*=\s*({number_pattern})")
-        wetted_area_pattern = re.compile(fr"Total\s*:\s*({number_pattern})")
-
         # Initialise output dictionaries.
         data = {'Total power CP': 0.00000, 'EtaP': 0.00000,
                 'Total force CT': 0.00000, 'Element 2 top CTV': 0.00000,
@@ -695,77 +694,90 @@ class output_processing:
         grouped_data = {}
 
         # Use regex to extract values from the line.
+        # First uses computationally cheap membership checks to avoid 
+        # unnecessary regex searches.
         for line in forces_file_contents:
             # Moves to the next line when a match is found.
-            match = total_CP_etaP_pattern.search(line)
-            if match is not None:
-                data["Total power CP"] = float(match.group(1))
-                data["EtaP"] = float(match.group(2))
-                continue
+            if 'CP' in line and 'EtaP' in line:
+                match = _RE_CP_ETAP.search(line)
+                if match:
+                    data["Total power CP"] = float(match.group(1))
+                    data["EtaP"] = float(match.group(2))
+                    continue
 
-            match = total_CT_pattern.search(line)
-            if match is not None:
-                data["Total force CT"] = float(match.group(1))
-                continue
+            if 'Total force' in line:
+                match = _RE_TOTAL_CT.search(line)
+                if match:
+                    data["Total force CT"] = float(match.group(1))
+                    continue
 
-            match = top_CTV_pattern.search(line)
-            if match is not None:
-                data["Element 2 top CTV"] = float(match.group(1))
-                continue
+            if 'top CTV' in line:
+                match = _RE_TOP_CTV.search(line)
+                if match:
+                    data["Element 2 top CTV"] = float(match.group(1))
+                    continue
 
-            match = bot_CTV_pattern.search(line)
-            if match is not None:
-                data["Element 2 bot CTV"] = float(match.group(1))
-                continue
+            if 'bot CTv' in line:
+                match = _RE_BOT_CTV.search(line)
+                if match:
+                    data["Element 2 bot CTV"] = float(match.group(1))
+                    continue
 
-            match = axis_body_CTV_pattern.search(line)
-            if match is not None:
-                data["Axis body CTV"] = float(match.group(1))
-                continue
+            if 'Axis body' in line and 'CTv' in line:
+                match = _RE_AXIS_BODY_CTV.search(line)
+                if match:
+                    data["Axis body CTV"] = float(match.group(1))
+                    continue
 
-            match = viscous_inviscid_pattern.search(line)
-            if match is not None:
-                data["Viscous CTv"] = float(match.group(1))
-                data["Inviscid CTi"] = float(match.group(2))
-                continue
+            if 'CTv' in line and 'CTi' in line:
+                match = _RE_VISC_INV.search(line)
+                if match:
+                    data["Viscous CTv"] = float(match.group(1))
+                    data["Inviscid CTi"] = float(match.group(2))
+                    continue
             
-            match = friction_pressure_pattern.search(line)
-            if match is not None:
-                data["Friction CTf"] = float(match.group(1))
-                data["Pressure CTp"] = float(match.group(2))
+            if 'CTf' in line and 'CTp' in line:
+                match = _RE_FRIC_PRESS.search(line)
+                if match:
+                    data["Friction CTf"] = float(match.group(1))
+                    data["Pressure CTp"] = float(match.group(2))
+                    continue
+
+            if 'CTf' in line and 'CTp' in line and 'top Xtr' in line and 'bot Xtr' in line and 'Element  2' in line:
+                match = _RE_ELEMENT_BREAKDOWN.search(line)
+                if match:
+                    CTf = float(match.group(1))
+                    CTp = float(match.group(2))
+                    top_Xtr = float(match.group(3))
+                    bot_Xtr = float(match.group(4))
+                    grouped_data["Element 2"] = {"CTf": CTf,
+                                                "CTp": CTp,
+                                                "top Xtr": top_Xtr,
+                                                "bot Xtr": bot_Xtr}
                 continue
 
-            match = element_breakdown_pattern.search(line)
-            if match is not None:
-                CTf = float(match.group(1))
-                CTp = float(match.group(2))
-                top_Xtr = float(match.group(3))
-                bot_Xtr = float(match.group(4))
-                grouped_data["Element 2"] = {"CTf": CTf,
-                                             "CTp": CTp,
-                                             "top Xtr": top_Xtr,
-                                             "bot Xtr": bot_Xtr}
-                continue
+            if 'CTf' in line and 'CTp' in line and 'Axis body' in line and 'Xtr' in line:
+                match = _RE_AXIS_BODY_BREAKDOWN.search(line)
+                if match:
+                    CTf = float(match.group(1))
+                    CTp = float(match.group(2))
+                    Xtr = float(match.group(3))
+                    grouped_data["Axis Body"] = {"CTf": CTf,
+                                                "CTp": CTp,
+                                                "Xtr": Xtr}
+                    continue
 
-            match = axis_body_breakdown_pattern.search(line)
-            if match is not None:
-                CTf = float(match.group(1))
-                CTp = float(match.group(2))
-                Xtr = float(match.group(3))
-                grouped_data["Axis Body"] = {"CTf": CTf,
-                                             "CTp": CTp,
-                                             "Xtr": Xtr}
-                continue
+            if 'Pexit/Po' in line:
+               match = _RE_P_RATIO.search(line)
+               if match:
+                   data["Pressure Ratio"] = float(match.group(1))
+                   continue
 
-            match = P_ratio_pattern.search(line)
-            if match is not None:
-                data["Pressure Ratio"] = float(match.group(1))
-                continue
-
-            match = wetted_area_pattern.search(line)
-            if match is not None:
-                data["Wetted Area"] = float(match.group(1))
-                continue
+            if 'Total    :' in line:
+               match = _RE_WETTED_AREA.search(line)
+               if match:
+                   data["Wetted Area"] = float(match.group(1))
+                   continue
 
         # Construct the output dictionary
         output = {'data': data, 'grouped_data': grouped_data}

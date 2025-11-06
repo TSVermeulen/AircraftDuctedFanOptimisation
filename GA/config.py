@@ -302,8 +302,7 @@ constraint_IDs = [[InEqConstraintID.EFFICIENCY_LEQ_THEOR_LIMIT, InEqConstraintID
 POPULATION_SIZE = 100
 # Larger initial population for better diversity in case of infeasible designs, then reduced to standard size
 INITIAL_POPULATION_SIZE = 200
-MAX_GENERATIONS = 100
-MAX_EVALUATIONS = 11000
+MAX_GENERATIONS = 200
 
 # Define the initial population parameter spreads, used to construct a biased initial population 
 SPREAD_CONTINUOUS = 0.5  # Relative spread (+/- %) applied to continous variables around their reference values
@@ -316,7 +315,7 @@ MAX_ONE2ONE_ATTEMPTS = 200  # Maximum number of attempts to enforce one-to-one o
 
 # Problem controls
 ARCHIVE_STATEFILES = False  # Bool to control if the statefiles should be archived after each evaluation. 
-PROBLEM_TYPE = "multi_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file. 
+PROBLEM_TYPE = "single_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file. 
 RESERVED_THREADS = 0  # Threads reserved for the operating system and any other programs.
 THREADS_PER_EVALUATION = 1  # Number of threads per MTFLOW evaluation: one for running MTSET/MTSOL/MTFLO and one for polling outputs
 
