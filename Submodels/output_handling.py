@@ -49,8 +49,8 @@ Changelog:
             spaces, which would not be the case for negative values.
 - V1.4:     Revamped output_processing method to enable console-based output
             handling. Updated documentation and type hinting.
-- V1.4.1:   Added ability for GetAllVariables() to return default zeroed output. 
-            Improved performance of method. 
+- V1.4.1:   Added ability for GetAllVariables() to return default zeroed output.
+            Improved performance of method.
 """
 
 # Import standard libraries
@@ -638,8 +638,8 @@ class output_processing:
         Read the forces.analysis_name file and return the variables and
         their values.
 
-        If both the parent property self.forces_path is None and 
-        forces_data=None, an output dictionary with all properties equal to 
+        If both the parent property self.forces_path is None and
+        forces_data=None, an output dictionary with all properties equal to
         zero is used.
 
         Parameters
@@ -673,7 +673,7 @@ class output_processing:
 
         # Only read the forces data from a file if it is not
         # provided as an argument
-        if forces_data is None:            
+        if forces_data is None:
             if self.forces_path is not None:
                 # Short sleep to ensure file has finished reading/writing to
                 time.sleep(0.25)
@@ -690,12 +690,12 @@ class output_processing:
             forces_file_contents = forces_data
 
         # Replace the newline characters with empty strings.
-        # Also remove any empty lines from the list        
+        # Also remove any empty lines from the list
         forces_file_contents = [s for s in forces_file_contents if s.strip()]
         forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
-        
+
         # Use regex to extract values from the line.
-        # First uses computationally cheap membership checks to avoid 
+        # First uses computationally cheap membership checks to avoid
         # unnecessary regex searches.
         for line in forces_file_contents:
             # Moves to the next line when a match is found.
@@ -736,7 +736,7 @@ class output_processing:
                     data["Viscous CTv"] = float(match.group(1))
                     data["Inviscid CTi"] = float(match.group(2))
                     continue
-            
+
             if 'CTf' in line and 'CTp' in line:
                 match = _RE_FRIC_PRESS.search(line)
                 if match:

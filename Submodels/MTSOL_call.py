@@ -77,7 +77,7 @@ Changelog:
           than file-based for significantly improved performance. General
           refactoring for improved performance. Removed NumPy dependency.
 - V2.0.5: Replaced empty output generation with reading of default zeroed output
-          for performance. 
+          for performance.
 """
 
 # Import standard libraries
@@ -325,7 +325,7 @@ class MTSOL_call:
         """
         Set the operating conditions for the MTSOL analysis.
 
-        Sets the inlet Mach number, and sets the Reynolds number equal to zero 
+        Sets the inlet Mach number, and sets the Reynolds number equal to zero
         to ensure an inviscid case is obtained.
 
         Parameters
@@ -625,8 +625,8 @@ class MTSOL_call:
             # First check if the subprocess has terminated to ensure fail fast
             # if this is the case
             if self.process.poll() is not None:
-                # If the solver crashes while generating the outputs, 
-                # wipe the stored results. 
+                # If the solver crashes while generating the outputs,
+                # wipe the stored results.
                 self.forces_data = None
                 return
 
@@ -636,7 +636,7 @@ class MTSOL_call:
                 line = self.output_queue.get(timeout=adaptive_timeout)
             except queue.Empty:
                 if self.process.poll() is not None:
-                    # If the solver crashes while reading the outputs, wipe the 
+                    # If the solver crashes while reading the outputs, wipe the
                     # stored results.
                     self.forces_data = None
                     return
@@ -861,7 +861,14 @@ class MTSOL_call:
         counts = {}
         for output in forces_outputs_dicts:
             _accumulate(sums, counts, output)
-        self.forces_data_dict = _compute_average(sums, counts)
+
+        # Only write the averages if at least one valid output was found
+        if sums:  # Check if we have any data to average
+            self.forces_data_dict = _compute_average(sums, counts)
+        else:
+            # Preserve the existing structure or initialize with zeros
+            if not hasattr(self, 'forces_data_dict') or not self.forces_data_dict:
+                self.forces_data_dict = self.output_processing_class.GetAllVariables()
 
 
     def CheckInviscidOutput(self) -> bool:
@@ -1151,7 +1158,7 @@ class MTSOL_call:
                 self.WriteStateFile()
 
             # Even if we don't want to generate output,
-            # we still need to initialize an empty forces output to ensure 
+            # we still need to initialize an empty forces output to ensure
             # downstream handling does not fail
             self.forces_data_dict = self.output_processing_class.GetAllVariables()
 
