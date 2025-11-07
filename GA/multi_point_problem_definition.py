@@ -32,8 +32,7 @@ https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 2.0
 
 Changelog:

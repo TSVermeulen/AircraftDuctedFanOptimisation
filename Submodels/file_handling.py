@@ -90,8 +90,7 @@ https://github.com/mathLab/BladeX
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 2.3
 Date [dd-mm-yyyy]: 27-10-2025
 

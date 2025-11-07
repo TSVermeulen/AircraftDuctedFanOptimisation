@@ -24,8 +24,7 @@ access to elements and provides error handling for missing keys or indices.
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 2.1
 
 Changelog:

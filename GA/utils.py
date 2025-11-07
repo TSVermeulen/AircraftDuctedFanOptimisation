@@ -8,8 +8,7 @@ compute the required number of points for the appropriate reference directions c
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 1.1
 
 Changelog:
