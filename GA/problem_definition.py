@@ -34,9 +34,8 @@ https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
-Version: 2.0
+Email: T.S.Vermeulen@tudelft.nl
+Version: 2.1
 
 Changelog:
 - V1.0:   Initial implementation.
@@ -462,11 +461,13 @@ class OptimisationProblem(ElementwiseProblem):
 
             try:
                 # Run UDC
-                exit_flag, UDC_outputs = UDC_interface.caller(external_inputs=True,
-                                                              output_type=OutputType.FORCES_ONLY)
+                (exit_flag, 
+                UDC_outputs) = UDC_interface.caller(external_inputs=True,
+                                                    output_type=OutputType.FORCES_ONLY)
 
                 # Overwrite outputs in case of crashes
-                if exit_flag == ExitFlag.CRASH:
+                if exit_flag in (ExitFlag.CRASH, ExitFlag.CHOKING, 
+                                 ExitFlag.NOT_PERFORMED):
                     UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
 
             except Exception as e:

@@ -43,9 +43,8 @@ https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 Versioning
 ------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
-Version: 2.0
+Email: T.S.Vermeulen@tudelft.nl
+Version: 2.0.5
 
 Changelog:
 - V0.0:   File created with empty class as placeholder.
@@ -77,6 +76,8 @@ Changelog:
 - V2.0:   Changed non-convergence handling to use console-based approach rather
           than file-based for significantly improved performance. General
           refactoring for improved performance. Removed NumPy dependency.
+- V2.0.5: Replaced empty output generation with reading of default zeroed output
+          for performance. 
 """
 
 # Import standard libraries
@@ -185,7 +186,6 @@ class MTSOL_call:
         self.SAMPLE_SIZE = 10  # Sample size for non-convergence handling
         self.ITER_LIMIT_INVISC = 50  # Maximum number of inviscid iterations
         self.ITER_LIMIT_VISC = 50  # Maximum number of viscous iterations
-        self.forces_data = None  # Placeholder for forces data from memory
 
         # Define key paths/directories
         self.submodels_path = Path(__file__).resolve().parent
@@ -1151,9 +1151,9 @@ class MTSOL_call:
                 self.WriteStateFile()
 
             # Even if we don't want to generate output,
-            # we still need to create the forces outputs to ensure downstream
-            # handling does not fail
-            self.GenerateSolverOutput(output_type=OutputType.FORCES_ONLY)
+            # we still need to initialize an empty forces output to ensure 
+            # downstream handling does not fail
+            self.forces_data_dict = self.output_processing_class.GetAllVariables()
 
             # Execute inviscid solve
             try:

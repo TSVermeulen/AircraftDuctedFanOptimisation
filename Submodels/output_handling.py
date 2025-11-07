@@ -33,23 +33,24 @@ None
 Versioning
 ------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
-Version: 1.4
+Email: T.S.Vermeulen@tudelft.nl
+Version: 1.4.1
 
 Changelog:
-- V1.0: Initial working version, containing only the plotting capabilities
-        based on the flowfield.analysis_name and boundary_layer.analysis_name
-        files. The output_processing() class is still a placeholder.
-- V1.1: Added the output_processing() class to read the forces.analysis_name
-        file and extract the thrust and power coefficients.
-- V1.2: Updated GetAllVariables() method to remove empty strings to increase
-        robustness and avoid runtime errors in case MTSOL.GetAvgValues() adds
-        additional whitelines.
-- V1.3: Fixed issue with file handling where regex patterns expected mandatory
-        spaces, which would not be the case for negative values.
-- V1.4: Revamped output_processing method to enable console-based output
-        handling. Updated documentation and type hinting.
+- V1.0:     Initial working version, containing only the plotting capabilities
+            based on the flowfield.analysis_name and boundary_layer.analysis_name
+            files. The output_processing() class is still a placeholder.
+- V1.1:     Added the output_processing() class to read the forces.analysis_name
+            file and extract the thrust and power coefficients.
+- V1.2:     Updated GetAllVariables() method to remove empty strings to increase
+            robustness and avoid runtime errors in case MTSOL.GetAvgValues() adds
+            additional whitelines.
+- V1.3:     Fixed issue with file handling where regex patterns expected mandatory
+            spaces, which would not be the case for negative values.
+- V1.4:     Revamped output_processing method to enable console-based output
+            handling. Updated documentation and type hinting.
+- V1.4.1:   Added ability for GetAllVariables() to return default zeroed output. 
+            Improved performance of method. 
 """
 
 # Import standard libraries
@@ -637,6 +638,10 @@ class output_processing:
         Read the forces.analysis_name file and return the variables and
         their values.
 
+        If both the parent property self.forces_path is None and 
+        forces_data=None, an output dictionary with all properties equal to 
+        zero is used.
+
         Parameters
         ----------
         - forces_data : list[str], optional
@@ -653,32 +658,8 @@ class output_processing:
                              for the duct and centerbody
         """
 
-        # Only read the forces data from a file if it is not
-        # provided as an argument
-        if forces_data is None:
-            if self.forces_path is None:
-                raise ValueError("Forces path is not defined. Please provide "
-                                 "forces_data or initialize the class with "
-                                 "an analysis_name.")
-
-            # Short sleep to ensure file has finished reading/writing to
-            time.sleep(0.25)
-
-            try:
-                with open(self.forces_path, 'r') as file:
-                    # Read the file contents
-                    forces_file_contents = file.readlines()
-            except OSError as e:
-                raise OSError(f"Failed to open forces file") from e
-        else:
-            forces_file_contents = forces_data
-
-        # Replace the newline characters with empty strings.
-        # Also remove any empty lines from the list        
-        forces_file_contents = [s for s in forces_file_contents if s.strip()]
-        forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
-
         # Initialise output dictionaries.
+        # This ensures all keys are present even if not found in the file/data.
         data = {'Total power CP': 0.00000, 'EtaP': 0.00000,
                 'Total force CT': 0.00000, 'Element 2 top CTV': 0.00000,
                 'Element 2 bot CTV': 0.00000, 'Axis body CTV': 0.00000,
@@ -689,10 +670,30 @@ class output_processing:
                                       'top Xtr': 0.00000, 'bot Xtr': 0.00000},
                         'Axis Body': {'CTf': 0.00000, 'CTp': 0.00000,
                                       'Xtr': 0.00000}}
-        
-        data = {}
-        grouped_data = {}
 
+        # Only read the forces data from a file if it is not
+        # provided as an argument
+        if forces_data is None:            
+            if self.forces_path is not None:
+                # Short sleep to ensure file has finished reading/writing to
+                time.sleep(0.25)
+
+                try:
+                    with open(self.forces_path, 'r') as file:
+                        # Read the file contents
+                        forces_file_contents = file.readlines()
+                except OSError as e:
+                    raise OSError(f"Failed to open forces file") from e
+            else:
+                return {'data': data, 'grouped_data': grouped_data}
+        else:
+            forces_file_contents = forces_data
+
+        # Replace the newline characters with empty strings.
+        # Also remove any empty lines from the list        
+        forces_file_contents = [s for s in forces_file_contents if s.strip()]
+        forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
+        
         # Use regex to extract values from the line.
         # First uses computationally cheap membership checks to avoid 
         # unnecessary regex searches.
