@@ -77,7 +77,7 @@ Changelog:
           than file-based for significantly improved performance. General
           refactoring for improved performance. Removed NumPy dependency.
 - V2.0.5: Replaced empty output generation with reading of default zeroed output
-          for performance.
+          for performance. Minor QoL improvements throughout. 
 """
 
 # Import standard libraries
@@ -477,30 +477,28 @@ class MTSOL_call:
             Exit flag indicating the status of the solver execution.
         """
 
-        # Define an exponential time_delay helper function to limit CPU usage
-        # while the solver is working
-        def _sleep_time(delta_t: float) -> float:
-            return min(0.1, 0.01 * (2 ** min(10, int(delta_t))))
+        # Define an adaptive timeout to limit CPU usage
+        def adaptive_timeout(delta_t: float) -> float:
+            return min(0.025 * (1 + int((delta_t) // 5)), 0.25)
 
         # Check the console output to ensure that commands are completed
         timer_start = time.monotonic()
         time_out = 45  # seconds
-        while (time.monotonic() - timer_start) <= time_out:
+        dt = 0.  # Initialize delta time
+        while dt <= time_out:
             # First check if the subprocess has terminated to ensure
             # fail fast if this is the case
+            dt = time.monotonic() - timer_start
             if self.process.poll() is not None:
                 return ExitFlag.CRASH
 
             # Read the output from the output thread
             try:
-                adaptive_timeout = min(0.025 * (1 + int((time.monotonic() - \
-                                                         timer_start) // 5)),
-                                       0.25)
-                line = self.output_queue.get(timeout=adaptive_timeout)
+                line = self.output_queue.get(timeout=adaptive_timeout(dt))
             except queue.Empty:
                 if self.process.poll() is not None:
                     return ExitFlag.CRASH
-                time.sleep(0.01)
+                time.sleep(adaptive_timeout(dt))
                 continue
 
             # Once iteration is complete, return the completed exit flag
@@ -532,9 +530,11 @@ class MTSOL_call:
                     target_path = self.submodels_path / \
                         self.FILE_TEMPLATES[output_file].format(self.analysis_name)
                     start_time = time.monotonic()
+                    elapsed_time = 0.
                     while not target_path.exists() and \
-                        (time.monotonic() - start_time) <= max_wait_time:
-                        time.sleep(_sleep_time(time.monotonic() - start_time))
+                        elapsed_time <= max_wait_time:
+                        time.sleep(adaptive_timeout(elapsed_time))
+                        elapsed_time = time.monotonic() - start_time
 
                 return ExitFlag.COMPLETED
 
@@ -691,13 +691,16 @@ class MTSOL_call:
                                    output_file='boundary_layer')
 
 
-    def ExecuteSolver(self) -> ExitFlag:
+    def ExecuteSolver(self, 
+                      iter_limit: int) -> ExitFlag:
         """
         Execute the MTSOL solver for the current analysis.
 
         Parameters
         ----------
-        None
+        - iter_limit : int
+            The maximum number of iterations to perform before declaring
+            non-convergence.
 
         Returns
         -------
@@ -705,16 +708,12 @@ class MTSOL_call:
             Exit flag indicating the status of the solver execution.
         """
 
-        # Ensure an iteration limit is defined before executing the solver
-        if not hasattr(self, "ITER_LIMIT"):
-            raise AttributeError("ITER_LIMIT not set before ExecuteSolver()")
-
         # Initialize iteration count and exit flag
-        self.iter_counter = 0
+        iter_counter = 0
         exit_flag = ExitFlag.NOT_PERFORMED
 
         # Keep converging until the iteration count exceeds the limit
-        while (self.iter_counter < self.ITER_LIMIT) and \
+        while (iter_counter < iter_limit) and \
             (exit_flag not in (ExitFlag.SUCCESS,
                                ExitFlag.CHOKING,
                                ExitFlag.CRASH)):
@@ -727,7 +726,7 @@ class MTSOL_call:
 
             if exit_flag != ExitFlag.CRASH:
                 # Increase the iteration counter for all non-crash states
-                self.iter_counter += self.ITER_STEP_SIZE
+                iter_counter += self.ITER_STEP_SIZE
 
             # Break on terminal states
             if exit_flag in (ExitFlag.SUCCESS, ExitFlag.CHOKING, ExitFlag.CRASH):
@@ -774,14 +773,16 @@ class MTSOL_call:
             # First check if subprocess is still alive. If the solver has
             # crashed, restart MTSOL and break the loop.
             if self.process.poll() is not None:
-                self.GenerateProcess()
-                break
+                self.forces_data_dict = self.output_processing_class.GetAllVariables()
+                return
 
             #Execute iteration
             self.StdinWrite("x1")
 
-            # Wait for current iteration to complete
-            self.WaitForCompletion(completion_type=CompletionType.ITERATION)
+            if self.WaitForCompletion(completion_type=CompletionType.ITERATION) == ExitFlag.CRASH:
+                # If the iteration crashes, set zeroed outputs and return
+                self.forces_data_dict = self.output_processing_class.GetAllVariables()
+                return
 
             # Generate solver outputs
             self.GenerateSolverOutput(output_type=OutputType.FORCES_ONLY)
@@ -894,7 +895,7 @@ class MTSOL_call:
             # Extract the efficiency from the forces output
             eta = self.forces_data_dict["data"]["EtaP"]
             # Return appropriate bool depending on found efficiency
-            return 0 < eta < 1.
+            return 0. < eta < 1.
         except Exception:
             # Treat any exception as non-physical to skip viscous runs but keep
             # any batch analyses alive
@@ -918,7 +919,7 @@ class MTSOL_call:
         try:
             eta = self.forces_data_dict["data"]["EtaP"]
         except Exception:
-            eta = 0
+            eta = 0.
         return eta
 
 
@@ -1033,7 +1034,7 @@ class MTSOL_call:
                 self.SetViscous(surface_ID, mode="enable")
 
             # Execute the solver and get the exit flag and iteration count
-            exit_flag = self.ExecuteSolver()
+            exit_flag = self.ExecuteSolver(self.ITER_LIMIT_VISC)
 
             # If solve did not crash, update the statefile
             if exit_flag != ExitFlag.CRASH:
@@ -1077,8 +1078,7 @@ class MTSOL_call:
         # Execute the viscous solve for the centerbody
         exit_flag_visc_CB = self.TryExecuteViscousSolver(surface_ID=1)
         if exit_flag_visc_CB == ExitFlag.CRASH:
-            # if the viscous CB solve caused a crash, return appropriate
-            # exit flag
+            # if the viscous solve caused a crash, return exit flag
             return exit_flag_visc_CB
 
         # Execute the viscous solve for the outside of the duct
@@ -1164,8 +1164,7 @@ class MTSOL_call:
 
             # Execute inviscid solve
             try:
-                self.ITER_LIMIT = self.ITER_LIMIT_INVISC  # Set iteration limit
-                exit_flag_invisc = self.ExecuteSolver()
+                exit_flag_invisc = self.ExecuteSolver(self.ITER_LIMIT_INVISC)
             except (OSError, BrokenPipeError):
                 # If the inviscid solve crashes, set the exit flag to crash
                 exit_flag_invisc = ExitFlag.CRASH
@@ -1203,14 +1202,11 @@ class MTSOL_call:
                 self.ToggleViscous()  # Set the viscous Reynolds number
                 self.SetViscous([1, 3, 4], mode="enable")
 
-                # Update the iteration limit
-                self.ITER_LIMIT = self.ITER_LIMIT_VISC
-
                 # First we try to run a complete viscous case.
                 # Only if this doesn't work and causes a crash do we try to
                 # converge each surface individually
                 try:
-                    exit_flag_visc = self.ExecuteSolver()
+                    exit_flag_visc = self.ExecuteSolver(self.ITER_LIMIT_VISC)
 
                 except (OSError, BrokenPipeError):
                     # Set the exit flag appropriately if crash occurred

@@ -30,6 +30,7 @@ Changelog:
 - V1.0: Initial implementation.
 - V1.1: Updated termination conditions for much needed improvement in multi-objective optimisation.
 - V1.2: Updated consistency in multi-objective termination conditions. 
+- V1.3: Made sliding window size an input from the config file r.t. constant. 
 """
 
 # Import 3rd party libraries
@@ -51,23 +52,23 @@ def GetTerminationConditions():
         # Set termination conditions for a single objective optimisation
         term_conditions = TerminationCollection(RobustTermination(SingleObjectiveSpaceTermination(tol=1E-5,
                                                                                                   only_feas=True),
-                                                                                                  period=30),  # Change in objective value termination condition
+                                                                                                  period=config.SLIDING_WINDOW_SIZE),  # Change in objective value termination condition
                                                 get_termination("n_gen", config.MAX_GENERATIONS),  # Maximum generation count termination condition
                                                 RobustTermination(DesignSpaceTermination(tol=1E-3),
-                                                                  period=30),  # Maximum change in design vector termination condition
+                                                                  period=config.SLIDING_WINDOW_SIZE),  # Maximum change in design vector termination condition
                                                 RobustTermination(ConstraintViolationTermination(tol=1E-8, terminate_when_feasible=False),
-                                                                  period=30)  # Maximum change in constriant violation termination condition
+                                                                  period=config.SLIDING_WINDOW_SIZE)  # Maximum change in constriant violation termination condition
                                                 )
     else:
         # Set termination conditions for a multiobjective optimisation
         term_conditions = TerminationCollection(RobustTermination(MultiObjectiveSpaceTermination(tol=1E-3,
                                                                                           only_feas=True),
-                                                                                          period=10),  # Change in objective value termination condition
+                                                                                          period=config.SLIDING_WINDOW_SIZE),  # Change in objective value termination condition
                                                 get_termination("n_gen", config.MAX_GENERATIONS),  # Maximum generation count termination condition
                                                 RobustTermination(DesignSpaceTermination(tol=1E-3),
-                                                                  period=10),  # Maximum change in design vector termination condition
+                                                                  period=config.SLIDING_WINDOW_SIZE),  # Maximum change in design vector termination condition
                                                 RobustTermination(ConstraintViolationTermination(tol=1E-8, terminate_when_feasible=False),
-                                                                  period=10)  # Maximum change in constriant violation termination condition
+                                                                  period=config.SLIDING_WINDOW_SIZE)  # Maximum change in constriant violation termination condition
                                                 )
 
 
