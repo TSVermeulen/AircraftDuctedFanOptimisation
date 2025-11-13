@@ -302,7 +302,7 @@ POPULATION_SIZE = 200
 # Larger initial population for better diversity in case of infeasible designs, then reduced to standard size
 INITIAL_POPULATION_SIZE = 400
 MAX_GENERATIONS = 500
-SLIDING_WINDOW_SIZE = 50
+SLIDING_WINDOW_SIZE = 25
 
 # Define the initial population parameter spreads, used to construct a biased initial population 
 SPREAD_CONTINUOUS = 0.5  # Relative spread (+/- %) applied to continous variables around their reference values

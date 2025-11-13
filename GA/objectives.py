@@ -30,7 +30,7 @@ Versioning
 ----------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version: 3.0
+Version: 3.1
 
 Changelog:
 - V1.0: Initial implementation with basic sub-objectives and placeholders for unimplemented methods.
@@ -39,6 +39,7 @@ Changelog:
 - V2.0: Refactored code for better modularity and maintainability. Updated examples and notes.
 - V2.1: Updated efficiency objective for better performance. Improved efficiency of frontal area objective
 - V3.0: Renamed MTFLOW to UDC for consistency with written thesis.
+- V3.1: Removed unneccesary rounding.
 """
 
 # Import standard libraries
@@ -264,7 +265,7 @@ class Objectives:
         objectives = [self.objectivelist[i] for i in objective_IDs]
 
         computed_objectives = np.fromiter(
-            (round(f(analysis_outputs), 5) for f in objectives),
+            (f(analysis_outputs) for f in objectives),
             dtype=float,
             count=len(objectives),
         )
@@ -273,7 +274,7 @@ class Objectives:
             # If the flight phase energy objective is requested, compute it separately
             # and append it to the computed objectives.
             flight_phase_energy = self.FlightPhaseEnergy(analysis_outputs)
-            computed_objectives = np.append(computed_objectives, round(flight_phase_energy, 5))
+            computed_objectives = np.append(computed_objectives, flight_phase_energy)
 
         out["F"] = computed_objectives
 
@@ -319,21 +320,20 @@ class Objectives:
 
         # First compute the outputs which are a function of operating condition
         for i, outputs in enumerate(analysis_outputs):
-            # Rounds the objective values to 5 decimal figures to match the number of sigfigs given by the UDC outputs to avoid rounding errors.
             computed_objectives[i * num_varobjectives : (i + 1) * num_varobjectives] = np.fromiter(
-                (round(obj(outputs), 5) for obj in variable_objectives),
+                (obj(outputs) for obj in variable_objectives),
                 dtype=float,
                 count=num_varobjectives
             )
 
         # Now compute the constant objectives
         for i, objective in enumerate(constant_objectives):
-            computed_objectives[num_varobjectives * num_outputs + i] = round(objective(analysis_outputs[0]), 5)
+            computed_objectives[num_varobjectives * num_outputs + i] = objective(analysis_outputs[0])
 
         # If the flight phase energy objective is requested, compute it separately
         if 4 in objective_IDs:
             flight_phase_energy = self.FlightPhaseEnergy(analysis_outputs)
-            computed_objectives = np.append(computed_objectives, round(flight_phase_energy, 5))
+            computed_objectives = np.append(computed_objectives, flight_phase_energy)
 
         out["F"] = computed_objectives
 

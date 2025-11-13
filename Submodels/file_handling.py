@@ -91,8 +91,8 @@ Versioning
 ----------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version: 2.3
-Date [dd-mm-yyyy]: 27-10-2025
+Version: 2.4
+Date [dd-mm-yyyy]: 13-11-2025
 
 Changelog
 ---------
@@ -130,6 +130,7 @@ Changelog
 - V2.2:   Removed all interpolations in fileHandlingMTFLO in favor of direct 
           geometry manipulation. 
 - V2.3:   Updated formatting and improved clarity of some sections. 
+- V2.4:   Removed unneccesary rounding. 
 """
 
 # Import standard libraries
@@ -280,23 +281,20 @@ class fileHandlingMTSET:
         # as an input
         if X_FRONT is None:
             # Calculate X-domain front boundary
-            X_FRONT = round((min(self.duct_params["Leading Edge Coordinates"][0], 
-                            self.centerbody_params["Leading Edge Coordinates"][0]) - \
-                                 self.X_FRONT_OFFSET * self.ref_length) / self.ref_length,
-                            3)
+            X_FRONT = (min(self.duct_params["Leading Edge Coordinates"][0], 
+                           self.centerbody_params["Leading Edge Coordinates"][0]) - \
+                           self.X_FRONT_OFFSET * self.ref_length) / self.ref_length
         if X_AFT is None:
             # Calculate X-domain aft boundary
-            X_AFT = round((max(self.duct_params["Leading Edge Coordinates"][0] + \
-                               self.duct_params["Chord Length"], 
-                          self.centerbody_params["Leading Edge Coordinates"][0] + \
-                            self.centerbody_params["Chord Length"]) + self.X_AFT_OFFSET * self.ref_length) / self.ref_length,
-                          3)
+            X_AFT = (max(self.duct_params["Leading Edge Coordinates"][0] + \
+                         self.duct_params["Chord Length"], 
+                         self.centerbody_params["Leading Edge Coordinates"][0] + \
+                         self.centerbody_params["Chord Length"]) + self.X_AFT_OFFSET * self.ref_length) / self.ref_length
         if Y_TOP is None:
             # Calculate upper Y-domain boundary
-            Y_TOP = round(max(self.DEFAULT_Y_TOP, 
-                             self.Y_TOP_MULTIPLIER * \
-                                self.duct_params["Leading Edge Coordinates"][1] / self.ref_length),
-                          3)
+            Y_TOP = max(self.DEFAULT_Y_TOP, 
+                        self.Y_TOP_MULTIPLIER * \
+                        self.duct_params["Leading Edge Coordinates"][1] / self.ref_length)
         
         return [X_FRONT, X_AFT, Y_BOT, Y_TOP]
 
@@ -971,9 +969,9 @@ class fileHandlingMTFLO:
 
                 # Add multipliers for each data type to enforce 
                 # non-dimensionalisation. Set additions to zero.
-                multipliers = [round(1 / self.ref_length, 6),  
-                               round(1 / self.ref_length, 6), 
-                               round(1 / self.ref_length, 6), 1]  
+                multipliers = [1 / self.ref_length,  
+                               1 / self.ref_length, 
+                               1 / self.ref_length, 1]  
                 additions = [0, 0, 0, 0]
                 file.write('*' + '    '.join(map(str, multipliers)) + '\n')
                 file.write('+' + '    '.join(map(str, additions)) + '\n')
@@ -1078,10 +1076,10 @@ class fileHandlingMTFLO:
                     # the data [x / Lref, r / Lref, T / Lref, Srel]
                     for j in range(n_points_axial):  
                         # Write data to row
-                        row = np.array([round((x_points[sampling_indices][j]), 5),
-                                        round(r, 5),
-                                        round(circumferential_thickness[sampling_indices][j], 5),
-                                        round(blade_slope[sampling_indices][j], 5),
+                        row = np.array([x_points[sampling_indices][j],
+                                        r,
+                                        circumferential_thickness[sampling_indices][j],
+                                        blade_slope[sampling_indices][j],
                                         ])
                         
                         # Write the row to the file
