@@ -415,11 +415,8 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                                     analysis_name=self.analysis_name,
                                     ref_length=self.Lref).GenerateMTSETInput()
 
-            # Generate the MTFLO input file
-            self.ComputeMTFLOInputs(oper_idx=0)
-
-            # If both input generation routines succeeded, set output_generated
-            output_generated =  True
+            # Generate the MTFLO input file and capture the succes flag
+            output_generated = self.ComputeMTFLOInputs(oper_idx=0)
 
         except ValueError as e:
             # Any value error will be caused by interpolation issues, so
