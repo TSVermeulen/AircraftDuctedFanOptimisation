@@ -279,7 +279,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         # Pre-calculate the common factor to avoid repeated computation
         omega_factor = -2 * np.pi * self.Lref / self.oper["Vinl"]
 
-        # Loop over all stages, and write the correct rotational ratefor
+        # Loop over all stages, and write the correct rotational rate for
         # the current stage.
         for blading_params in self.blade_blading_parameters:
             rps = blading_params["RPS_lst"][idx]
