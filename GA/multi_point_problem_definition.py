@@ -119,7 +119,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
 
 
     def __init__(self,
-                 verbose: bool = True,
+                 verbose: bool = False,
                  **kwargs) -> None:
         """
         Initialization of the OptimizationProblem class.
