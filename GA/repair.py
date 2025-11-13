@@ -24,8 +24,7 @@ This module is intended for use with the PyMoo optimization framework.
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Date [dd-mm-yyyy]: [08-06-2025]
 Version: 1.5
 

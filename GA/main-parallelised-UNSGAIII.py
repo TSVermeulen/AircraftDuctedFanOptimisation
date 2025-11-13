@@ -4,13 +4,15 @@ main-parallelised-UNSGAIII
 
 Description
 -----------
-This module defines the main entry point for running a multi-threaded optimisation problem using the pymoo framework.
-Uses the starmap parallelisation method for flexible parallelisation opportunities.
-Uses the Unified-Nondominated Sorting Genetic Algorithm 3 with the mixed-variable implementation.
+This module defines the main entry point for running a multi-threaded 
+optimisation problem using the pymoo framework. Uses the starmap parallelisation 
+method for flexible parallelisation opportunities. Uses the Unified-Nondominated 
+Sorting Genetic Algorithm 3 with the mixed-variable implementation.
 
 Functionality
 -------------
-- Initializes an optimisation problem using UNSGA-III with mixed-variable support.
+- Initializes an optimisation problem using UNSGA-III with mixed-variable 
+  support.
 - Configures and runs a genetic algorithm (GA) for optimisation.
 - Saves the results to a dill database for future reference.
 
@@ -20,23 +22,25 @@ Examples
 
 Notes
 -----
-This module integrates with the pymoo framework and requires the problem definition and population initialization modules.
-Ensure that all dependencies are installed and properly configured.
+This module integrates with the pymoo framework and requires the problem 
+definition and population initialization modules. Ensure that all dependencies 
+are installed and properly configured.
 
 References
 ----------
-For more details on pymoo and its capabilities, refer to the official documentation:
+For more details on pymoo and its capabilities, refer to the official 
+documentation:
 https://pymoo.org/
 
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
-Version: 1.0
+Email: T.S.Vermeulen@tudelft.nl
+Version: 1.5
 
 Changelog:
 - V1.0: Initial implementation.
+- V1.5: Updated naming convention for output file, revamped upper thread limit
 """
 
 # Import standard libraries
@@ -67,7 +71,8 @@ from repair import RepairIndividuals # type: ignore
 
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support() # Required for Windows compatibility when using multiprocessing
+    # Required for Windows compatibility when using multiprocessing
+    multiprocessing.freeze_support() 
     if os.name == 'nt':
         multiprocessing.set_start_method('spawn', force=True)
 
@@ -77,16 +82,19 @@ if __name__ == "__main__":
     total_threads_avail = max(0, total_threads - config.RESERVED_THREADS)
 
     if total_threads_avail < threads_per_eval:
-        # No point spawning processes that will immediately contend for the same cores
+        # No point spawning processes that will immediately contend 
+        # for the same cores
         n_processes = 0
     else:
         n_processes = total_threads_avail // threads_per_eval
 
-    # Always fall back to at least one serial worker to ensure the script still runs.
+    # Always fall back to at least one serial worker to ensure the script 
+    # still runs.
     n_processes = max(1, n_processes)
 
     # Do not spawn more processes than the GA can effectively use
-    n_processes = min(n_processes, config.POPULATION_SIZE)
+    if n_processes > 61:
+        n_processes = 61
 
     print(f"Spawning {n_processes} worker processes (total threads: {total_threads}, available: {total_threads_avail}, threads per eval: {threads_per_eval})")
     with multiprocessing.Pool(processes=n_processes,
@@ -97,7 +105,8 @@ if __name__ == "__main__":
         runner = StarmapParallelization(pool.starmap)
 
         """ Initialise the optimisation problem and algorithm """
-        # Initialise the optimisation problem by passing the configuration and the starmap interface of the thread_pool
+        # Initialise the optimisation problem by passing the configuration and 
+        # the starmap interface of the thread_pool
         if hasattr(config, "PROBLEM_TYPE") and config.PROBLEM_TYPE == "multi_point":
             from multi_point_problem_definition import MultiPointOptimizationProblem # type: ignore
             problem = MultiPointOptimizationProblem(elementwise_runner=runner,
@@ -140,8 +149,9 @@ if __name__ == "__main__":
         print(f"Best solution found: \nX = {res.X}\nF = {res.F}")
 
         """ Save the results to a dill file for future reference """
-        # This avoids needing to re-run the optimisation if the results are needed later.
-        # The filename is generated using the process ID and current timestamp to ensure uniqueness.
+        # This avoids needing to re-run the optimisation if the results are 
+        # needed later. The filename is generated using the process ID and 
+        # current timestamp to ensure uniqueness.
 
         # First generate the results folder if it does not exist already
         results_dir = Path(__file__).resolve().parent / "results"
@@ -150,7 +160,7 @@ if __name__ == "__main__":
 
         now = datetime.datetime.now()
         timestamp = f"{now:%y%m%d%H%M%S%f}"
-        output_name = results_dir / f"res_pop{config.POPULATION_SIZE}_eval{config.MAX_EVALUATIONS}_{timestamp}.dill"
+        output_name = results_dir / f"res_pop{config.POPULATION_SIZE}_eval{config.MAX_GENERATIONS}_{timestamp}.dill"
         try:
             with open(output_name, 'wb') as f:
                 dill.dump(res, f)

@@ -50,8 +50,7 @@ dated March 2004
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 1.3.1
 Date [dd-mm-yyyy]: 24-06-2025
 

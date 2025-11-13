@@ -43,9 +43,8 @@ https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 Versioning
 ------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
-Version: 2.0
+Email: T.S.Vermeulen@tudelft.nl
+Version: 2.0.5
 
 Changelog:
 - V0.0:   File created with empty class as placeholder.
@@ -77,6 +76,8 @@ Changelog:
 - V2.0:   Changed non-convergence handling to use console-based approach rather
           than file-based for significantly improved performance. General
           refactoring for improved performance. Removed NumPy dependency.
+- V2.0.5: Replaced empty output generation with reading of default zeroed output
+          for performance. Minor QoL improvements throughout. 
 """
 
 # Import standard libraries
@@ -185,7 +186,6 @@ class MTSOL_call:
         self.SAMPLE_SIZE = 10  # Sample size for non-convergence handling
         self.ITER_LIMIT_INVISC = 50  # Maximum number of inviscid iterations
         self.ITER_LIMIT_VISC = 50  # Maximum number of viscous iterations
-        self.forces_data = None  # Placeholder for forces data from memory
 
         # Define key paths/directories
         self.submodels_path = Path(__file__).resolve().parent
@@ -211,7 +211,8 @@ class MTSOL_call:
     def StdinWrite(self,
                    command: str) -> None:
         """
-        Simple function to write commands to the subprocess stdin in order to pass commands to MTSOL
+        Simple function to write commands to the subprocess stdin in order to
+        pass commands to MTSOL
 
         Parameters
         ----------
@@ -324,9 +325,8 @@ class MTSOL_call:
         """
         Set the operating conditions for the MTSOL analysis.
 
-        Sets the inlet Mach number and critical amplification factor,
-        and sets the Reynolds number equal to zero to ensure an inviscid
-        case is obtained.
+        Sets the inlet Mach number, and sets the Reynolds number equal to zero
+        to ensure an inviscid case is obtained.
 
         Parameters
         ----------
@@ -342,12 +342,6 @@ class MTSOL_call:
 
         # Write inlet Mach number
         self.StdinWrite(f"M {self.operating_conditions['Inlet_Mach']}")
-
-        # Wait for completion of processing operating condition change
-        self.WaitForCompletion(completion_type=CompletionType.PARAM_CHANGE)
-
-        # Set critical amplification factor to N=9 rather than the default N=7
-        self.StdinWrite(f"N {self.operating_conditions['N_crit']}")
 
         # Wait for completion of processing operating condition change
         self.WaitForCompletion(completion_type=CompletionType.PARAM_CHANGE)
@@ -386,6 +380,12 @@ class MTSOL_call:
 
         # Enter the Modify solution parameters menu
         self.StdinWrite("m")
+
+        # Set critical amplification factor to N=9 rather than the default N=7
+        self.StdinWrite(f"N {self.operating_conditions['N_crit']}")
+
+        # Wait for completion of processing operating condition change
+        self.WaitForCompletion(completion_type=CompletionType.PARAM_CHANGE)
 
         # Set the viscous Reynolds number, calculated using the length self.LREF
         self.StdinWrite(f"R {self.operating_conditions['Inlet_Reynolds']}")
@@ -477,28 +477,28 @@ class MTSOL_call:
             Exit flag indicating the status of the solver execution.
         """
 
-        # Define an exponential time_delay helper function to limit CPU usage
-        # while the solver is working
-        def _sleep_time(delta_t: float) -> float:
-            return min(0.1, 0.01 * (2 ** min(10, int(delta_t))))
+        # Define an adaptive timeout to limit CPU usage
+        def adaptive_timeout(delta_t: float) -> float:
+            return min(0.025 * (1 + int((delta_t) // 5)), 0.25)
 
         # Check the console output to ensure that commands are completed
         timer_start = time.monotonic()
         time_out = 45  # seconds
-        while (time.monotonic() - timer_start) <= time_out:
+        dt = 0.  # Initialize delta time
+        while dt <= time_out:
             # First check if the subprocess has terminated to ensure
             # fail fast if this is the case
+            dt = time.monotonic() - timer_start
             if self.process.poll() is not None:
                 return ExitFlag.CRASH
 
             # Read the output from the output thread
             try:
-                adaptive_timeout = min(0.025 * (1 + int((time.monotonic() - timer_start) // 5)), 0.25)
-                line = self.output_queue.get(timeout=adaptive_timeout)
+                line = self.output_queue.get(timeout=adaptive_timeout(dt))
             except queue.Empty:
                 if self.process.poll() is not None:
                     return ExitFlag.CRASH
-                time.sleep(0.01)
+                time.sleep(adaptive_timeout(dt))
                 continue
 
             # Once iteration is complete, return the completed exit flag
@@ -530,9 +530,11 @@ class MTSOL_call:
                     target_path = self.submodels_path / \
                         self.FILE_TEMPLATES[output_file].format(self.analysis_name)
                     start_time = time.monotonic()
+                    elapsed_time = 0.
                     while not target_path.exists() and \
-                        (time.monotonic() - start_time) <= max_wait_time:
-                        time.sleep(_sleep_time(time.monotonic() - start_time))
+                        elapsed_time <= max_wait_time:
+                        time.sleep(adaptive_timeout(elapsed_time))
+                        elapsed_time = time.monotonic() - start_time
 
                 return ExitFlag.COMPLETED
 
@@ -558,7 +560,7 @@ class MTSOL_call:
                 return ExitFlag.CRASH
 
         # If timer ran out while waiting for completion, assume the solver
-        # has crashed/hung
+        # has hung
         return ExitFlag.NON_CONVERGENCE
 
 
@@ -585,15 +587,18 @@ class MTSOL_call:
                              output_type: OutputType = OutputType.FORCES_ONLY) -> None:
         """
         Generate all outputs for the current analysis.
-        If a viscous analysis was performed, the boundary layer data is also dumped to the corresponding file.
-        Requires that MTSOL is in the main menu when starting this function.
+        If a viscous analysis was performed, the boundary layer data is also
+        dumped to the corresponding file. Requires that MTSOL is in the main
+        menu when starting this function.
 
         Parameters
         ----------
         - output_type : OutputType
             An enum to determine which outputs need to be generated:
-                - OutputType.FORCES_ONLY: Generate only the forces data. (default)
-                - OutputType.ALL_FILES: Generate all outputs (forces, flowfield, boundary_layer)
+                - OutputType.FORCES_ONLY: Generate only the forces data.
+                                          (default)
+                - OutputType.ALL_FILES: Generate all outputs (forces, flowfield,
+                                        boundary_layer)
 
         Returns
         -------
@@ -620,6 +625,9 @@ class MTSOL_call:
             # First check if the subprocess has terminated to ensure fail fast
             # if this is the case
             if self.process.poll() is not None:
+                # If the solver crashes while generating the outputs,
+                # wipe the stored results.
+                self.forces_data = None
                 return
 
             # Read the output from the output thread
@@ -628,12 +636,15 @@ class MTSOL_call:
                 line = self.output_queue.get(timeout=adaptive_timeout)
             except queue.Empty:
                 if self.process.poll() is not None:
+                    # If the solver crashes while reading the outputs, wipe the
+                    # stored results.
+                    self.forces_data = None
                     return
                 time.sleep(0.01)
                 line = ""
                 continue
 
-            if line.startswith(' Case name:'):
+            if line.startswith('  Total power'):
                 started_reading = True
                 forces_output.append(line)
             elif line.startswith('                    CPK1'):
@@ -646,8 +657,7 @@ class MTSOL_call:
                 forces_output.append(line)
 
         self.forces_data = forces_output
-        self.forces_data_dict = self.output_processing_class.GetAllVariables(output_type=0,
-                                                                             forces_data=forces_output)
+        self.forces_data_dict = self.output_processing_class.GetAllVariables(forces_data=forces_output)
 
         # Handle the case where all outputs are to be handled
         if output_type == OutputType.ALL_FILES:
@@ -681,13 +691,16 @@ class MTSOL_call:
                                    output_file='boundary_layer')
 
 
-    def ExecuteSolver(self) -> ExitFlag:
+    def ExecuteSolver(self, 
+                      iter_limit: int) -> ExitFlag:
         """
         Execute the MTSOL solver for the current analysis.
 
         Parameters
         ----------
-        None
+        - iter_limit : int
+            The maximum number of iterations to perform before declaring
+            non-convergence.
 
         Returns
         -------
@@ -695,16 +708,12 @@ class MTSOL_call:
             Exit flag indicating the status of the solver execution.
         """
 
-        # Ensure an iteration limit is defined before executing the solver
-        if not hasattr(self, "ITER_LIMIT"):
-            raise AttributeError("ITER_LIMIT not set before ExecuteSolver()")
-
         # Initialize iteration count and exit flag
-        self.iter_counter = 0
+        iter_counter = 0
         exit_flag = ExitFlag.NOT_PERFORMED
 
         # Keep converging until the iteration count exceeds the limit
-        while (self.iter_counter < self.ITER_LIMIT) and \
+        while (iter_counter < iter_limit) and \
             (exit_flag not in (ExitFlag.SUCCESS,
                                ExitFlag.CHOKING,
                                ExitFlag.CRASH)):
@@ -717,7 +726,7 @@ class MTSOL_call:
 
             if exit_flag != ExitFlag.CRASH:
                 # Increase the iteration counter for all non-crash states
-                self.iter_counter += self.ITER_STEP_SIZE
+                iter_counter += self.ITER_STEP_SIZE
 
             # Break on terminal states
             if exit_flag in (ExitFlag.SUCCESS, ExitFlag.CHOKING, ExitFlag.CRASH):
@@ -764,25 +773,27 @@ class MTSOL_call:
             # First check if subprocess is still alive. If the solver has
             # crashed, restart MTSOL and break the loop.
             if self.process.poll() is not None:
-                self.GenerateProcess()
-                break
+                self.forces_data_dict = self.output_processing_class.GetAllVariables()
+                return
 
             #Execute iteration
             self.StdinWrite("x1")
 
-            # Wait for current iteration to complete
-            self.WaitForCompletion(completion_type=CompletionType.ITERATION)
+            if self.WaitForCompletion(completion_type=CompletionType.ITERATION) == ExitFlag.CRASH:
+                # If the iteration crashes, set zeroed outputs and return
+                self.forces_data_dict = self.output_processing_class.GetAllVariables()
+                return
 
             # Generate solver outputs
             self.GenerateSolverOutput(output_type=OutputType.FORCES_ONLY)
-            forces_outputs.append(self.forces_data)
+            if self.forces_data is not None:
+                forces_outputs.append(self.forces_data)
 
             # Increase iteration counter by step size
             iter_counter += 1
 
         # Convert all output lists into dictionaries
-        forces_outputs_dicts = [self.output_processing_class.GetAllVariables(output_type=0,
-                                                                             forces_data=output)
+        forces_outputs_dicts = [self.output_processing_class.GetAllVariables(forces_data=output)
                                 for output in forces_outputs]
 
         # Define helper functions to compute average from list of dictionaries
@@ -790,7 +801,8 @@ class MTSOL_call:
                         count_dict: dict[str, Any],
                         input_dict: dict[str, Any]) -> None:
             """
-            Populate a sum and count dictionary from the input dictionary recursively for averaging.
+            Populate a sum and count dictionary from the input dictionary
+            recursively for averaging.
 
             Parameters
             ----------
@@ -844,15 +856,20 @@ class MTSOL_call:
                     avg_dict[key] = sum_dict[key] / count_dict[key]
             return avg_dict
 
-        # Now compute the average dictionary
+        # Now compute the average dictionary and write the averaged values to
+        # the forces dictionary attribute
         sums = {}
         counts = {}
         for output in forces_outputs_dicts:
             _accumulate(sums, counts, output)
-        averages = _compute_average(sums, counts)
 
-        # Write the averaged values to the forces dictionary attribute
-        self.forces_data_dict = averages
+        # Only write the averages if at least one valid output was found
+        if sums:  # Check if we have any data to average
+            self.forces_data_dict = _compute_average(sums, counts)
+        else:
+            # Preserve the existing structure or initialize with zeros
+            if not hasattr(self, 'forces_data_dict') or not self.forces_data_dict:
+                self.forces_data_dict = self.output_processing_class.GetAllVariables()
 
 
     def CheckInviscidOutput(self) -> bool:
@@ -876,9 +893,9 @@ class MTSOL_call:
 
         try:
             # Extract the efficiency from the forces output
-            eta = self.GetEtaOutput()
+            eta = self.forces_data_dict["data"]["EtaP"]
             # Return appropriate bool depending on found efficiency
-            return 0 < eta < 1.
+            return 0. < eta < 1.
         except Exception:
             # Treat any exception as non-physical to skip viscous runs but keep
             # any batch analyses alive
@@ -900,18 +917,17 @@ class MTSOL_call:
         """
 
         try:
-            output = self.output_processing_class.GetAllVariables(output_type=0,
-                                                                  forces_data=self.forces_data)
-            eta = output["data"]["EtaP"]
+            eta = self.forces_data_dict["data"]["EtaP"]
         except Exception:
-            eta = 0
+            eta = 0.
         return eta
 
 
     def HandleExitFlag(self,
                        exit_flag: ExitFlag,
                        handle_type : str,
-                       update_statefile : bool = False,
+                       generate_output : bool = False,
+                       output_type : OutputType = OutputType.FORCES_ONLY,
                        ) -> None:
         """
         Handle the exit flag of the solver execution.
@@ -924,8 +940,12 @@ class MTSOL_call:
             A string indicating the type of solve:
                 - 'Inviscid'
                 - 'Viscous'
-        - update_statefile: bool, optional
-            A control boolean to determine if the state file should be updated.
+        - generate_output: bool, optional
+            A control boolean to determine if the outputs should be generated.
+        - output_type: OutputType, optional
+            An enum to determine which outputs to generate.
+            OutputType.FORCES_ONLY generates only the forces data,
+            while OutputType.ALL_FILES generates all files.
 
         Returns
         -------
@@ -934,11 +954,10 @@ class MTSOL_call:
 
         #If solver does not converge, call the non-convergence handler function.
         if exit_flag == ExitFlag.NON_CONVERGENCE:
-            if update_statefile:
-                self.WriteStateFile()
             if handle_type == 'Inviscid':
                 return
-            else:
+            if generate_output:
+                self.WriteStateFile()
                 self.HandleNonConvergence()
 
         # Else if the solver has crashed, restart MTSOL from the last saved
@@ -951,11 +970,15 @@ class MTSOL_call:
                 self.GenerateProcess()
                 return
 
-        # Else if the solver has finished, update the statefile.
+        # Else if the solver has finished, update the statefile, and generate
+        # the outputs
         elif exit_flag in (ExitFlag.COMPLETED, ExitFlag.SUCCESS,
                            ExitFlag.NOT_PERFORMED, ExitFlag.CHOKING):
-            if update_statefile:
-                self.WriteStateFile()
+            self.WriteStateFile()
+            if generate_output:
+                self.GenerateSolverOutput(output_type=output_type)
+            else:
+                self.GenerateSolverOutput(output_type=OutputType.FORCES_ONLY)
             return
 
         else:
@@ -1011,7 +1034,7 @@ class MTSOL_call:
                 self.SetViscous(surface_ID, mode="enable")
 
             # Execute the solver and get the exit flag and iteration count
-            exit_flag = self.ExecuteSolver()
+            exit_flag = self.ExecuteSolver(self.ITER_LIMIT_VISC)
 
             # If solve did not crash, update the statefile
             if exit_flag != ExitFlag.CRASH:
@@ -1055,8 +1078,7 @@ class MTSOL_call:
         # Execute the viscous solve for the centerbody
         exit_flag_visc_CB = self.TryExecuteViscousSolver(surface_ID=1)
         if exit_flag_visc_CB == ExitFlag.CRASH:
-            # if the viscous CB solve caused a crash, return appropriate
-            # exit flag
+            # if the viscous solve caused a crash, return exit flag
             return exit_flag_visc_CB
 
         # Execute the viscous solve for the outside of the duct
@@ -1136,36 +1158,30 @@ class MTSOL_call:
                 self.WriteStateFile()
 
             # Even if we don't want to generate output,
-            # we still need to create the forces outputs to ensure downstream
-            # handling does not fail
-            self.GenerateSolverOutput(output_type=OutputType.FORCES_ONLY)
+            # we still need to initialize an empty forces output to ensure
+            # downstream handling does not fail
+            self.forces_data_dict = self.output_processing_class.GetAllVariables()
 
             # Execute inviscid solve
             try:
-                self.ITER_LIMIT = self.ITER_LIMIT_INVISC  # Set iteration limit
-                exit_flag_invisc = self.ExecuteSolver()
+                exit_flag_invisc = self.ExecuteSolver(self.ITER_LIMIT_INVISC)
             except (OSError, BrokenPipeError):
                 # If the inviscid solve crashes, set the exit flag to crash
                 exit_flag_invisc = ExitFlag.CRASH
             finally:
                 # Handle solver based on exit flag
+                # handle_type='Inviscid' bypasses the non-convergence loop.
+                # This is intentional for a viscous run, as it speeds up the
+                # solution process substantially. However, for an inviscid-only
+                # run, we do need to perform this loop.
+                exit_flag_handler = 'Inviscid' if run_viscous else 'Viscous'
+
                 self.HandleExitFlag(exit_flag_invisc,
-                                    handle_type='Inviscid',
-                                    update_statefile=generate_output)
+                                    handle_type=exit_flag_handler,
+                                    generate_output=generate_output,
+                                    output_type=output_type)
                 total_exit_flag = exit_flag_invisc
 
-                if generate_output:
-                    # Generate the requested solver outputs based on output_type
-                    self.GenerateSolverOutput(output_type=output_type)
-
-            if not run_viscous:
-                # handle_type="inviscid" bypasses the non-convergence loop.
-                # This is intentional for a viscous run,
-                # as it speeds up the solution process substantially.
-                # However, for an inviscid run, we do need to perform this loop.
-                self.HandleExitFlag(total_exit_flag,
-                                    handle_type="Viscous",
-                                    update_statefile=generate_output)
 
             # Only run a viscous solve if required by the user
             # Theoretically there is the chance a viscous run may be started on
@@ -1186,14 +1202,11 @@ class MTSOL_call:
                 self.ToggleViscous()  # Set the viscous Reynolds number
                 self.SetViscous([1, 3, 4], mode="enable")
 
-                # Update the iteration limit
-                self.ITER_LIMIT = self.ITER_LIMIT_VISC
-
                 # First we try to run a complete viscous case.
                 # Only if this doesn't work and causes a crash do we try to
                 # converge each surface individually
                 try:
-                    exit_flag_visc = self.ExecuteSolver()
+                    exit_flag_visc = self.ExecuteSolver(self.ITER_LIMIT_VISC)
 
                 except (OSError, BrokenPipeError):
                     # Set the exit flag appropriately if crash occurred
@@ -1209,12 +1222,8 @@ class MTSOL_call:
                                           key=lambda flag: flag.value)
                     self.HandleExitFlag(total_exit_flag,
                                         handle_type='Viscous',
-                                        update_statefile=generate_output)
-
-
-                    if generate_output:
-                        # Generate the requested solver outputs
-                        self.GenerateSolverOutput(output_type=output_type)
+                                        generate_output=generate_output,
+                                        output_type=output_type)
 
                     # Check feasibility of the viscous efficiency. If not, set
                     # the exit flag to crash to enable appropriate downstream
@@ -1253,7 +1262,7 @@ class MTSOL_call:
 if __name__ == "__main__":
     import time
 
-    analysisName = "1024205412_7880_135ad8f9117a"
+    analysisName = "1031205207_4620_1a331d5f4aed"
     oper = {"Inlet_Mach": 0.125,
             "Inlet_Reynolds": 5112279,
             "N_crit": 9,

@@ -29,8 +29,7 @@ The constraints are structured to be compatible with PyMoo's constraint handling
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 1.7
 
 Changelog:

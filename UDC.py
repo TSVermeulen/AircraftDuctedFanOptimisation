@@ -71,8 +71,7 @@ https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 2.0
 
 Changelog:
@@ -338,7 +337,6 @@ class UDC:
 
                 if grid_checked:
                     exit_flag = ExitFlag.SUCCESS
-                    forces_data = {}  # Empty dict to ensure forces_data exists
                     break
 
                 exit_flag, forces_data  = MTSOL_call(operating_conditions={"Inlet_Mach": 0.15,

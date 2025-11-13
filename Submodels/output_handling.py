@@ -33,23 +33,24 @@ None
 Versioning
 ------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
-Version: 1.4
+Email: T.S.Vermeulen@tudelft.nl
+Version: 1.4.1
 
 Changelog:
-- V1.0: Initial working version, containing only the plotting capabilities
-        based on the flowfield.analysis_name and boundary_layer.analysis_name
-        files. The output_processing() class is still a placeholder.
-- V1.1: Added the output_processing() class to read the forces.analysis_name
-        file and extract the thrust and power coefficients.
-- V1.2: Updated GetAllVariables() method to remove empty strings to increase
-        robustness and avoid runtime errors in case MTSOL.GetAvgValues() adds
-        additional whitelines.
-- V1.3: Fixed issue with file handling where regex patterns expected mandatory
-        spaces, which would not be the case for negative values.
-- V1.4: Revamped output_processing method to enable console-based output
-        handling. Updated documentation and type hinting.
+- V1.0:     Initial working version, containing only the plotting capabilities
+            based on the flowfield.analysis_name and boundary_layer.analysis_name
+            files. The output_processing() class is still a placeholder.
+- V1.1:     Added the output_processing() class to read the forces.analysis_name
+            file and extract the thrust and power coefficients.
+- V1.2:     Updated GetAllVariables() method to remove empty strings to increase
+            robustness and avoid runtime errors in case MTSOL.GetAvgValues() adds
+            additional whitelines.
+- V1.3:     Fixed issue with file handling where regex patterns expected mandatory
+            spaces, which would not be the case for negative values.
+- V1.4:     Revamped output_processing method to enable console-based output
+            handling. Updated documentation and type hinting.
+- V1.4.1:   Added ability for GetAllVariables() to return default zeroed output.
+            Improved performance of method.
 """
 
 # Import standard libraries
@@ -61,6 +62,24 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+
+# Define regex patterns for processing of results at module level
+# Define a unified number pattern
+_NUMBER_PATTERN = r"(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[+-]?Infinity)"
+
+# Define regex patterns.
+_RE_CP_ETAP = re.compile(fr"CP\s*=\s*({_NUMBER_PATTERN})\s+EtaP\s*=\s*({_NUMBER_PATTERN})")
+_RE_TOTAL_CT = re.compile(fr"Total force\s+CT\s*=\s*({_NUMBER_PATTERN})")
+_RE_TOP_CTV = re.compile(fr"top CTV\s*=\s*({_NUMBER_PATTERN})")
+_RE_BOT_CTV = re.compile(fr"bot CTv\s*=\s*({_NUMBER_PATTERN})")
+_RE_AXIS_BODY_CTV = re.compile(fr"Axis body\s+CTv\s*=\s*({_NUMBER_PATTERN})")
+_RE_VISC_INV = re.compile(fr"CTv\s*=\s*({_NUMBER_PATTERN})\s+CTi\s*=\s*({_NUMBER_PATTERN})")
+_RE_FRIC_PRESS = re.compile(fr"CTf\s*=\s*({_NUMBER_PATTERN})\s+CTp\s*=\s*({_NUMBER_PATTERN})")
+_RE_ELEMENT_BREAKDOWN = re.compile(fr"CTf\s*=\s*({_NUMBER_PATTERN})\s+CTp\s*=\s*({_NUMBER_PATTERN})"
+                                   fr"\s+top Xtr\s*=\s*({_NUMBER_PATTERN})\s+bot Xtr\s*=\s*({_NUMBER_PATTERN})")
+_RE_AXIS_BODY_BREAKDOWN = re.compile(fr"CTf\s*=\s*({_NUMBER_PATTERN})\s+CTp\s*=\s*({_NUMBER_PATTERN})\s+Xtr\s*=\s*({_NUMBER_PATTERN})")
+_RE_P_RATIO = re.compile(fr"Pexit/Po\s*=\s*({_NUMBER_PATTERN})")
+_RE_WETTED_AREA = re.compile(fr"Total\s*:\s*({_NUMBER_PATTERN})")
 
 
 class output_visualisation:
@@ -613,20 +632,18 @@ class output_processing:
 
 
     def GetAllVariables(self,
-                        output_type: int = 0,
                         forces_data: list[str] | None = None,
                         ) -> dict[str, float | dict[str, float]]:
         """
         Read the forces.analysis_name file and return the variables and
         their values.
 
+        If both the parent property self.forces_path is None and
+        forces_data=None, an output dictionary with all properties equal to
+        zero is used.
+
         Parameters
         ----------
-        - output_type : int
-            An integer indicating the type of output desired from the method:
-            - '0' : All outputs
-            - '1' : General Output data only
-            - '2' : Element output data
         - forces_data : list[str], optional
             A list of strings containing the lines of the forces data read from
             the console output. If None, the method will read from the
@@ -641,209 +658,132 @@ class output_processing:
                              for the duct and centerbody
         """
 
+        # Initialise output dictionaries.
+        # This ensures all keys are present even if not found in the file/data.
+        data = {'Total power CP': 0.00000, 'EtaP': 0.00000,
+                'Total force CT': 0.00000, 'Element 2 top CTV': 0.00000,
+                'Element 2 bot CTV': 0.00000, 'Axis body CTV': 0.00000,
+                'Viscous CTv': 0.00000, 'Inviscid CTi': 0.00000,
+                'Friction CTf': 0.00000, 'Pressure CTp': 0.00000,
+                'Pressure Ratio': 0.00000, 'Wetted Area': 0.00000}
+        grouped_data = {'Element 2': {'CTf': 0.00000, 'CTp': 0.00000,
+                                      'top Xtr': 0.00000, 'bot Xtr': 0.00000},
+                        'Axis Body': {'CTf': 0.00000, 'CTp': 0.00000,
+                                      'Xtr': 0.00000}}
+
         # Only read the forces data from a file if it is not
         # provided as an argument
         if forces_data is None:
-            if self.forces_path is None:
-                raise ValueError("Forces path is not defined. Please provide "
-                                 "forces_data or initialize the class with "
-                                 "an analysis_name.")
-            
-            # Short sleep to ensure file has finished reading/writing to
-            time.sleep(0.25)
+            if self.forces_path is not None:
+                # Short sleep to ensure file has finished reading/writing to
+                time.sleep(0.25)
 
-            try:
-                with open(self.forces_path, 'r') as file:
-                    # Read the file contents
-                    forces_file_contents = file.readlines()
-            except OSError as e:
-                raise OSError(f"Failed to open forces file") from e
+                try:
+                    with open(self.forces_path, 'r') as file:
+                        # Read the file contents
+                        forces_file_contents = file.readlines()
+                except OSError as e:
+                    raise OSError(f"Failed to open forces file") from e
+            else:
+                return {'data': data, 'grouped_data': grouped_data}
         else:
             forces_file_contents = forces_data
 
         # Replace the newline characters with empty strings.
         # Also remove any empty lines from the list
-        forces_file_contents = [s.replace('\n', '').strip()
-                                for s in forces_file_contents if s.strip()]
-
-        # Define a unified number pattern
-        number_pattern = r"(?:[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[+-]?Infinity)"
-
-        # Define regex patterns.
-        total_CP_etaP_pattern = fr"CP\s*=\s*({number_pattern})\s+EtaP\s*=\s*({number_pattern})"
-        total_CT_pattern = fr"Total force\s+CT\s*=\s*({number_pattern})"
-        top_CTV_pattern = fr"top CTV\s*=\s*({number_pattern})"
-        bot_CTV_pattern = fr"bot CTv\s*=\s*({number_pattern})"
-        axis_body_CTV_pattern = fr"Axis body\s+CTv\s*=\s*({number_pattern})"
-        viscous_inviscid_pattern = fr"CTv\s*=\s*({number_pattern})\s+CTi\s*=\s*({number_pattern})"
-        friction_pressure_pattern = fr"CTf\s*=\s*({number_pattern})\s+CTp\s*=\s*({number_pattern})"
-        element_breakdown_pattern = (
-            fr"CTf\s*=\s*({number_pattern})\s+CTp\s*=\s*({number_pattern})"
-            fr"\s+top Xtr\s*=\s*({number_pattern})\s+bot Xtr\s*=\s*({number_pattern})"
-        )
-        axis_body_breakdown_pattern = fr"CTf\s*=\s*({number_pattern})\s+CTp\s*=\s*({number_pattern})\s+Xtr\s*=\s*({number_pattern})"
-        P_ratio_pattern = fr"Pexit/Po\s*=\s*({number_pattern})"
-        wetted_area_pattern = fr"Total\s*:\s*({number_pattern})"
-
-        # Initialise output dictionaries.
-        data = {}
-        grouped_data = {}
+        forces_file_contents = [s for s in forces_file_contents if s.strip()]
+        forces_file_contents = [s.replace('\n', '') for s in forces_file_contents]
 
         # Use regex to extract values from the line.
-        # Only search for the data if desired based on the output_type
-        # integer provided.
-        for idx, line in enumerate(forces_file_contents):
+        # First uses computationally cheap membership checks to avoid
+        # unnecessary regex searches.
+        for line in forces_file_contents:
+            # Moves to the next line when a match is found.
+            if 'CP' in line and 'EtaP' in line:
+                match = _RE_CP_ETAP.search(line)
+                if match:
+                    data["Total power CP"] = float(match.group(1))
+                    data["EtaP"] = float(match.group(2))
+                    continue
 
-            if idx == 0:
-                continue
+            if 'Total force' in line:
+                match = _RE_TOTAL_CT.search(line)
+                if match:
+                    data["Total force CT"] = float(match.group(1))
+                    continue
 
-            elif idx == 3 and output_type in (0, 1, 3):
-                match = re.search(total_CP_etaP_pattern, line)
-                if match is not None:
-                    data["Total power CP"] = match.group(1)
-                    data["EtaP"] = match.group(2)
-                else:
-                    data["Total power CP"] = 0
-                    data["EtaP"] = 0
+            if 'top CTV' in line:
+                match = _RE_TOP_CTV.search(line)
+                if match:
+                    data["Element 2 top CTV"] = float(match.group(1))
+                    continue
 
-            elif idx == 4 and output_type in (0, 1, 3):
-                match = re.search(total_CT_pattern, line)
-                if match is not None:
-                    data["Total force CT"] = match.group(1)
-                else:
-                    data["Total force CT"] = 0
+            if 'bot CTv' in line:
+                match = _RE_BOT_CTV.search(line)
+                if match:
+                    data["Element 2 bot CTV"] = float(match.group(1))
+                    continue
 
-            elif idx == 5 and output_type in (0, 1, 3):
-                match = re.search(top_CTV_pattern, line)
-                if match is not None:
-                    data["Element 2 top CTV"] = match.group(1)
-                else:
-                    data["Element 2 top CTV"] = 0
+            if 'Axis body' in line and 'CTv' in line:
+                match = _RE_AXIS_BODY_CTV.search(line)
+                if match:
+                    data["Axis body CTV"] = float(match.group(1))
+                    continue
 
-            elif idx == 6 and output_type in (0, 1, 3):
-                match = re.search(bot_CTV_pattern, line)
-                if match is not None:
-                    data["Element 2 bot CTV"] = match.group(1)
-                else:
-                    data["Element 2 bot CTV"] = 0
+            if 'CTv' in line and 'CTi' in line:
+                match = _RE_VISC_INV.search(line)
+                if match:
+                    data["Viscous CTv"] = float(match.group(1))
+                    data["Inviscid CTi"] = float(match.group(2))
+                    continue
 
-            elif idx == 7 and output_type in (0, 1, 3):
-                match = re.search(axis_body_CTV_pattern, line)
-                if match is not None:
-                    data["Axis body CTV"] = match.group(1)
-                else:
-                    data["Axis body CTV"] = 0
+            if 'CTf' in line and 'CTp' in line:
+                match = _RE_FRIC_PRESS.search(line)
+                if match:
+                    data["Friction CTf"] = float(match.group(1))
+                    data["Pressure CTp"] = float(match.group(2))
+                    continue
 
-            elif idx == 9 and output_type in (0, 1, 3):
-                viscous_inviscid_match = re.search(viscous_inviscid_pattern,
-                                                   line)
-                if viscous_inviscid_match is not None:
-                    data["Viscous CTv"] = viscous_inviscid_match.group(1)
-                    data["Inviscid CTi"] = viscous_inviscid_match.group(2)
-                else:
-                    data["Viscous CTv"] = 0
-                    data["Inviscid CTi"] = 0
-
-            elif idx == 10 and output_type in (0, 1, 3):
-                friction_pressure_match = re.search(friction_pressure_pattern,
-                                                    line)
-                if friction_pressure_match is not None:
-                    data["Friction CTf"] = friction_pressure_match.group(1)
-                    data["Pressure CTp"] = friction_pressure_match.group(2)
-                else:
-                    data["Friction CTf"] = 0
-                    data["Pressure CTp"] = 0
-
-            elif idx == 11 and output_type in (0, 2, 3):
-                match = re.search(element_breakdown_pattern, line)
-                if match is not None:
-                    CTf = match.group(1)
-                    CTp = match.group(2)
-                    top_Xtr = match.group(3)
-                    bot_Xtr = match.group(4)
+            if 'CTf' in line and 'CTp' in line and 'top Xtr' in line and 'bot Xtr' in line and 'Element  2' in line:
+                match = _RE_ELEMENT_BREAKDOWN.search(line)
+                if match:
+                    CTf = float(match.group(1))
+                    CTp = float(match.group(2))
+                    top_Xtr = float(match.group(3))
+                    bot_Xtr = float(match.group(4))
                     grouped_data["Element 2"] = {"CTf": CTf,
                                                 "CTp": CTp,
                                                 "top Xtr": top_Xtr,
                                                 "bot Xtr": bot_Xtr}
-                else:
-                    grouped_data["Element 2"] = {"CTf": 0,
-                                                "CTp": 0,
-                                                "top Xtr": 0,
-                                                "bot Xtr": 0}
+                continue
 
-            elif idx == 12 and output_type in (0, 2, 3):
-                match = re.search(axis_body_breakdown_pattern, line)
-                if match is not None:
-                    CTf = match.group(1)
-                    CTp = match.group(2)
-                    Xtr = match.group(3)
+            if 'CTf' in line and 'CTp' in line and 'Axis body' in line and 'Xtr' in line:
+                match = _RE_AXIS_BODY_BREAKDOWN.search(line)
+                if match:
+                    CTf = float(match.group(1))
+                    CTp = float(match.group(2))
+                    Xtr = float(match.group(3))
                     grouped_data["Axis Body"] = {"CTf": CTf,
                                                 "CTp": CTp,
                                                 "Xtr": Xtr}
-                else:
-                    grouped_data["Axis Body"] = {"CTf": 0,
-                                                "CTp": 0,
-                                                "Xtr": 0}
+                    continue
 
-            elif idx == 14 and output_type in (0, 1, 3):
-                match = re.search(P_ratio_pattern, line)
-                if match is not None:
-                    data["Pressure Ratio"] = match.group(1)
-                else:
-                    data["Pressure Ratio"] = 0
+            if 'Pexit/Po' in line:
+               match = _RE_P_RATIO.search(line)
+               if match:
+                   data["Pressure Ratio"] = float(match.group(1))
+                   continue
 
-            elif idx == 21 and output_type in (0, 1, 3):
-                match = re.search(wetted_area_pattern, line)
-                if match is not None:
-                    data["Wetted Area"] = match.group(1)
-                else:
-                    data["Wetted Area"] = 0
+            if 'Total    :' in line:
+               match = _RE_WETTED_AREA.search(line)
+               if match:
+                   data["Wetted Area"] = float(match.group(1))
+                   continue
 
-        # Convert contents of all dictionaries to floats
-        data = {key: float(value) for key, value in data.items()}
-        grouped_data = {key: {k: float(v) for k, v in value.items()} for key,
-                        value in grouped_data.items()}
-
-        # Construct output dictionary
-        output = {}
-        if output_type == 0:
-            output["data"] = data
-            output["grouped_data"] = grouped_data
-        elif output_type == 1:
-            output = data
-        elif output_type == 2:
-            output = grouped_data
-        else:
-            raise ValueError(f"Invalid output type: {output_type}."
-                             " Output type should be 0-2.")
+        # Construct the output dictionary
+        output = {'data': data, 'grouped_data': grouped_data}
 
         return output
-
-
-    def GetCTCPEtaP(self) -> tuple[float, float, float]:
-        """
-        Read the forces.analysis_name file and return the thrust and power
-        coefficients with the propulsive efficiency.
-
-        Parameters
-        ----------
-        None
-
-        Returns
-        -------
-        - tuple[float, float, float]
-            A tuple of the form (CT, CP, EtaP) containing the thrust and power
-            coefficients, together with the propulsive efficiency for the
-            analysed case
-        """
-
-        data = self.GetAllVariables(1)
-
-        total_CP = data["Total power CP"]
-        EtaP = data["EtaP"]
-        total_CT = data["Total force CT"]
-
-        return total_CT, total_CP, EtaP
 
 
 if __name__ == "__main__":
@@ -856,6 +796,5 @@ if __name__ == "__main__":
     # Example usage for the output_processing class
     start = time.monotonic()
     test = output_processing(analysis_name='f')
-    test.GetAllVariables(0)
+    test.GetAllVariables()
     print(time.monotonic() - start)
-    test.GetCTCPEtaP()

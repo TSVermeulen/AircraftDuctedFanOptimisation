@@ -20,8 +20,7 @@ https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 1.4
 
 Changelog:
@@ -71,18 +70,18 @@ class ObjectiveID(IntEnum):
     ENERGY = auto()
     
 # Define the (multi-point) operating conditions
-multi_oper = [{"Inlet_Mach": 0.125,  # ~take-off condition
-               "N_crit": 9,
-               "atmos": Atmosphere(0),
-               "Omega": -11.42397,
-               "RPS": 42,
-               "flight_phase_time": 15*60},
-            #   {"Inlet_Mach": 0.2,  # loiter condition at ~125kts
+multi_oper = [#{"Inlet_Mach": 0.125,  # ~take-off condition
             #    "N_crit": 9,
-            #    "atmos": Atmosphere(3048),
+            #    "atmos": Atmosphere(0),
             #    "Omega": -11.42397,
-            #    "RPS": 44,
-            #    "flight_phase_time": 1.7*3600},
+            #    "RPS": 42,
+            #    "flight_phase_time": 15*60},
+              {"Inlet_Mach": 0.2,  # loiter condition at ~125kts
+               "N_crit": 9,
+               "atmos": Atmosphere(3048),
+               "Omega": -11.42397,
+               "RPS": 44,
+               "flight_phase_time": 1.7*3600},
             #   {"Inlet_Mach": 0.3,  # Combat condition at ~185kts
             #    "N_crit": 9,
             #    "atmos": Atmosphere(3048),
@@ -121,7 +120,7 @@ OPTIMIZE_STAGE = [True, False, False]
 ROTATING = [True, False, False]
 NUM_RADIALSECTIONS = [4, 2, 2]  # Define the number of radial sections at which the blade profiles for each stage will be defined. Note that we cannot use more than 16 radial sections due to limitations of MTFLOW. Advice from the user manual: ~5 or less is good. 
 NUM_STAGES = 3  # Define the number of stages (i.e. total count of rotors + stators)
-OPTIMIZE_BLADETHICKNESS = False  # Boolean to control if the blade thickness distributions should be optimised
+OPTIMIZE_BLADETHICKNESS = True  # Boolean to control if the blade thickness distributions should be optimised
 REFERENCE_BLADE_ANGLES = (float(np.deg2rad(14.5)))  # Reference angles at the reference section of the rotor, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
 BLADE_DIAMETERS = [2.1336, 2.2098, 2.2098]
 tipGap = 0.01016  # 1.016 cm tip gap
@@ -249,12 +248,12 @@ STAGE_BLADING_PARAMETERS, STAGE_DESIGN_VARIABLES = _load_blading(tuple([oper["RP
                                                                  REFERENCE_BLADE_ANGLES)
 
 # Define the target thrust/power and efficiency for use in constraints
-P_ref_constr = [2.3201 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # take-off power
-                # 0.46287 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # endurance power
+P_ref_constr = [#2.3201 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # take-off power
+                0.46287 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # endurance power
                 # 0.21720 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 3 * BLADE_DIAMETERS[0] ** 2),  # combat power
                 ]  # Reference Power in Watts derived from baseline analysis
-T_ref_constr = [1.6485 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # take-off thrust
-                # 0.36771 * (0.5 * multi_oper[1]["atmos"].density[0] * multi_oper[1]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # endurance thrust
+T_ref_constr = [#1.6485 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # take-off thrust
+                0.36771 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # endurance thrust
                 # 0.16605 * (0.5 * multi_oper[0]["atmos"].density[0] * multi_oper[0]["Vinl"] ** 2 * BLADE_DIAMETERS[0] ** 2),  # combat thrust
                 ] # Reference Thrust in Newtons derived from baseline analysis
 
@@ -299,11 +298,11 @@ constraint_IDs = [[InEqConstraintID.EFFICIENCY_LEQ_THEOR_LIMIT, InEqConstraintID
 
 
 # Define the population size
-POPULATION_SIZE = 100
+POPULATION_SIZE = 200
 # Larger initial population for better diversity in case of infeasible designs, then reduced to standard size
-INITIAL_POPULATION_SIZE = 200
-MAX_GENERATIONS = 100
-MAX_EVALUATIONS = 11000
+INITIAL_POPULATION_SIZE = 400
+MAX_GENERATIONS = 500
+SLIDING_WINDOW_SIZE = 50
 
 # Define the initial population parameter spreads, used to construct a biased initial population 
 SPREAD_CONTINUOUS = 0.5  # Relative spread (+/- %) applied to continous variables around their reference values
@@ -316,7 +315,7 @@ MAX_ONE2ONE_ATTEMPTS = 200  # Maximum number of attempts to enforce one-to-one o
 
 # Problem controls
 ARCHIVE_STATEFILES = False  # Bool to control if the statefiles should be archived after each evaluation. 
-PROBLEM_TYPE = "multi_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file. 
+PROBLEM_TYPE = "single_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file. 
 RESERVED_THREADS = 0  # Threads reserved for the operating system and any other programs.
 THREADS_PER_EVALUATION = 1  # Number of threads per MTFLOW evaluation: one for running MTSET/MTSOL/MTFLO and one for polling outputs
 

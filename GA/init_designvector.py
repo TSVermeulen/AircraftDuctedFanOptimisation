@@ -26,8 +26,7 @@ properly set up with the required toggles and parameters for the design vector c
 Versioning
 ----------
 Author: T.S. Vermeulen
-Email: T.S.Vermeulen@student.tudelft.nl
-Student ID: 4995309
+Email: T.S.Vermeulen@tudelft.nl
 Version: 1.2
 
 Changelog:
