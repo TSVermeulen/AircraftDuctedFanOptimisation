@@ -523,7 +523,7 @@ class RepairIndividuals(Repair):
                 if optimise_stage:
                     # Repair the blading parameters
                     blade_blading_parameters[j] = self._enforce_blade_LE_positive_sweepback(blade_blading_parameters[j])
-                    blade_blading_parameters[j] = self._enforce_chord_distribution(blade_blading_parameters[j])
+                    # blade_blading_parameters[j] = self._enforce_chord_distribution(blade_blading_parameters[j])
 
                     # Repair the duct LE location
                     duct_variables = self._enforce_duct_location(blade_blading_parameters[j],

@@ -197,8 +197,11 @@ class InitPopulation():
                         vector.append(RPS)  # Required for multipoint analysis
                 vector.append(config.STAGE_BLADING_PARAMETERS[i]["radial_stations"][-1] * 2)  # The interfaces uses the radial locations, but the design varable is the blade diameter!
 
-                for j in range(config.NUM_RADIALSECTIONS[i]):
-                    vector.append(config.STAGE_BLADING_PARAMETERS[i]["chord_length"][j])
+                vector.append(config.STAGE_BLADING_PARAMETERS[i]["root_chord"])
+                for j in range(config.NUM_RADIALSECTIONS[i] - 1):  # -1 since the root section has no taper
+                    vector.append(config.STAGE_BLADING_PARAMETERS[i]["taper_distribution"][j])
+                # for j in range(config.NUM_RADIALSECTIONS[i]):
+                #     vector.append(config.STAGE_BLADING_PARAMETERS[i]["chord_length"][j])
                 for j in range(config.NUM_RADIALSECTIONS[i] - 1):
                     vector.append(config.STAGE_BLADING_PARAMETERS[i]["sweep_angle"][j + 1])
                 for j in range(config.NUM_RADIALSECTIONS[i] - 1):  # -1 since the tip section has a fixed angle of 0

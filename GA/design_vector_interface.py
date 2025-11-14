@@ -411,7 +411,15 @@ class DesignVectorInterface:
                 stage_blading_parameters["radial_stations"] = np.linspace(0, 0.5 * next(it), self.num_radial[stage])  # Radial stations are defined as fraction of blade radius * local radius
 
                 # Extract sectional blading parameter lists
-                stage_blading_parameters["chord_length"] = [next(it) for _ in range(self.num_radial[stage])]
+                root_chord = next(it)
+                taper_distribution = [next(it) for _ in range(self.num_radial[stage] - 1)]
+                stage_blading_parameters["root_chord"] = root_chord
+                stage_blading_parameters["taper_distribution"] = taper_distribution
+
+                chord_distribution = np.cumprod([root_chord] + taper_distribution)
+                stage_blading_parameters["chord_length"] = chord_distribution
+
+                # stage_blading_parameters["chord_length"] = [next(it) for _ in range(self.num_radial[stage])]
                 sweep_angle = [0]
                 sweep_angle.extend([next(it) for _ in range(self.num_radial[stage] - 1)])  # -1 since the root is independent of sweep
                 stage_blading_parameters["sweep_angle"] = sweep_angle
@@ -547,7 +555,11 @@ class DesignVectorInterface:
                 vector.extend([RPS for RPS in blade_blading_parameters[i]["RPS_lst"]])  # blade RPS
                 vector.append(blade_blading_parameters[i]["radial_stations"][-1] * 2)  # blade diameter
 
-                vector.extend(blade_blading_parameters[i]["chord_length"])  # chord length
+                vector.append(blade_blading_parameters[i]["root_chord"])
+                vector.extend(blade_blading_parameters[i]["taper_distribution"])
+
+                # vector.extend(blade_blading_parameters[i]["chord_length"])  # chord length
+                
                 vector.extend(blade_blading_parameters[i]["sweep_angle"][1:])  # Skip the root section since the root is independent of sweep
                 vector.extend(blade_blading_parameters[i]["blade_angle"][:-1])  # -1 since we fix the angle at the tip to zero to simplify the design.
 
