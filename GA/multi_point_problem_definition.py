@@ -478,7 +478,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         # Otherwise, set the correct pitch angle per stage (variable or fixed)
         for blading_params in self.blade_blading_parameters:
             if len(blading_params["ref_blade_angle_lst"]) == len(self.multi_oper):
-                # Variable pitchL select angle for this operating condition
+                # Variable pitch - select angle for this operating condition
                 blading_params["ref_blade_angle"] = blading_params["ref_blade_angle_lst"][oper_idx]
             # For fixed pitch stages we keep the single-angle as-is. 
 
