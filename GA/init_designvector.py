@@ -202,10 +202,8 @@ class DesignVector:
             vector.append(Real(bounds=(1.0, 3.0)))  # blade diameter
 
             vector.append(Real(bounds=(0.1,0.75)))  # root chord 
-            for _ in range(stage_config['num_radial_sections'] - 1):  # Note the -1 since the root section has taper=1
+            for _ in range(stage_config['num_radial_sections'] - 1):  # Note the -1 since the root section has no taper
                 vector.append(Real(bounds=(0.75, 1)))  # blade taper ratio
-            # for _ in range(stage_config['num_radial_sections']):
-            #     vector.append(Real(bounds=(0.1, 0.75)))  # chord length
             for _ in range(stage_config['num_radial_sections'] - 1):  # Note the -1 since the root section is independent of sweep.
                 vector.append(Real(bounds=(0, np.pi/3)))  # sweep_angle
             for _ in range(stage_config['num_radial_sections'] - 1):  # Note the -1 since the tip has a fixed angle at 0

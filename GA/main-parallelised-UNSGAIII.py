@@ -128,8 +128,7 @@ if __name__ == "__main__":
                            mating=MixedVariableMating(selection=selection_operator,
                                                       eliminate_duplicates=duplicate_elimination,
                                                       repair=RepairIndividuals()),
-                           sampling=InitPopulation(population_type="biased",
-                                                   seed=config.GLOBAL_SEED).GeneratePopulation(),
+                           sampling=InitPopulation(seed=config.GLOBAL_SEED).GeneratePopulation(),
                            eliminate_duplicates=duplicate_elimination,
                            selection=selection_operator,
                            repair=RepairIndividuals()

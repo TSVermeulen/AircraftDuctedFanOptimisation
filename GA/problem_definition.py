@@ -513,7 +513,7 @@ if __name__ == "__main__":
     from init_population import InitPopulation  # type: ignore
     from repair import RepairIndividuals  # type: ignore
 
-    ref_pop = InitPopulation(population_type="biased").GeneratePopulation()
+    ref_pop = InitPopulation().GeneratePopulation()
     ref_vectors = ref_pop.get("X")
     ref_vectors = RepairIndividuals()._do(test, ref_vectors)
     ref_vector = ref_vectors[0]  # Use the first vector for testing

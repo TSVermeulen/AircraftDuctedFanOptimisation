@@ -1267,8 +1267,7 @@ class PostProcessing:
             res = self.load_res()
             CB_data, duct_data, blading_data, design_data = self._extract_data(res.opt)
         else:
-            init_class = InitPopulation(population_type="biased")
-            reference_vector = init_class.DeconstructDictFromReferenceDesign()
+            reference_vector = InitPopulation().DeconstructDictFromReferenceDesign()
 
             vec_interface = DesignVectorInterface()
 
@@ -1636,8 +1635,7 @@ class PostProcessing:
                 else:
                     all_labels.append(label)
 
-        init_class = InitPopulation(population_type="biased")
-        reference_vector = init_class.DeconstructDictFromReferenceDesign()
+        reference_vector = InitPopulation().DeconstructDictFromReferenceDesign()
         vec_interface = DesignVectorInterface()
 
         data = vec_interface.DeconstructDesignVector(reference_vector)
@@ -1680,8 +1678,7 @@ class PostProcessing:
                 else:
                     all_labels.append(label)
 
-        init_class = InitPopulation(population_type="biased")
-        reference_vector = init_class.DeconstructDictFromReferenceDesign()
+        reference_vector = InitPopulation().DeconstructDictFromReferenceDesign()
         vec_interface = DesignVectorInterface()
 
         data = vec_interface.DeconstructDesignVector(reference_vector)

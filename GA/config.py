@@ -158,7 +158,6 @@ def _load_blading(RPS_lst: Sequence[float]|float,
     # Start defining the MTFLO blading inputs
     radial_stations = np.array([0, 0.32004, 0.74676, 1.0668])  # 0, 0.3, 0.7, 1
     chord_length = np.array([0.3510, 0.3152, 0.2367, 0.2205])
-    root_chord = 0.3510
     taper_distribution = chord_length[1:] / chord_length[:-1] 
 
     blade_angle = np.array([np.deg2rad(38.1), np.deg2rad(30.9), np.deg2rad(16.8), np.deg2rad(0)])
@@ -172,7 +171,7 @@ def _load_blading(RPS_lst: Sequence[float]|float,
                             "blade_count": 3, 
                             "radial_stations": radial_stations, 
                             "chord_length": chord_length, 
-                            "root_chord": root_chord,
+                            "root_chord": chord_length[0],
                             "taper_distribution": taper_distribution,
                             "blade_angle": blade_angle}
     
@@ -186,8 +185,8 @@ def _load_blading(RPS_lst: Sequence[float]|float,
                                    "blade_count": 4, 
                                    "radial_stations": np.array([0.0, 1.20968]), 
                                    "chord_length": np.array([0.57658, 0.14224]), 
-                                   "root_chord": 0.57658,
-                                   "taper_distribution": [0.14224/0.57658],
+                                   "root_chord": chord_length[0],
+                                   "taper_distribution": [chord_length[-1] / chord_length[0]],
                                    "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                    "sweep_angle": np.array([0, 0])}
     
@@ -201,8 +200,8 @@ def _load_blading(RPS_lst: Sequence[float]|float,
                                  "blade_count": 2, 
                                  "radial_stations": np.array([0.0, 1.20968]), 
                                  "chord_length": np.array([0.10287, 0.10287]), 
-                                 "root_chord": 0.10287,
-                                 "taper_distribution": [1],
+                                 "root_chord": chord_length[0],
+                                 "taper_distribution": [chord_length[-1] / chord_length[0]],
                                  "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                  "sweep_angle": np.array([0, 0])}
     
