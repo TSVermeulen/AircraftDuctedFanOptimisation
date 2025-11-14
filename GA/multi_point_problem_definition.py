@@ -119,7 +119,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
 
 
     def __init__(self,
-                 verbose: bool = True,
+                 verbose: bool = False,
                  **kwargs) -> None:
         """
         Initialization of the OptimizationProblem class.
@@ -599,7 +599,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
 
                     except Exception as e:
                         exit_flag = ExitFlag.CRASH
-                        UDC_outputs[idx] = self.CRASH_OUTPUTS
+                        UDC_outputs[idx] = copy.copy(self.CRASH_OUTPUTS)
                         if self.verbose:
                             print(f"[UDC_ERROR] OP={idx}, case={self.analysis_name}: {e}")
 

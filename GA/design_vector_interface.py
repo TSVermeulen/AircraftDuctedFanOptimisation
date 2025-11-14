@@ -455,8 +455,8 @@ class DesignVectorInterface:
                 stage_blading_parameters["root_chord"] = root_chord
                 stage_blading_parameters["taper_distribution"] = taper_distribution
 
-                chord_distribution = np.cumprod([root_chord] + taper_distribution)
-                stage_blading_parameters["chord_length"] = chord_distribution
+                chord_distribution = np.cumprod([root_chord, *taper_distribution])
+                stage_blading_parameters["chord_length"] = chord_distribution.tolist()
 
                 sweep_angle = [0]
                 sweep_angle.extend([next(it) for _ in range(self.num_radial[stage] - 1)])  # -1 since the root is independent of sweep
@@ -603,7 +603,8 @@ class DesignVectorInterface:
                     vector.append(angle)  # Enables variable pitch to be used.
 
                 vector.append(int(blade_blading_parameters[i]["blade_count"]))  # blade_count
-                vector.extend([RPS for RPS in blade_blading_parameters[i]["RPS_lst"]])  # blade RPS
+                if self.rotating[i]:
+                    vector.extend([RPS for RPS in blade_blading_parameters[i]["RPS_lst"]])  # blade RPS
                 vector.append(blade_blading_parameters[i]["radial_stations"][-1] * 2)  # blade diameter
 
                 vector.append(blade_blading_parameters[i]["root_chord"])

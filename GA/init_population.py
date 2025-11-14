@@ -296,4 +296,4 @@ class InitPopulation():
 
 
 if __name__ == "__main__":
-    biased_pop = InitPopulation().GeneratePopulation()
+    ref_pop = InitPopulation().GeneratePopulation()
