@@ -467,22 +467,23 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
             - Bool to indicate if the MTFLO input generation was succesful.
         """
 
-        # Set the correct pitch angle in the blading params dictionary
-        # Loop over all stages
+        # Detect global fixed-pitch multi-point: 
+        all_fixed_pitch = all(len(blading_params["ref_blade_angle_lst"]) == 1
+                              for blading_params in self.blade_blading_parameters
+                              )
+        
+        # For globally fixed-pitch analyses beyond the first operating point, 
+        # only update Omega in-place to avoid regenerating tflow.
+        if all_fixed_pitch and oper_idx !=0:
+            self.SetOmega(oper_idx)
+            return True
+        
+        # Otherwise, set the correct pitch angle per stage (variable or fixed)
         for blading_params in self.blade_blading_parameters:
             if len(blading_params["ref_blade_angle_lst"]) == len(self.multi_oper):
-                # Only update variable pitch if it is used,
-                # otherwise leave it as constant.
+                # Variable pitchL select angle for this operating condition
                 blading_params["ref_blade_angle"] = blading_params["ref_blade_angle_lst"][oper_idx]
-            else:
-                # Check if a fixed-pitch analysis is being performed. If so,
-                # The MTFLO input file for the 2nd-onward condition can be
-                # generated faster by modifying the rotational rate in-place
-                # using the SetOmega method.
-                if oper_idx != 0:
-                    self.SetOmega(oper_idx)
-                    return True
-
+            # For fixed pitch stages we keep the single-angle as-is. 
 
         # Overwrite the UDC input file to the correct inputs
         # First set the correct nondimensional rotational rate
@@ -611,7 +612,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                 else:
                     # If any of the operating points are infeasible,
                     #  set crash outputs.
-                    UDC_outputs[idx] = self.CRASH_OUTPUTS
+                    UDC_outputs[idx] = copy.copy(self.CRASH_OUTPUTS)
 
         # Obtain objective(s)
         # The out dictionary is updated in-place

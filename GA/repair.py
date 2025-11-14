@@ -204,7 +204,8 @@ class RepairIndividuals(Repair):
             to ensure one to one mapping.
         """
 
-        # Attempt to enforce one to one mapping of the bezier x-curves for 200 attempts.
+        # Attempt to enforce one to one mapping of the bezier curves 
+        # for 200 attempts.
         modified_profile_params = copy.deepcopy(profile_params)
         
         # Extract the constant values from the profile parameters to avoid 
@@ -215,8 +216,8 @@ class RepairIndividuals(Repair):
         x_c = modified_profile_params["x_c"]
 
         for _ in range(200):
-            # Compute the bezier curves for the x-coordinates. x_LE_thickness 
-            # is always one to one, so we can ignore it.
+            # Compute the bezier curves. x_LE_thickness is always one to one, 
+            # so we can ignore it.
             ((_,
               x_TE_thickness,
               x_LE_camber,
@@ -249,12 +250,16 @@ class RepairIndividuals(Repair):
                 b_8 = modified_profile_params["b_8"]
                 # Adjust the third x control point to enforce 
                 # x3 = x_2 + feasibility_offset
-                if (b_15 - x_t) / (1 - x_t) < 3 * x_t + 15 * b_8 ** 2 / (4 * r_LE):
-                    b_15_adjusted_coor = 3 * x_t + 15 * b_8 ** 2 / (4 * r_LE) + self.feasibility_offset
+                if (b_15 - x_t) / (1 - x_t) < \
+                    3 * x_t + 15 * b_8 ** 2 / (4 * r_LE):
+                    b_15_adjusted_coor = 3 * x_t + 15 * b_8 ** 2 / \
+                        (4 * r_LE) + self.feasibility_offset
                     b_15_adjusted = x_t + (1 - x_t) * b_15_adjusted_coor
 
                     # Enfoce b_15 to bounds
-                    b_15_adjusted = np.clip(b_15_adjusted, self.BP_bounds["b_15"][0], self.BP_bounds["b_15"][1])
+                    b_15_adjusted = np.clip(b_15_adjusted, 
+                                            self.BP_bounds["b_15"][0], 
+                                            self.BP_bounds["b_15"][1])
                     modified_profile_params["b_15"] = b_15_adjusted
 
                 b_15 = modified_profile_params["b_15"]
@@ -262,10 +267,16 @@ class RepairIndividuals(Repair):
                     # Adjust the second control point to enforce x2 < x3
                     sqrt_term = -10 * x_t * r_LE / 21
                     # Safety check to avoid sqrt of a negative number
-                    b_8_adjusted = np.sqrt(sqrt_term) - 1e-2 if sqrt_term > 0 else 0
+                    if sqrt_term > 0:
+                        b_8_adjusted = np.sqrt(sqrt_term) - 1e-2
+                    else:
+                        b_8_adjusted = 0
+
                     b_8_upper_limit = min(y_t, np.sqrt(-2 * r_LE * x_t / 3))
                     b_8_map = b_8_adjusted / b_8_upper_limit
-                    b_8_clipped_map = np.clip(b_8_map, self.BP_bounds["b_8"][0], self.BP_bounds["b_8"][1])
+                    b_8_clipped_map = np.clip(b_8_map, 
+                                              self.BP_bounds["b_8"][0], 
+                                              self.BP_bounds["b_8"][1])
                     b_8_adjusted_clipped = b_8_clipped_map * b_8_upper_limit
                     modified_profile_params["b_8"] = b_8_adjusted_clipped
 
@@ -278,14 +289,18 @@ class RepairIndividuals(Repair):
                     b_2 = b_0 + self.feasibility_offset
 
                     # Enforce b_2 to bounds
-                    modified_profile_params["b_2"] = np.clip(b_2, self.BP_bounds["b_2"][0], self.BP_bounds["b_2"][1])  
+                    modified_profile_params["b_2"] = np.clip(b_2, 
+                                                             self.BP_bounds["b_2"][0], 
+                                                             self.BP_bounds["b_2"][1])  
 
                 b_2 = modified_profile_params["b_2"]
                 if b_2 > x_c:
                     b_2 = x_c - self.feasibility_offset
 
                     # Enforce b_2 to bounds
-                    modified_profile_params["b_2"] = np.clip(b_2, self.BP_bounds["b_2"][0], self.BP_bounds["b_2"][1])  
+                    modified_profile_params["b_2"] = np.clip(b_2, 
+                                                             self.BP_bounds["b_2"][0], 
+                                                             self.BP_bounds["b_2"][1])  
 
             # Handle TE camber x points
             if not one_to_one_TE_camber_x:
@@ -293,69 +308,96 @@ class RepairIndividuals(Repair):
                 y_c = modified_profile_params["y_c"]
                 leading_edge_direction = modified_profile_params["leading_edge_direction"]
 
-                if (b_17 - x_c) / (1 - x_c) < (-8 * y_c / np.tan(leading_edge_direction) + 13 * x_c) / 6:
-                    b_17_adjusted_coor = (-8 * y_c / np.tan(leading_edge_direction) + 13 * x_c) / 6 + self.feasibility_offset
+                if (b_17 - x_c) / (1 - x_c) < \
+                    (-8 * y_c / np.tan(leading_edge_direction) + 13 * x_c) / 6:
+                    b_17_adjusted_coor = (-8 * y_c / \
+                                          np.tan(leading_edge_direction) + \
+                                            13 * x_c) / 6 + self.feasibility_offset
                     b_17_adjusted = (1 - x_c) * b_17_adjusted_coor + x_c
 
                     # Enforce b_17 to bounds
-                    b_17_adjusted = np.clip(b_17_adjusted, self.BP_bounds["b_17"][0], self.BP_bounds["b_17"][1])
+                    b_17_adjusted = np.clip(b_17_adjusted, 
+                                            self.BP_bounds["b_17"][0], 
+                                            self.BP_bounds["b_17"][1])
                     modified_profile_params["b_17"] = b_17_adjusted
 
                 b_17 = modified_profile_params["b_17"]
                 if x_c > (3 * x_c - y_c / np.tan(leading_edge_direction))  / 2:
                     # based on the LE camber y coordinates
-                    gamma_LE_adjusted_x_based = np.atan(y_c / (x_c - 2 * self.feasibility_offset)) + 1e-3
-                    gamma_LE_adjusted_b0_based = np.atan(y_c / (modified_profile_params["b_0"] * x_c)) - 1e-3
+                    gamma_LE_adjusted_x_based = np.atan(y_c / \
+                                                        (x_c - 2 * self.feasibility_offset)) + 1e-3
+                    gamma_LE_adjusted_b0_based = np.atan(y_c / \
+                                                         (modified_profile_params["b_0"] * x_c)) - 1e-3
 
                     # gamma_LE must lie somewhere between the two computed 
                     # values for it to be feasible, so we simply take the 
                     # middle value.
-                    gamma_LE_adjusted = (gamma_LE_adjusted_x_based + gamma_LE_adjusted_b0_based) / 2
+                    gamma_LE_adjusted = (gamma_LE_adjusted_x_based + \
+                                         gamma_LE_adjusted_b0_based) / 2
 
-                    modified_profile_params["leading_edge_direction"] = np.clip(gamma_LE_adjusted, self.BP_bounds["leading_edge_direction"][0], self.BP_bounds["leading_edge_direction"][1])  # Enforce gamma_LE to bounds
+                    modified_profile_params["leading_edge_direction"] = np.clip(gamma_LE_adjusted, 
+                                                                                self.BP_bounds["leading_edge_direction"][0], 
+                                                                                self.BP_bounds["leading_edge_direction"][1])  # Enforce gamma_LE to bounds
     
                 leading_edge_direction = modified_profile_params["leading_edge_direction"]
-                if x_c > (-8 * y_c / np.tan(leading_edge_direction) + 13 * x_c) / 6:
-                    y_c_adjusted = 7 / 8 * x_c * np.tan(leading_edge_direction) - 1e-3
+                if x_c > \
+                    (-8 * y_c / np.tan(leading_edge_direction) + 13 * x_c) / 6:
+                    y_c_adjusted = 7 / 8 * x_c * \
+                        np.tan(leading_edge_direction) - 1e-3
 
                     # Enforce y_c to bounds
-                    y_c_adjusted = np.clip(y_c_adjusted, self.BP_bounds["y_c"][0], self.BP_bounds["y_c"][1])
+                    y_c_adjusted = np.clip(y_c_adjusted, 
+                                           self.BP_bounds["y_c"][0], 
+                                           self.BP_bounds["y_c"][1])
                     modified_profile_params["y_c"] = y_c_adjusted
 
             # Handle TE thickness y points
             if not one_to_one_TE_thickness_y:
                 # Compute the new trailing edge wedge angle
-                beta_TE = np.atan((y_t + modified_profile_params["b_8"] - modified_profile_params["dz_TE"]) / (2 * (1 - modified_profile_params["b_15"]))) - 1e-3
+                beta_TE = np.atan((y_t + modified_profile_params["b_8"] - \
+                                   modified_profile_params["dz_TE"]) / \
+                                    (2 * (1 - modified_profile_params["b_15"]))) - 1e-3
                 
                 # Enforce beta_TE to bounds
-                beta_TE = np.clip(beta_TE, self.BP_bounds["trailing_wedge_angle"][0], self.BP_bounds["trailing_wedge_angle"][1])
+                beta_TE = np.clip(beta_TE, 
+                                  self.BP_bounds["trailing_wedge_angle"][0], 
+                                  self.BP_bounds["trailing_wedge_angle"][1])
                 modified_profile_params["trailing_wedge_angle"] = beta_TE
 
             # Handle LE camber y points
             if not one_to_one_LE_camber_y:
                 # Adjust the b_0 control point
-                b_0_coor = modified_profile_params["y_c"] / np.tan(modified_profile_params["leading_edge_direction"]) - 1e-3
+                b_0_coor = modified_profile_params["y_c"] / \
+                    np.tan(modified_profile_params["leading_edge_direction"]) - 1e-3
                 b_0 = b_0_coor / x_c
 
                 # Enforce b_0 to bounds
-                b_0 = np.clip(b_0, self.BP_bounds["b_0"][0], self.BP_bounds["b_0"][1])
+                b_0 = np.clip(b_0,
+                              self.BP_bounds["b_0"][0], 
+                              self.BP_bounds["b_0"][1])
                 modified_profile_params["b_0"] = b_0
 
             # # Handle TE camber y points
             if not one_to_one_TE_camber_y:
                 # Compute the new trailing camberline angle
-                alpha_TE = np.atan((5/6 * modified_profile_params["y_c"] - modified_profile_params["z_TE"]) / (1 - modified_profile_params["b_17"])) + 1e-3
+                alpha_TE = np.atan((5/6 * modified_profile_params["y_c"] - \
+                                    modified_profile_params["z_TE"]) / \
+                                        (1 - modified_profile_params["b_17"])) + 1e-3
                 
                 # Enforce alpha_TE to bounds
-                alpha_TE = np.clip(alpha_TE, self.BP_bounds["trailing_camberline_angle"][0], self.BP_bounds["trailing_camberline_angle"][1]) 
+                alpha_TE = np.clip(alpha_TE, 
+                                   self.BP_bounds["trailing_camberline_angle"][0], 
+                                   self.BP_bounds["trailing_camberline_angle"][1]) 
                 modified_profile_params["trailing_camberline_angle"] = alpha_TE 
 
         return modified_profile_params
 
 
-    def _enforce_blade_LE_positive_sweepback(self, blading_params: dict[str, Any]) -> dict[str, Any]:
+    def _enforce_blade_LE_positive_sweepback(self, 
+                                             blading_params: dict[str, Any]) -> dict[str, Any]:
         """
-        Enforce that the leading edge x-coordinate of the blade is positively increasing along the span.
+        Enforce that the leading edge x-coordinate of the blade is 
+        positively increasing along the span.
 
         Parameters
         ----------
@@ -365,16 +407,21 @@ class RepairIndividuals(Repair):
         Returns
         -------
         - blading_params : dict[str, Any]
-            Dictionary containing the blading parameters with adjusted values to ensure positive sweepback angle
+            Dictionary containing the blading parameters with adjusted 
+            values to ensure positive sweepback angle
         """
 
-        # Compute the LE x-coordinate distribution for each of the radial sections and enforce it to be positively increasing
-        LE_x_coordinate = np.tan(blading_params["sweep_angle"]) * blading_params["radial_stations"]
+        # Compute the LE x-coordinate distribution for each of the radial 
+        # sections and enforce it to be positively increasing
+        LE_x_coordinate = np.tan(blading_params["sweep_angle"]) * \
+            blading_params["radial_stations"]
         LE_x_coordinate_corrected = np.maximum.accumulate(LE_x_coordinate)
 
-        # Extract the corrected sweep angles from the corrected X-coordinate distribution.
-        # Skip the first entry since the root is enforced to have sweep=0
-        blading_params["sweep_angle"][1:] = np.atan(LE_x_coordinate_corrected[1:] / blading_params["radial_stations"][1:])
+        # Extract the corrected sweep angles from the corrected X-coordinate 
+        # distribution. Skip the first entry since the root is enforced to have 
+        # x=x_root, so sweep has no effect
+        blading_params["sweep_angle"][1:] = np.atan(LE_x_coordinate_corrected[1:] / \
+                                                    blading_params["radial_stations"][1:])
 
         return blading_params
 
@@ -383,7 +430,8 @@ class RepairIndividuals(Repair):
                                blading_params: dict[str, Any],
                                duct_params: dict[str, Any]) -> dict[str, Any]:
         """
-        Enforce the duct leading edge is always positioned at/forward of the blade tip leading edge.
+        Enforce the duct leading edge is always positioned at/forward of the 
+        blade tip leading edge.
 
         Parameters
         ----------
@@ -395,10 +443,12 @@ class RepairIndividuals(Repair):
         Returns
         -------
         - duct_params : dict[str, Any]
-            Dictionary containing the duct parameters with adjusted LE x coordinate.
+            Dictionary containing the duct parameters with adjusted 
+            LE x-coordinate.
         """
 
-        # If the duct is positioned aft of the LE of the blade root, move it forward
+        # If the duct is positioned aft of the LE of the blade root,
+        # move it forward
         x_old, y_old = duct_params["Leading Edge Coordinates"]
         if x_old > blading_params["root_LE_coordinate"]:
             duct_params["Leading Edge Coordinates"] = (blading_params["root_LE_coordinate"],
@@ -411,15 +461,17 @@ class RepairIndividuals(Repair):
                       blading_params: dict[str, Any],
                       design_params: list[dict[str, Any]]) -> dict[str, Any]:
         """
-        Fix the blade circumferential thickness. If limit of complete blockage is exceeded anywhere along the blade span,
-        we simply decrease the blade-count to fix the blockage.
+        Fix the blade circumferential thickness. If limit of complete blockage 
+        is exceeded anywhere along the blade span, we simply decrease the 
+        blade-count to fix the blockage.
 
         Parameters
         ----------
         - blading_params : dict[str, Any]
             Dictionary containing the blading parameters
         - design_params : list[dict[str, Any]]
-            - List of the Bezier-Parsec design parameters for all defined radial profile sections
+            - List of the Bezier-Parsec design parameters for all defined 
+              radial profile sections
 
         Returns
         -------
@@ -429,18 +481,23 @@ class RepairIndividuals(Repair):
 
         original_blading_params = copy.deepcopy(blading_params)
 
-        # Use a try-except block to handle cases where the profile shape is infeasible.
+        # Use a try-except block to handle cases where the profile shape 
+        # is infeasible.
         try:
             # Loop over the radial sections
             for i, design_param in enumerate(design_params):
 
                 if blading_params["radial_stations"][i] == 0:
                     continue
-                # Loop to fix the blockage: decrement blade_count while > 2 to enforce minimum of 2 blades
+                # Loop to fix the blockage: decrement blade_count while > 2 
+                # to enforce minimum of 2 blades
                 evaluating = True
                 while evaluating and blading_params["blade_count"] > 2:
-                    # First precompute the limit of complete blockage at the radial station
-                    complete_blockage = 2 * np.pi * blading_params["radial_stations"][i] / blading_params["blade_count"]
+                    # First precompute the limit of complete blockage at the 
+                    # radial station
+                    complete_blockage = 2 * np.pi * \
+                        blading_params["radial_stations"][i] / \
+                            blading_params["blade_count"]
 
                     upper_x, upper_y, lower_x, lower_y = self.airfoil_parameterisation.ComputeProfileCoordinates(design_param)
                     upper_x *= blading_params["chord_length"][i]
@@ -448,41 +505,55 @@ class RepairIndividuals(Repair):
                     lower_x *= blading_params["chord_length"][i]
                     lower_y *= blading_params["chord_length"][i]
 
-                    blade_pitch = (blading_params["blade_angle"][i] + blading_params["ref_blade_angle"] - blading_params["reference_section_blade_angle"])
-                    rotated_upper_x, rotated_upper_y, rotated_lower_x, rotated_lower_y  = fileHandlingMTFLO.RotateProfile(blade_pitch,
-                                                                                                                        upper_x,
-                                                                                                                        lower_x,
-                                                                                                                        upper_y,
-                                                                                                                        lower_y)
+                    blade_pitch = (blading_params["blade_angle"][i] + \
+                                   blading_params["ref_blade_angle"] - \
+                                    blading_params["reference_section_blade_angle"])
+                    (rotated_upper_x, 
+                     rotated_upper_y, 
+                     rotated_lower_x, 
+                     rotated_lower_y)  = fileHandlingMTFLO.RotateProfile(blade_pitch,
+                                                                         upper_x,
+                                                                         lower_x,
+                                                                         upper_y,
+                                                                         lower_y)
 
-                    LE_coordinate = blading_params["radial_stations"][i] * np.tan(blading_params["sweep_angle"][i])
+                    LE_coordinate = blading_params["radial_stations"][i] * \
+                        np.tan(blading_params["sweep_angle"][i])
                     rotated_upper_x += LE_coordinate - rotated_upper_x[0]
                     rotated_lower_x += LE_coordinate - rotated_lower_x[0]
 
-                    y_section_upper, y_section_lower, _, z_section_upper, z_section_lower, _ = fileHandlingMTFLO.PlanarToCylindrical(rotated_upper_y,
-                                                                                                                                     rotated_lower_y,
-                                                                                                                                     blading_params["radial_stations"][i])
+                    (y_section_upper, 
+                     y_section_lower, 
+                     _, 
+                     z_section_upper, 
+                     z_section_lower, 
+                     _) = fileHandlingMTFLO.PlanarToCylindrical(rotated_upper_y,
+                                                                rotated_lower_y,
+                                                                blading_params["radial_stations"][i])
 
                     # Compute the circumferential blade thickness
                     circumferential_thickness = fileHandlingMTFLO.CircumferentialThickness(y_section_upper,
-                                                                            z_section_upper,
-                                                                            y_section_lower,
-                                                                            z_section_lower,
-                                                                            blading_params["radial_stations"][i])
+                                                                                           z_section_upper,
+                                                                                           y_section_lower,
+                                                                                           z_section_lower,
+                                                                                           blading_params["radial_stations"][i])
 
-                    # Check if the limit of complete blockage is respected by the design. If not, decrease the blade count by 1
+                    # Check if the limit of complete blockage is respected by 
+                    # the design. If not, decrease the blade count by 1
                     max_circumf_thickness = circumferential_thickness.max()
                     if max_circumf_thickness >= complete_blockage:
                         blading_params["blade_count"] -= 1
                         continue
 
-                    # If thickness is okay, break out of the while loop and move to the next radial section
+                    # If thickness is okay, break out of the while loop and 
+                    # move to the next radial section
                     evaluating = False
 
             return blading_params
 
         except ValueError:
-            # If the profile shape is infeasible, return the original blading parameters to avoid crashing the algorithm.
+            # If the profile shape is infeasible, return the original 
+            # blading parameters to avoid crashing the algorithm.
             return original_blading_params
 
 
@@ -491,34 +562,42 @@ class RepairIndividuals(Repair):
             X: list[dict[str, float | int]], **kwargs) -> list[dict[str, float | int]]:
         """
         Perform a simple repair on all individuals in the population.
-        This is not guaranteed to fix the parameterisation, but testing shows it fixes 90% of the infeasible design vectors.
+        This is not guaranteed to fix the parameterisation, but testing 
+        shows it fixes 90% of the infeasible design vectors.
 
         Parameters
         ----------
         - problem : object
             The optimisation problem.
         - X : list[dict[str, float | int]]
-            The list of design vector dictionaries for all individuals in the population.
+            The list of design vector dictionaries for all individuals in 
+            the population.
 
         Returns
         -------
         - X : list[dict[str, float | int]]
-            The repaired list of design vector dictionaries for all individuals in the population.
+            The repaired list of design vector dictionaries for all individuals 
+            in the population.
         """
 
         # Loop over all individuals in the population and repair them if needed
         for i, individual in enumerate(X):
-            # First extract the keys of the integer variables in the design vector dictionary to be able to cast them back to integer after repairing
-            int_keys = [key for key, value in individual.items() if isinstance(value, (int, np.integer))]
+            # First extract the keys of the integer variables in the design 
+            # vector dictionary to be able to cast them back to integer 
+            # after repairing
+            int_keys = [key for key, 
+                        value in individual.items() if isinstance(value, 
+                                                                  (int, np.integer))]
 
-            # Deconstruct the design vector in to the different design dictionaries
-            # We do not need to compute the duct LE y coordinate here, so we can skip this step
-            # and speed up the computation by setting compute_duct = False.
+            # Deconstruct the design vector in to the different design 
+            # dictionaries. We do not need to compute the duct LE y coordinate 
+            # here, so we can skip this step by setting compute_duct = False.
             (centerbody_variables,
             duct_variables,
             blade_design_parameters,
             blade_blading_parameters,
-            _) = self.dvi.DeconstructDesignVector(individual, compute_duct = False)
+            _) = self.dvi.DeconstructDesignVector(individual, 
+                                                  compute_duct = False)
 
             if config.OPTIMIZE_CENTERBODY:
                 # Repair the centerbody parameters
@@ -543,7 +622,8 @@ class RepairIndividuals(Repair):
                         blade_design_parameters[j][k] = self._enforce_one2one(blade_design_parameters[j][k])
 
                     # Repair the blade count
-                    blade_blading_parameters[j] = self._fix_blockage(blade_blading_parameters[j], blade_design_parameters[j])
+                    blade_blading_parameters[j] = self._fix_blockage(blade_blading_parameters[j], 
+                                                                     blade_design_parameters[j])
 
             # Reconstruct the design vector into a singular dictionary
             x = self.dvi.ReconstructDesignVector(centerbody_variables,
@@ -551,7 +631,8 @@ class RepairIndividuals(Repair):
                                                  blade_design_parameters,
                                                  blade_blading_parameters)
 
-            # Convert design vector into array together with bounds to enforce design variable bounds
+            # Convert design vector into array together with bounds to enforce 
+            # design variable bounds
             x_array = np.array(list(x.values()))
 
             # Only extract the bounds of they are not already written in self.
@@ -567,7 +648,8 @@ class RepairIndividuals(Repair):
             x_array = set_to_bounds_if_outside(x_array, self.xl, self.xu)
 
             # Convert the array back to a dictionary and write the result to X
-            # Casts the integer values back to integers to ensure consistent variable types throughout the evaluation.
+            # Casts the integer values back to integers to ensure consistent 
+            # variable types throughout the evaluation.
             x_dict = dict(zip(x.keys(), x_array))
             X[i] = {key: (int(round(val)) if key in int_keys else val) for key, val in x_dict.items()}
 

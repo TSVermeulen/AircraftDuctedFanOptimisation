@@ -5,15 +5,12 @@ init_population
 Description
 -----------
 This module provides functionality to initialize populations for optimization 
-problems, either by generating a biased population based on a reference design 
-or by sampling randomly within the bounds of the design variables.
+problems by generating a biased population based on a reference design
 
 Classes
 -------
 InitPopulation
-    A class to initialize populations for optimization problems. It supports 
-    generating biased populations with perturbations around a reference design 
-    or random populations sampled uniformly across the bounds.
+    A class to initialize populations for optimization problems.
 
 Examples
 --------
@@ -21,7 +18,7 @@ Examples
 >>> import time
 
 >>> start_time = time.time()
->>> init_pop = InitPopulation("biased", config)
+>>> init_pop = InitPopulation(seed=config.GLOBAL_SEED)
 >>> population = init_pop.GeneratePopulation()
 >>> print(population)
 >>> print(f"Population generation took: {time.time() - start_time} seconds")
