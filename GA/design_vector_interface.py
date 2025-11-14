@@ -4,22 +4,25 @@ design_vector_interface
 
 Description
 -----------
-This module provides utilities for efficient access and manipulation of design vectors used in optimization problems.
+This module provides utilities for efficient access and manipulation of design
+vectors used in optimization problems.
 
 Classes
 -------
 DesignVectorInterface
-    Class to provide efficient access to design vector elements and decompose design vectors into sub-dictionaries.
+    Class to provide efficient access to design vector elements and decompose
+    design vectors into sub-dictionaries.
 
 Examples
 --------
 >>> interface = DesignVectorInterface()
->>> interface.DeconstructDesignVector(x_dict)  # Decomposes the design vector into sub-dictionaries
+>>> interface.DeconstructDesignVector(x_dict)  # Decomposes the design vector
 
 Notes
 -----
-This module is designed to streamline the handling of design vectors in optimization workflows. It ensures efficient
-access to elements and provides error handling for missing keys or indices.
+This module is designed to streamline the handling of design vectors in
+optimization workflows. It ensures efficient access to elements and provides
+error handling for missing keys or indices.
 
 Versioning
 ----------
@@ -31,10 +34,12 @@ Changelog:
 - V1.0: Initial implementation.
 - V1.1: Updated documentation and added examples for clarity.
 - V1.2: Rework of design vector access. Inclusion of utils.ensure_repo_paths.
-- V1.3: Added type hints for better code clarity and maintainability. Added reconstruct_design_vector method.
+- V1.3: Added type hints for better code clarity and maintainability.
+        Added reconstruct_design_vector method.
 - V2.0: Renamed MTFLOW to UDC for consistency with written thesis.
-- V2.1: Added support for config.OPTIMIZE_BLADETHICKNESS boolean. 
-        Reduces problem dimensionality by optionally optimising the blade thickness distributions.
+- V2.1: Added support for config.OPTIMIZE_BLADETHICKNESS boolean.
+        Reduces problem dimensionality by optionally optimising the blade
+        thickness distributions.
 """
 
 # Import standard libraries
@@ -55,8 +60,10 @@ _PARAMETERISATION = AirfoilParameterisation()
 
 class DesignVectorInterface:
     """
-    Simple class to provide efficient access to design vector elements without repeated string formatting,
-    and to deconstruct the design vector dictionary x into the expected "sub"-dictionaries required to use the UDC interface """
+    Simple class to provide efficient access to design vector elements without
+    repeated string formatting, and to deconstruct the design vector dictionary
+    x into the expected "sub"-dictionaries required to use the UDC interface.
+    """
 
 
     def __init__(self) -> None:
@@ -79,7 +86,8 @@ class DesignVectorInterface:
         self.optimize_duct = config.OPTIMIZE_DUCT
 
 
-        # Initialize the AirfoilParameterisation class for slightly better memory usage
+        # Initialize the AirfoilParameterisation class for slightly
+        # better memory usage
         self.Parameterisation = _PARAMETERISATION
 
         # Initialize empty ordered keys cache
@@ -90,9 +98,9 @@ class DesignVectorInterface:
                                   duct_variables: dict,
                                   blade_blading_parameters: list[dict]) -> tuple[dict, list]:
         """
-        Compute the y-coordinate of the LE of the duct based on the design variables.
-        Accounts for the minimum duct y-coordinate influenced by the blade angle at the tip. 
-        Does not currently account for the presence of skew. 
+        Compute the y-coordinate of the LE of the duct based on the design
+        variables. Accounts for the minimum duct y-coordinate influenced by the
+        blade angle at the tip. Does not account for the presence of skew.
 
         Parameters
         ----------
@@ -105,15 +113,18 @@ class DesignVectorInterface:
         -------
         - tuple:
             - duct_variables : dict
-                The updated duct variables dictionary containing the updated LE y coordinate.
+                The updated duct variables dictionary containing the updated
+                LE y coordinate.
             - blade_blading_parameters : list[dict]
-                The updated blading parameters containing the updated radii of the stator stage(s).
+                The updated blading parameters containing the updated radii
+                of the stator stage(s).
         """
 
         # Initialize data array for the radial duct coordinates to zeroes
         radial_duct_coordinates = np.zeros(self.num_stages)
 
-        # Compute the duct x,y coordinates. Note that we are only interested in the lower surface.
+        # Compute the duct x,y coordinates. Note that we are only interested
+        # in the lower surface.
         _, _, lower_x, lower_y = self.Parameterisation.ComputeProfileCoordinates(duct_variables)
         lower_x = lower_x * duct_variables["Chord Length"]
         lower_y = lower_y * duct_variables["Chord Length"]
@@ -122,21 +133,25 @@ class DesignVectorInterface:
         lower_x += duct_variables["Leading Edge Coordinates"][0]
 
         # Construct cubic spline interpolant of the duct surface
-        order = np.argsort(lower_x)  # Defensively sort the x coordinates to avoid a runtime failure
+        # Defensively sorts the x coordinates to avoid a runtime failure
+        order = np.argsort(lower_x)
         dx = np.diff(lower_x[order])
         mask = np.hstack([True, dx > 1e-12]) # keep first point, drop exact duplicates
         order = order[mask]
         duct_interpolant = interpolate.CubicSpline(lower_x[order],
-                                                   np.abs(lower_y)[order],  # Take absolute value of y-coordinates since we need the distance, not the actual coordinate
-                                                   extrapolate=False)
+                                                   np.abs(lower_y)[order],
+                                                   extrapolate=False)  # Take absolute value of y-coordinates since we need the distance
 
         x_min, x_max = lower_x[order[0]], lower_x[order[-1]]
         for i in range(self.num_stages):
             if not self.rotating[i]:
                 continue
 
-            # Loop over the number of blade angles to account for variable pitch to find the largest required radial duct coordinate
-            # Note that this currently only works for skew=0. If skew is implemented in future work, this needs to be reworked to account for skew.
+            # Loop over the number of blade angles to account for variable
+            # pitch to find the largest required radial duct coordinate
+            # Note that this currently only works for skew=0. If skew is
+            # implemented in future work, this needs to be reworked to
+            # account for skew.
             blading = blade_blading_parameters[i]
             y_tip_LE = blading["radial_stations"][-1]
             for angle in blading["ref_blade_angle_lst"]:
@@ -147,26 +162,33 @@ class DesignVectorInterface:
                 projected_chord = blading["chord_length"][-1] * np.cos(chi)
                 x_tip_TE = x_tip_LE + projected_chord
 
-                # Compute the minimum radius of a circle for the trailing edge of the blade tip which satisfies the 
-                # tip gap requirement
-                chord_into_plane = blading["chord_length"][-1] * np.sin(chi)  # Neglect the effect of trailing edge thickness
+                # Compute the minimum radius of a circle for the trailing edge
+                # of the blade tip which satisfies the tip gap requirement,
+                # neglecting the effects of trailinge dge thickness
+                chord_into_plane = blading["chord_length"][-1] * np.sin(chi)
                 theta = np.atan2(chord_into_plane, blading["radial_stations"][-1])
                 y_TE = blading["radial_stations"][-1] + self.tipGap / np.cos(theta)
 
-                # Compute the offsets for the LE and TE of the blade tip from the LE y-coordinate of the duct to the local 
-                # y-coordinate of the lower surface of the duct
-                LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else float(duct_interpolant(x_tip_LE))  # Set to 0 if duct does not lie above LE
-                TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))  # Set to 0 if duct does not lie above TE
+                # Compute the offsets for the LE and TE of the blade tip from
+                # the LE y-coordinate of the duct to the local y-coordinate of
+                # the lower surface of the duct
+                # Sets to zero if the duct does not lie above the LE/TE.
+                LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else float(duct_interpolant(x_tip_LE))
+                TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))
 
-                # Compute the radial location of the duct for the current tip angle and overwrite the current guess if it is larger
-                # Takes the maximum value for the LE & TE since a minimum gap must be enforced
+                # Compute the radial location of the duct for the current tip
+                # angle and overwrite the current guess if it is larger. Takes
+                # the maximum value for the LE & TE since a minimum gap must
+                # be enforced
                 LE_duct_position = y_tip_LE + self.tipGap + LE_offset
                 TE_duct_position = y_TE + TE_offset
                 radial_duct_position = max(LE_duct_position, TE_duct_position)
                 if radial_duct_position > radial_duct_coordinates[i]:
                     radial_duct_coordinates[i] = radial_duct_position
 
-        # The LE y coordinate of the duct is then the maximum of the computed coordinates for each of the blade stages to enforce the minimum tip gap everywhere
+        # The LE y coordinate of the duct is then the maximum of the computed
+        # coordinates for each of the blade stages to enforce the minimum
+        # tip gap everywhere
         if radial_duct_coordinates.any():
             LE_coordinate_duct = float(radial_duct_coordinates.max())
         else:
@@ -176,7 +198,8 @@ class DesignVectorInterface:
         duct_variables["Leading Edge Coordinates"] = (duct_variables["Leading Edge Coordinates"][0],
                                                       LE_coordinate_duct)
 
-        # Set the radius of all stators equal to this y coordinate to avoid miss-matches in stator sizes.
+        # Set the radius of all stators equal to this y coordinate to avoid
+        # miss-matches in stator sizes.
         for i in range(self.num_stages):
             if not self.rotating[i]:
                 r_old = blade_blading_parameters[i]["radial_stations"][-1]
@@ -184,7 +207,9 @@ class DesignVectorInterface:
                     # Simple guard against r=0
                     blade_blading_parameters[i]["radial_stations"] = blade_blading_parameters[i]["radial_stations"] / r_old * LE_coordinate_duct
                 else:
-                    # If the last entry of radial stations is 0, simply set it to the LE coordinate of the duct. This avoids a divide-by-zero error.
+                    # If the last entry of radial stations is 0, simply set it
+                    # to the LE coordinate of the duct. This avoids a
+                    # divide-by-zero error.
                     blade_blading_parameters[i]["radial_stations"] = np.full_like(blade_blading_parameters[i]["radial_stations"],
                                                                                   LE_coordinate_duct,
                                                                                   dtype=float)
@@ -224,7 +249,8 @@ class DesignVectorInterface:
               x_t: float,
               y_t: float) -> float:
         """
-        Helper function to compute the bezier parameter b_8 using the mapping parameter 0 <= b_8_map <= 1
+        Helper function to compute the bezier parameter b_8 using the mapping
+        parameter 0 <= b_8_map <= 1
         """
 
         term = -2 * r_le * x_t / 3
@@ -239,15 +265,17 @@ class DesignVectorInterface:
                                 x_dict: dict[str, float | int],
                                 compute_duct: bool = True) -> tuple:
         """
-        Decompose the design vector x into dictionaries of all the design variables to match the expected input formats for
-        the UDC code interface.
+        Decompose the design vector x into dictionaries of all the design
+        variables to match the expected input formats for the
+        UDC code interface.
 
         Parameters
         ----------
         - x_dict : dict[str, float | int]
             The Pymoo design vector dictionary.
         - compute_duct : bool, optional
-            If True, compute the duct radial location based on the design variables. Default is True.
+            If True, compute the duct radial location based on the design
+            variables. Default is True.
 
         Returns
         -------
@@ -272,8 +300,10 @@ class DesignVectorInterface:
         section_designvar_count = 15 if self.optimize_bladethickness else 8
 
         # Deconstruct the centerbody values if it's variable.
-        # If the centerbody is constant, read in the centerbody values from config.
-        # Note that if the centerbody is variable, we keep the LE coordinate fixed, as the LE coordinate of the duct would already be free to move.
+        # If the centerbody is constant, read in the centerbody values from
+        # config. Note that if the centerbody is variable, we keep the LE
+        # coordinate fixed, as the LE coordinate of the duct would already be
+        # free to move.
         if self.optimize_centrebody:
             try:
                 centerbody_vals = [next(it) for _ in range(centerbody_designvar_count)]
@@ -327,15 +357,18 @@ class DesignVectorInterface:
             duct_variables = copy.deepcopy(config.DUCT_VALUES)
 
         # Deconstruct the rotorblade parameters if they are variable.
-        # If the rotorblade parameters are constant, read in the parameters from config.
+        # If the rotorblade parameters are constant, read in the parameters
+        # from config.
         blade_design_parameters = []
         for stage in range(self.num_stages):
             # Initiate empty list for each stage
             stage_design_parameters = []
             if self.optimize_stages[stage]:
-                # If the stage is to be optimized, read in the design vector for the blade profiles
+                # If the stage is to be optimized, read in the design vector
+                # for the blade profiles
                 for section in range(self.num_radial[stage]):
-                    # Loop over the number of radial sections and append each section to stage_design_parameters
+                    # Loop over the number of radial sections and append each
+                    # section to stage_design_parameters
                     try:
                         section_vals = [next(it) for _ in range(section_designvar_count)]
                     except StopIteration:
@@ -357,7 +390,9 @@ class DesignVectorInterface:
                                               "trailing_camberline_angle": section_vals[13],
                                               "leading_edge_direction": section_vals[14]}
                     else:
-                        # If only the blade camber distribution is meant to be optimised, read in the thickness parameters from the reference design
+                        # If only the blade camber distribution is meant to be
+                        # optimised, read in the thickness parameters
+                        # from the reference design
                         section_parameters = {"b_0": section_vals[0],
                                               "b_2": section_vals[1],
                                               "b_8": config.STAGE_DESIGN_VARIABLES[stage][section]["b_8"],
@@ -386,20 +421,24 @@ class DesignVectorInterface:
             # Initiate empty list for each stage
             stage_blading_parameters = {}
             if self.optimize_stages[stage]:
-                # If the stage is to be optimized, read in the design vector for the blading parameters
+                # If the stage is to be optimized, read in the design vector
+                # for the blading parameters
                 stage_blading_parameters["root_LE_coordinate"] = next(it)
 
                 ref_blade_angle_lst = []
+                # Allow for multi-point variable pitch AND fixed pitch analyses
+                # by simply reading in the appropriate number of angles
                 for _ in range(len(config.STAGE_BLADING_PARAMETERS[stage]["ref_blade_angle_lst"])):
-                    ref_blade_angle_lst.append(next(it))  # Allow for multi-point variable pitch AND fixed pitch analyses by simply reading in the appropriate number of angles
-                
-                # Check consistency of the amount of tip angles against the analysis being performed
+                    ref_blade_angle_lst.append(next(it))
+
+                # Check consistency of the amount of tip angles against the
+                # analysis being performed
                 if len(ref_blade_angle_lst) not in (1, num_operating_conditions):
                     raise ValueError(
                         f"ref_blade_angle count {len(ref_blade_angle_lst)} != operating points {num_operating_conditions} "
                         f"(stage {stage}). Provide either 1 (fixed pitch) or one per operating point."
                     )
-                
+
                 stage_blading_parameters["ref_blade_angle_lst"] = ref_blade_angle_lst
                 stage_blading_parameters["ref_blade_angle"] = ref_blade_angle_lst[0]  # Initialise to the first pitch angle
 
@@ -411,7 +450,14 @@ class DesignVectorInterface:
                 stage_blading_parameters["radial_stations"] = np.linspace(0, 0.5 * next(it), self.num_radial[stage])  # Radial stations are defined as fraction of blade radius * local radius
 
                 # Extract sectional blading parameter lists
-                stage_blading_parameters["chord_length"] = [next(it) for _ in range(self.num_radial[stage])]
+                root_chord = next(it)
+                taper_distribution = [next(it) for _ in range(self.num_radial[stage] - 1)]
+                stage_blading_parameters["root_chord"] = root_chord
+                stage_blading_parameters["taper_distribution"] = taper_distribution
+
+                chord_distribution = np.cumprod([root_chord, *taper_distribution])
+                stage_blading_parameters["chord_length"] = chord_distribution.tolist()
+
                 sweep_angle = [0]
                 sweep_angle.extend([next(it) for _ in range(self.num_radial[stage] - 1)])  # -1 since the root is independent of sweep
                 stage_blading_parameters["sweep_angle"] = sweep_angle
@@ -431,7 +477,9 @@ class DesignVectorInterface:
                                                                                       blade_blading_parameters=blade_blading_parameters)
 
         # Write the reference length for UDC
-        Lref = blade_blading_parameters[0]["radial_stations"][-1] * 2  # The last entry in radial stations corresponds to the blade tip, so multiply by 2 to get the blade diameter
+        # The last entry in radial stations corresponds to the blade tip,
+        # so multiply by 2 to get the blade diameter
+        Lref = blade_blading_parameters[0]["radial_stations"][-1] * 2
 
         return centerbody_variables, duct_variables, blade_design_parameters, blade_blading_parameters, Lref
 
@@ -443,8 +491,9 @@ class DesignVectorInterface:
                                 blade_blading_parameters: list[dict[str, float | int]],
                                 ) -> dict[str, float | int]:
         """
-        Based on the design vector dictionaries, reconstruct the design vector dictionary x.
-        This is used to reconstruct the design vector after it has been modified by the repair operator.
+        Based on the design vector dictionaries, reconstruct the design vector
+        dictionary x. This is used to reconstruct the design vector after it
+        has been modified by the repair operator.
 
         Parameters
         ----------
@@ -453,9 +502,11 @@ class DesignVectorInterface:
         - duct_variables : dict[str, float]
             A dictionary containing the duct variables.
         - blade_design_parameters : list[list[dict[str, float]]]
-            A list of lists of dictionaries containing the blade design parameters for each stage.
+            A list of lists of dictionaries containing the blade design
+            parameters for each stage.
         - blade_blading_parameters : list[dict[str, float | int]]
-            A list of dictionaries containing the blade blading parameters for each stage.
+            A list of dictionaries containing the blade blading parameters
+            for each stage.
 
         Returns
         -------
@@ -465,7 +516,8 @@ class DesignVectorInterface:
 
         def extract_b8_map(params: dict[str, float]) -> float:
             """
-            Helper function to compute the mapping parameter b_8_map using the bezier parameter b_8
+            Helper function to compute the mapping parameter b_8_map using the
+            bezier parameter b_8
             """
 
             term = -2 * params["r_LE"] * params["x_t"] / 3
@@ -498,7 +550,8 @@ class DesignVectorInterface:
         vector = []
 
         if config.OPTIMIZE_CENTERBODY:
-            # If the centerbody is to be optimised, reconstruct the corresponding variable section.
+            # If the centerbody is to be optimised, reconstruct the
+            # corresponding variable section.
             vector.append(extract_b8_map(centerbody_variables))  # b_8_map
             vector.append(centerbody_variables["b_15"])  # b_15
             vector.append(centerbody_variables["x_t"])  # x_t
@@ -515,16 +568,20 @@ class DesignVectorInterface:
             vector.append(duct_variables["Leading Edge Coordinates"][0])  # Leading Edge X-Coordinate
 
         for i, optimize_stage in enumerate(config.OPTIMIZE_STAGE):
-            # If (any of) the rotor/stator stage(s) are to be optimised, reconstruct the design variables for the profiles
+            # If (any of) the rotor/stator stage(s) are to be optimised,
+            # reconstruct the design variables for the profiles
             if optimize_stage:
                 for j in range(config.NUM_RADIALSECTIONS[i]):
-                    # Loop over the number of radial sections and append each section to stage_design_parameters
+                    # Loop over the number of radial sections and append each
+                    # section to stage_design_parameters
                     if self.optimize_bladethickness:
                         # If the full profile parameterisation is used, simply add the dictionary values
                         profile = profile_section_vars(blade_design_parameters[i][j])
                         vector.extend(profile)
                     else:
-                        # If only the camber distribution is optimised, extract those from the profile and add them to the design vector
+                        # If only the camber distribution is optimised,
+                        # extract those from the profile and add them to
+                        # the design vector
                         profile = [blade_design_parameters[i][j]["b_0"],
                                    blade_design_parameters[i][j]["b_2"],
                                    blade_design_parameters[i][j]["b_17"],
@@ -536,27 +593,33 @@ class DesignVectorInterface:
                         vector.extend(profile)
 
         for i, opt_stage in enumerate(config.OPTIMIZE_STAGE):
-            # Loop over the stages and write the blading parameters to the design vector
+            # Loop over the stages and write the blading parameters to the
+            # design vector
             if opt_stage:
-                # If the stage is to be optimised, read in the design vector for the blading parameters
+                # If the stage is to be optimised, read in the design vector
+                # for the blading parameters
                 vector.append(blade_blading_parameters[i]["root_LE_coordinate"])  # root_LE_coordinate
                 for angle in blade_blading_parameters[i]["ref_blade_angle_lst"]:
-                    vector.append(angle)  # Enables variable pitch to be used. 
+                    vector.append(angle)  # Enables variable pitch to be used.
 
                 vector.append(int(blade_blading_parameters[i]["blade_count"]))  # blade_count
-                vector.extend([RPS for RPS in blade_blading_parameters[i]["RPS_lst"]])  # blade RPS
+                if self.rotating[i]:
+                    vector.extend([RPS for RPS in blade_blading_parameters[i]["RPS_lst"]])  # blade RPS
                 vector.append(blade_blading_parameters[i]["radial_stations"][-1] * 2)  # blade diameter
 
-                vector.extend(blade_blading_parameters[i]["chord_length"])  # chord length
+                vector.append(blade_blading_parameters[i]["root_chord"])
+                vector.extend(blade_blading_parameters[i]["taper_distribution"])
+
                 vector.extend(blade_blading_parameters[i]["sweep_angle"][1:])  # Skip the root section since the root is independent of sweep
                 vector.extend(blade_blading_parameters[i]["blade_angle"][:-1])  # -1 since we fix the angle at the tip to zero to simplify the design.
 
-        # For a mixed-variable problem, PyMoo expects the vector to be a dictionary, so we convert vector to a dictionary.
+        # For a mixed-variable problem, PyMoo expects the vector to be a
+        # dictionary, so we convert vector to a dictionary.
         # Note that all variables are given a name xi.
         vector = {f"x{i}": var for i, var in enumerate(vector)}
 
         return vector
-    
+
 
 if __name__ == "__main__":
     # Create a reference vector for testing
@@ -565,10 +628,10 @@ if __name__ == "__main__":
     from repair import RepairIndividuals  # type: ignore
 
     test = OptimizationProblem()
-    ref_pop = InitPopulation(population_type="biased").GeneratePopulation()
+    ref_pop = InitPopulation().GeneratePopulation()
     ref_vectors = ref_pop.get("X")
     ref_vectors = RepairIndividuals()._do(test, ref_vectors)
-    ref_vector = ref_vectors[0]  # Use the first vector for testing, since it is the reference vector
+    ref_vector = ref_vectors[0]  # Use the first vector (=reference vector) for testing
 
     interface = DesignVectorInterface()
     vector = interface.DeconstructDesignVector(ref_vector)

@@ -55,7 +55,8 @@ Changelog:
           dump folder generation to avoid unnecessary folder creation.
 - V2.0:   Renamed MTFLOW_caller to UDC for consistency with written thesis.
           Updated imports to reflect new structure.
-- V2.1:   Updated documentation and formatting. Improved type hints.
+- V2.1:   Updated documentation and formatting. Improved type hints. 
+          Cleaned up old imports. 
 """
 
 # Import standard libraries
@@ -199,11 +200,9 @@ class OptimisationProblem(ElementwiseProblem):
         # Prevents circular imports and speeds up initial loading time.
         if not hasattr(self, "_lazy_modules_loaded"):
             from UDC import UDC  # type: ignore
-            from Submodels.output_handling import output_processing  # type: ignore
             from Submodels.file_handling import fileHandlingMTSET  # type: ignore
             from Submodels.file_handling import fileHandlingMTFLO  # type: ignore
             self._UDC = UDC
-            self._output_processing = output_processing
             self._fileHandlingMTSET = fileHandlingMTSET
             self._fileHandlingMTFLO = fileHandlingMTFLO
             self._lazy_modules_loaded = True
@@ -357,7 +356,7 @@ class OptimisationProblem(ElementwiseProblem):
         """
 
         # Generate the MTSET input file containing the axisymmetric geometries
-        # and the MTFLO blading input file
+        # and the MTFLO blading input file.
         try:
             # Deconstruct the design vector
             (self.centerbody_variables,
@@ -461,19 +460,20 @@ class OptimisationProblem(ElementwiseProblem):
 
             try:
                 # Run UDC
-                (exit_flag, 
+                (exit_flag,
                 UDC_outputs) = UDC_interface.caller(external_inputs=True,
                                                     output_type=OutputType.FORCES_ONLY)
 
                 # Overwrite outputs in case of crashes
-                if exit_flag in (ExitFlag.CRASH, ExitFlag.CHOKING, 
+                if exit_flag in (ExitFlag.CRASH, ExitFlag.CHOKING,
                                  ExitFlag.NOT_PERFORMED):
                     UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
 
             except Exception as e:
+                UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
                 if self.verbose:
                     print(f"[UDC_ERROR] case={self.analysis_name}: {e}")
-                UDC_outputs = copy.copy(self.CRASH_OUTPUTS)
+
         else:
             # If the design is infeasible, we load the crash outputs
             # This is a predefined dictionary with all outputs set to 0.
@@ -513,7 +513,7 @@ if __name__ == "__main__":
     from init_population import InitPopulation  # type: ignore
     from repair import RepairIndividuals  # type: ignore
 
-    ref_pop = InitPopulation(population_type="biased").GeneratePopulation()
+    ref_pop = InitPopulation().GeneratePopulation()
     ref_vectors = ref_pop.get("X")
     ref_vectors = RepairIndividuals()._do(test, ref_vectors)
     ref_vector = ref_vectors[0]  # Use the first vector for testing

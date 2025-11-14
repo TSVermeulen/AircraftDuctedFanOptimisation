@@ -30,7 +30,7 @@ Versioning
 ----------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version: 1.7
+Version: 1.8
 
 Changelog:
 - V1.0: Initial implementation with basic equality and inequality constraints.
@@ -41,6 +41,7 @@ Changelog:
 - V1.5: Fixed bug in minimum thrust constraint. Performance improvements by avoiding repeated construction/lookup of data.
 - V1.6: Implemented theoretical efficiency limit calculation based on actuator disk theory. Improved efficiency calculations.
 - V1.7: Added unified thrust bound constraint to replace the minimum and maximum thrust constraints. Removed deprecated constraints.
+- V1.8: Removed unneccesary rounding of constraint values. 
 """
 
 # Import standard libraries
@@ -65,9 +66,6 @@ class Constraints:
 
     # Large constraint violation value to penalize infeasible designs
     INFEASIBLE_CV = 1e12  # CV = Constraint Violation
-
-    # Define rounding for constraints to match MTFLOW precision
-    CONSTRAINT_PRECISION = 5
 
 
     def __init__(self,
@@ -248,7 +246,7 @@ class Constraints:
             power = self._calculate_power(outputs, Lref)
             energy = power * self.oper["flight_phase_time"]
 
-        return round(energy / config.reference_energy - 1, self.CONSTRAINT_PRECISION)
+        return energy / config.reference_energy - 1
 
 
     def KeepEfficiencyFeasibleUpper(self,
@@ -426,9 +424,8 @@ class Constraints:
         self.ref_thrust = config.T_ref_constr[0]
 
         # Compute the inequality constraints and write them to out["G"]
-        # Rounds the constraint values to 5 decimal figures to match the number of sigfigs given by the MTFLOW outputs to avoid rounding errors.
         if ineq_constraints:
-            computed_ineq_constraints = [round(constraint(analysis_outputs, Lref, thrust, power), self.CONSTRAINT_PRECISION)
+            computed_ineq_constraints = [constraint(analysis_outputs, Lref, thrust, power)
                                          for constraint in ineq_constraints]
 
             if self.design_okay:
@@ -438,9 +435,8 @@ class Constraints:
                 out["G"] = np.full(len(computed_ineq_constraints), self.INFEASIBLE_CV, dtype=float)
 
         # Compute the equality constraints and write them to out["H"]
-        # Rounds the constraint values to 5 decimal figures to match the number of sigfigs given by the MTFLOW outputs to avoid rounding errors.
         if eq_constraints:
-            computed_eq_constraints = [round(constraint(analysis_outputs, Lref, thrust, power), self.CONSTRAINT_PRECISION)
+            computed_eq_constraints = [constraint(analysis_outputs, Lref, thrust, power)
                                        for constraint in eq_constraints]
 
             if self.design_okay:
@@ -469,7 +465,7 @@ class Constraints:
             self.ref_thrust = ref_thrusts[i]
             self.ref_power = ref_powers[i]
             self.oper = self.multi_oper[i]
-            computed_constraints.extend([round(constraint(outputs, Lref, thrust[i], power[i]), self.CONSTRAINT_PRECISION)
+            computed_constraints.extend([constraint(outputs, Lref, thrust[i], power[i])
                                         for constraint in constraint_list])
         return computed_constraints
 
@@ -528,7 +524,6 @@ class Constraints:
 
 
         # Compute the inequality constraints and write them to out["G"]
-        # Rounds the constraint values to 5 decimal figures to match the number of sigfigs given by the MTFLOW outputs to avoid rounding errors.
         if ineq_constraints:
             computed_ineq_constraints = self._compute_multi_point_constraints(ineq_constraints, analysis_outputs, Lref, thrust, power)
             if config.InEqConstraintID.ENERGY_IMPROVEMENT in config.constraint_IDs[0]:
@@ -541,7 +536,6 @@ class Constraints:
                 out["G"] = np.full(len(computed_ineq_constraints), self.INFEASIBLE_CV, dtype=float)
 
         # Compute the equality constraints and write them to out["H"]
-        # Rounds the constraint values to 5 decimal figures to match the number of sigfigs given by the MTFLOW outputs to avoid rounding errors.
         if eq_constraints:
             computed_eq_constraints = self._compute_multi_point_constraints(eq_constraints, analysis_outputs, Lref, thrust, power)
             if self.design_okay:

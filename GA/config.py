@@ -158,6 +158,8 @@ def _load_blading(RPS_lst: Sequence[float]|float,
     # Start defining the MTFLO blading inputs
     radial_stations = np.array([0, 0.32004, 0.74676, 1.0668])  # 0, 0.3, 0.7, 1
     chord_length = np.array([0.3510, 0.3152, 0.2367, 0.2205])
+    taper_distribution = chord_length[1:] / chord_length[:-1] 
+
     blade_angle = np.array([np.deg2rad(38.1), np.deg2rad(30.9), np.deg2rad(16.8), np.deg2rad(0)])
     propeller_parameters = {"root_LE_coordinate": 0.1495672948767407, 
                             "rotational_rate": 0,  # Initialise to zero, will be updated by the UDC/Opti framework interface
@@ -169,6 +171,8 @@ def _load_blading(RPS_lst: Sequence[float]|float,
                             "blade_count": 3, 
                             "radial_stations": radial_stations, 
                             "chord_length": chord_length, 
+                            "root_chord": chord_length[0],
+                            "taper_distribution": taper_distribution,
                             "blade_angle": blade_angle}
     
     horizontal_strut_parameters = {"root_LE_coordinate": 0.57785, 
@@ -181,6 +185,8 @@ def _load_blading(RPS_lst: Sequence[float]|float,
                                    "blade_count": 4, 
                                    "radial_stations": np.array([0.0, 1.20968]), 
                                    "chord_length": np.array([0.57658, 0.14224]), 
+                                   "root_chord": chord_length[0],
+                                   "taper_distribution": [chord_length[-1] / chord_length[0]],
                                    "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                    "sweep_angle": np.array([0, 0])}
     
@@ -194,6 +200,8 @@ def _load_blading(RPS_lst: Sequence[float]|float,
                                  "blade_count": 2, 
                                  "radial_stations": np.array([0.0, 1.20968]), 
                                  "chord_length": np.array([0.10287, 0.10287]), 
+                                 "root_chord": chord_length[0],
+                                 "taper_distribution": [chord_length[-1] / chord_length[0]],
                                  "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                  "sweep_angle": np.array([0, 0])}
     
@@ -205,7 +213,7 @@ def _load_blading(RPS_lst: Sequence[float]|float,
     # Define the sweep angles
     # Note that this is approximate, since the rotation of the chord line is not completely accurate when rotating a complete profile
     # As approximation, we use the first blade reference angle in the reference blade angle list.
-    sweep_angle = np.zeros_like(blading_parameters[0]["chord_length"])
+    sweep_angle = np.zeros_like(blading_parameters[0]["radial_stations"])
     root_blade_angle = (blade_angle[0] + blading_parameters[0]["ref_blade_angle"] - blading_parameters[0]["reference_section_blade_angle"])
 
     root_LE = blading_parameters[0]["root_LE_coordinate"] # The location of the root LE is arbitrary for computing the sweep angles.
@@ -302,7 +310,7 @@ POPULATION_SIZE = 200
 # Larger initial population for better diversity in case of infeasible designs, then reduced to standard size
 INITIAL_POPULATION_SIZE = 400
 MAX_GENERATIONS = 500
-SLIDING_WINDOW_SIZE = 50
+SLIDING_WINDOW_SIZE = 25
 
 # Define the initial population parameter spreads, used to construct a biased initial population 
 SPREAD_CONTINUOUS = 0.5  # Relative spread (+/- %) applied to continous variables around their reference values

@@ -93,8 +93,7 @@ if __name__ == "__main__":
         # Initialise the algorithm
         algorithm = MixedVariableGA(pop_size=config.POPULATION_SIZE,
                                     mating=MixedVariableMating(repair=RepairIndividuals()),
-                                    sampling=InitPopulation(population_type="biased",
-                                                            seed=config.GLOBAL_SEED).GeneratePopulation(),
+                                    sampling=InitPopulation(seed=config.GLOBAL_SEED).GeneratePopulation(),
                                     repair=RepairIndividuals())
 
         # Run the optimisation
