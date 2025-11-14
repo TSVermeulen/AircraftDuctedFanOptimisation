@@ -29,8 +29,8 @@ Version: 1.2
 Changelog:
 - V1.0: Initial implementation.
 - V1.1: Updated termination conditions for much needed improvement in multi-objective optimisation.
-- V1.2: Updated consistency in multi-objective termination conditions. 
-- V1.3: Made sliding window size an input from the config file r.t. constant. 
+- V1.2: Updated consistency in multi-objective termination conditions.
+- V1.3: Made sliding window size an input from the config file r.t. constant.
 """
 
 # Import 3rd party libraries

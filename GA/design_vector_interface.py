@@ -523,6 +523,12 @@ class DesignVectorInterface:
             term = -2 * params["r_LE"] * params["x_t"] / 3
             sqrt_term = 0 if term <= 0 else np.sqrt(term)
             factor = min(params["y_t"], sqrt_term)
+
+            if factor <= 0:
+                raise ValueError(f"Invalid geometry for b_8_map: denominator<=0",
+                                 f" (r_LE={params["r_LE"]}, "
+                                 f"x_t={params["x_t"]}, y_t={params["y_t"]}).")
+
             return float(params["b_8"] / factor)
 
 

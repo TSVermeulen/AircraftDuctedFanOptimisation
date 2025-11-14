@@ -4,14 +4,14 @@ main-parallelised-UNSGAIII
 
 Description
 -----------
-This module defines the main entry point for running a multi-threaded 
-optimisation problem using the pymoo framework. Uses the starmap parallelisation 
-method for flexible parallelisation opportunities. Uses the Unified-Nondominated 
+This module defines the main entry point for running a multi-threaded
+optimisation problem using the pymoo framework. Uses the starmap parallelisation
+method for flexible parallelisation opportunities. Uses the Unified-Nondominated
 Sorting Genetic Algorithm 3 with the mixed-variable implementation.
 
 Functionality
 -------------
-- Initializes an optimisation problem using UNSGA-III with mixed-variable 
+- Initializes an optimisation problem using UNSGA-III with mixed-variable
   support.
 - Configures and runs a genetic algorithm (GA) for optimisation.
 - Saves the results to a dill database for future reference.
@@ -22,13 +22,13 @@ Examples
 
 Notes
 -----
-This module integrates with the pymoo framework and requires the problem 
-definition and population initialization modules. Ensure that all dependencies 
+This module integrates with the pymoo framework and requires the problem
+definition and population initialization modules. Ensure that all dependencies
 are installed and properly configured.
 
 References
 ----------
-For more details on pymoo and its capabilities, refer to the official 
+For more details on pymoo and its capabilities, refer to the official
 documentation:
 https://pymoo.org/
 
@@ -72,7 +72,7 @@ from repair import RepairIndividuals # type: ignore
 
 if __name__ == "__main__":
     # Required for Windows compatibility when using multiprocessing
-    multiprocessing.freeze_support() 
+    multiprocessing.freeze_support()
     if os.name == 'nt':
         multiprocessing.set_start_method('spawn', force=True)
 
@@ -82,13 +82,13 @@ if __name__ == "__main__":
     total_threads_avail = max(0, total_threads - config.RESERVED_THREADS)
 
     if total_threads_avail < threads_per_eval:
-        # No point spawning processes that will immediately contend 
+        # No point spawning processes that will immediately contend
         # for the same cores
         n_processes = 0
     else:
         n_processes = total_threads_avail // threads_per_eval
 
-    # Always fall back to at least one serial worker to ensure the script 
+    # Always fall back to at least one serial worker to ensure the script
     # still runs.
     n_processes = max(1, n_processes)
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         runner = StarmapParallelization(pool.starmap)
 
         """ Initialise the optimisation problem and algorithm """
-        # Initialise the optimisation problem by passing the configuration and 
+        # Initialise the optimisation problem by passing the configuration and
         # the starmap interface of the thread_pool
         if hasattr(config, "PROBLEM_TYPE") and config.PROBLEM_TYPE == "multi_point":
             from multi_point_problem_definition import MultiPointOptimizationProblem # type: ignore
@@ -148,8 +148,8 @@ if __name__ == "__main__":
         print(f"Best solution found: \nX = {res.X}\nF = {res.F}")
 
         """ Save the results to a dill file for future reference """
-        # This avoids needing to re-run the optimisation if the results are 
-        # needed later. The filename is generated using the process ID and 
+        # This avoids needing to re-run the optimisation if the results are
+        # needed later. The filename is generated using the process ID and
         # current timestamp to ensure uniqueness.
 
         # First generate the results folder if it does not exist already

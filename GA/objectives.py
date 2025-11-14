@@ -4,9 +4,10 @@ objectives
 
 Description
 -----------
-This module provides an interface to define and compute objectives for optimization problems.
-It includes methods to calculate various sub-objectives such as efficiency, weight, frontal area,
-pressure ratio, and multi-point objectives.
+This module provides an interface to define and compute objectives for
+optimisation problems. It includes methods to calculate various sub-objectives
+such as efficiency, weight, frontal area, pressure ratio, and
+multi-point objectives.
 
 Classes
 -------
@@ -24,7 +25,8 @@ Examples
 Notes
 -----
 This module is designed to work with optimization frameworks such as PyMoo.
-The objectives are structured to be compatible with PyMoo's minimization-based approach.
+The objectives are structured to be compatible with PyMoo's
+minimisation-based approach.
 
 Versioning
 ----------
@@ -33,11 +35,14 @@ Email: T.S.Vermeulen@tudelft.nl
 Version: 3.1
 
 Changelog:
-- V1.0: Initial implementation with basic sub-objectives and placeholders for unimplemented methods.
+- V1.0: Initial implementation with basic sub-objectives and placeholders for
+        unimplemented methods.
 - V1.1: Added ComputeObjective method to handle multiple objectives dynamically.
 - V1.2: Improved documentation and added type hints for better clarity.
-- V2.0: Refactored code for better modularity and maintainability. Updated examples and notes.
-- V2.1: Updated efficiency objective for better performance. Improved efficiency of frontal area objective
+- V2.0: Refactored code for better modularity and maintainability.
+        Updated examples and notes.
+- V2.1: Updated efficiency objective for better performance.
+        Improved efficiency of frontal area objective
 - V3.0: Renamed MTFLOW to UDC for consistency with written thesis.
 - V3.1: Removed unneccesary rounding.
 """
@@ -83,8 +88,10 @@ class Objectives:
         self.oper = oper
         self.Lref = Lref
 
-        # Define the objective list, and the subset of objectives which are independent of operating condition
-        self.objectivelist = [self.Efficiency, self.FrontalArea, self.WettedArea, self.PressureRatio]
+        # Define the objective list, and the subset of objectives which are
+        # independent of operating condition
+        self.objectivelist = [self.Efficiency, self.FrontalArea,
+                              self.WettedArea, self.PressureRatio]
         self.constant_objectiveIDs = {1, 2}
 
 
@@ -97,8 +104,10 @@ class Objectives:
         Parameters
         ----------
         - outputs : AnalysisOutputs
-            A dictionary containing the outputs from the forces.xxx file.
-            outputs should be structured based on output mode 3 of output_handling.output_processing.GetAllVariables().
+            A dictionary containing the forces outputs. Must contain all
+            entries corresponding to an execution of
+            output_handling.output_processing().GetAllVariables()
+
 
         Returns
         -------
@@ -118,8 +127,9 @@ class Objectives:
         Parameters
         ----------
         - _outputs : AnalysisOutputs
-            A dictionary containing the outputs from the forces.xxx file.
-            _outputs should be structured based on output mode 3 of output_handling.output_processing.GetAllVariables().
+            A dictionary containing the forces outputs. Must contain all
+            entries corresponding to an execution of
+            output_handling.output_processing().GetAllVariables()
 
         Returns
         -------
@@ -132,9 +142,10 @@ class Objectives:
             from Submodels.Parameterisations import AirfoilParameterisation  # type: ignore
             self._airfoil_parameterisation = AirfoilParameterisation()
 
-        # To compute the frontal area, we need the maximum radius of the ducted propeller/fan.
-        # This can be computed based on the radial LE coordinate of the duct,
-        # together with the maximum y-coordinate of the duct profile.
+        # To compute the frontal area, we need the maximum radius of the
+        # ducted propeller/fan. This can be computed based on the radial LE
+        # coordinate of the duct, together with the maximum y-coordinate of
+        # the duct profile.
 
         # For a symmetric profile, this is simply equal to y_t,
         # so we do not need to compute the airfoil upper surface distribution
@@ -142,21 +153,28 @@ class Objectives:
             upper_y = self.duct_variables["y_t"]
         else:
             # For a cambered profile, compute the airfoil coordinates
-            # We only care about the upper y coordinates so they are the only ones we store
-            _, upper_y, _, _ = self._airfoil_parameterisation.ComputeProfileCoordinates(self.duct_variables)
+            # We only care about the upper y coordinates so they are the
+            # only ones we store
+            (_,
+             upper_y,
+             _,
+             _) = self._airfoil_parameterisation.ComputeProfileCoordinates(self.duct_variables)
 
         # Dimensionalise the y coordinates using the chord length
         chord = self.duct_variables["Chord Length"]
         upper_y = upper_y * chord
 
         # Compute the maximum radius
-        max_radius = self.duct_variables["Leading Edge Coordinates"][1] + np.max(upper_y)
+        max_radius = self.duct_variables["Leading Edge Coordinates"][1] + \
+            np.max(upper_y)
 
-        # Since we deal with axisymmetric geometry, the frontal area is then simply the area of a circle
+        # Since we deal with axisymmetric geometry, the frontal area is
+        # then simply the area of a circle
         frontal_area = np.pi * max_radius ** 2
 
-        # Return the frontal area normalised by the reference frontal area in config
-        # This is needed to ensure all objectives are of the same order of magnitude and thus have equal weight to the GA optimiser.
+        # Return the frontal area normalised by the reference frontal area
+        # in config. This is needed to ensure all objectives are of the
+        # same order of magnitude and thus have equal weight to the GA.
         return frontal_area / config.REF_FRONTAL_AREA
 
 
@@ -169,15 +187,16 @@ class Objectives:
         Parameters
         ----------
         - outputs : AnalysisOutputs
-            A dictionary containing the outputs from the forces.xxx file.
-            outputs should be structured based on output mode 3 of output_handling.output_processing.GetAllVariables().
+            A dictionary containing the forces outputs. Must contain all
+            entries corresponding to an execution of
+            output_handling.output_processing().GetAllVariables()
 
         Returns
         -------
         - wetted_area : float
             The wetted area as taken from the output file forces.analysis_name.
-            The wetted area is computed in the normalised coordinate system of UDC,
-            so it is multiplied by Lref^2 to obtain the dimensional form.
+            The wetted area is computed in the normalised coordinate system of
+            UDC, so it is multiplied by Lref^2 to obtain the dimensional form.
         """
 
         return outputs["data"]["Wetted Area"] * self.Lref ** 2
@@ -192,8 +211,9 @@ class Objectives:
         Parameters
         ----------
         - outputs : AnalysisOutputs
-            A dictionary containing the outputs from the forces.xxx file.
-            outputs should be structured based on output mode 3 of output_handling.output_processing.GetAllVariables().
+            A dictionary containing the forces outputs. Must contain all
+            entries corresponding to an execution of
+            output_handling.output_processing().GetAllVariables()
 
         Returns
         -------
@@ -214,26 +234,36 @@ class Objectives:
         Parameters
         ----------
         - outputs : AnalysisOutputs
-            A dictionary or list of dictionaries containing the outputs from the forces.xxx file.
-            outputs should be structured based on output mode 3 of output_handling.output_processing.GetAllVariables().
+            A dictionary or list of dictionaries containing the forces outputs.
+            Must contain all entries corresponding to an execution of
+            output_handling.output_processing().GetAllVariables()
 
         Returns
         -------
         - Energy : float
-            A float of the energy used to power the ducted fan during the flight phase.
-            This is computed as the product of the power and the time spent in the flight phase.
+            A float of the energy used to power the ducted fan during the
+            flight phase. This is computed as the product of the power and the
+            time spent in the flight phase.
         """
 
         if isinstance(outputs, list):
-            # If outputs is a list, we are solving for a multi-point optimisation problem, so we sum the total energ for all points.
+            # If outputs is a list, we are solving for a multi-point
+            # optimisation problem, so we sum the total energ for all points.
             energy = 0
             for idx, output in enumerate(outputs):
-                power = output["data"]["Total power CP"] * (0.5 * self.oper[idx]["atmos"].density[0] * self.oper[idx]["Vinl"] ** 3 * self.Lref ** 2)
-                energy += power * self.oper[idx]["flight_phase_time"] / config.reference_energy
+                power = output["data"]["Total power CP"] * \
+                    (0.5 * self.oper[idx]["atmos"].density[0] * \
+                     self.oper[idx]["Vinl"] ** 3 * self.Lref ** 2)
+                energy += power * self.oper[idx]["flight_phase_time"] / \
+                    config.reference_energy
         else:
-            # If outputs is a single dictionary, we are solving for a single-point optimisation problem.
-            power = outputs["data"]["Total power CP"] * (0.5 * self.oper["atmos"].density[0] * self.oper["Vinl"] ** 3 * self.Lref ** 2)
-            energy = power * self.oper["flight_phase_time"] / config.reference_energy
+            # If outputs is a single dictionary, we are solving for a
+            # single-point optimisation problem.
+            power = outputs["data"]["Total power CP"] * \
+                (0.5 * self.oper["atmos"].density[0] * self.oper["Vinl"] \
+                 ** 3 * self.Lref ** 2)
+            energy = power * self.oper["flight_phase_time"] / \
+                config.reference_energy
 
         return energy
 
@@ -243,11 +273,12 @@ class Objectives:
                          objective_IDs: list[int],
                          out: dict) -> None:
         """
-        Computes the objectives for optimization based on the provided analysis outputs.
-        This method evaluates a list of objective functions, specified by their IDs in the
-        configuration, and returns their computed values. The objectives are negated to
-        convert maximization objectives (e.g., maximize efficiency) into minimization
-        objectives, as required by the PyMoo optimization framework.
+        Computes the objectives for optimisation based on the provided analysis
+        outputs. This method evaluates a list of objective functions,
+        specified by their IDs in the configuration, and returns their
+        computed values. The objectives are negated to convert maximisation
+        objectives (e.g., maximise efficiency) into minimisation objectives,
+        as required by the PyMoo optimisation framework.
 
         Parameters
         ----------
@@ -259,7 +290,7 @@ class Objectives:
 
         Returns
         -------
-        None, the out dictionary is updated in place with the computed objectives.
+        None
         """
 
         objectives = [self.objectivelist[i] for i in objective_IDs]
@@ -271,10 +302,11 @@ class Objectives:
         )
 
         if 4 in objective_IDs:
-            # If the flight phase energy objective is requested, compute it separately
-            # and append it to the computed objectives.
+            # If the flight phase energy objective is requested, compute it
+            # separately and append it to the computed objectives.
             flight_phase_energy = self.FlightPhaseEnergy(analysis_outputs)
-            computed_objectives = np.append(computed_objectives, flight_phase_energy)
+            computed_objectives = np.append(computed_objectives,
+                                            flight_phase_energy)
 
         out["F"] = computed_objectives
 
@@ -287,11 +319,12 @@ class Objectives:
                                     objective_IDs: list[int],
                                     out: dict) -> None:
         """
-        Computes the objectives for a multi-point optimization based on the provided analysis outputs.
-        This method evaluates a list of objective functions, specified by their IDs in the
-        configuration, and returns their computed values. The objectives are negated to
-        convert maximization objectives (e.g., maximize efficiency) into minimization
-        objectives, as required by the PyMoo optimization framework.
+        Computes the objectives for a multi-point optimisation based on the
+        provided analysis outputs. This method evaluates a list of objective
+        functions, specified by their IDs in the configuration, and returns
+        their computed values. The objectives are negated to convert
+        maximisation objectives (e.g., maximise efficiency) into minimisation
+        objectives, as required by the PyMoo optimisation framework.
 
         Parameters
         ----------
@@ -303,20 +336,22 @@ class Objectives:
 
         Returns
         -------
-        None, the out dictionary is updated in place with the computed objectives.
+        None
         """
 
-        variable_IDs = [oid for oid in objective_IDs if oid not in self.constant_objectiveIDs and oid !=4]  # Identifiers for the variable objective functions
-        constant_IDs = [oid for oid in objective_IDs if oid in self.constant_objectiveIDs and oid !=4]  # Identifiers for the constant variable objective functions
+        # Identify the selected variable and constant objective functions
+        variable_IDs = [oid for oid in objective_IDs if oid not in self.constant_objectiveIDs and oid !=4]
+        constant_IDs = [oid for oid in objective_IDs if oid in self.constant_objectiveIDs and oid !=4]
+        variable_objectives = [self.objectivelist[i] for i in variable_IDs]
+        constant_objectives = [self.objectivelist[i] for i in constant_IDs]
 
-        variable_objectives = [self.objectivelist[i] for i in variable_IDs]  # The variable objectives
-        constant_objectives = [self.objectivelist[i] for i in constant_IDs]  # The constant objectives
-
-        # Compute the relevant dimensions and construct the empty objectives output array
+        # Compute the relevant dimensions and construct the empty objectives
+        # output array
         num_outputs = len(analysis_outputs)
         num_varobjectives = len(variable_objectives)
         num_constobjectives = len(constant_objectives)
-        computed_objectives = np.empty(num_varobjectives * num_outputs + num_constobjectives, dtype=float)
+        computed_objectives = np.empty(num_varobjectives * num_outputs + num_constobjectives,
+                                       dtype=float)
 
         # First compute the outputs which are a function of operating condition
         for i, outputs in enumerate(analysis_outputs):
@@ -330,10 +365,12 @@ class Objectives:
         for i, objective in enumerate(constant_objectives):
             computed_objectives[num_varobjectives * num_outputs + i] = objective(analysis_outputs[0])
 
-        # If the flight phase energy objective is requested, compute it separately
+        # If the flight phase energy objective is requested,
+        # compute it separately
         if 4 in objective_IDs:
             flight_phase_energy = self.FlightPhaseEnergy(analysis_outputs)
-            computed_objectives = np.append(computed_objectives, flight_phase_energy)
+            computed_objectives = np.append(computed_objectives,
+                                            flight_phase_energy)
 
         out["F"] = computed_objectives
 
@@ -352,9 +389,11 @@ if __name__ == "__main__":
 
     from Submodels.output_handling import output_processing #type: ignore
 
-    objectives_class = Objectives(config.DUCT_VALUES, config.multi_oper, config.BLADE_DIAMETERS[0])
+    objectives_class = Objectives(config.DUCT_VALUES,
+                                  config.multi_oper,
+                                  config.BLADE_DIAMETERS[0])
     output = {}
-    objectives_class.ComputeObjective(output_processing('x22a_validation').GetAllVariables(0),
+    objectives_class.ComputeObjective(output_processing('x22a_validation').GetAllVariables(),
                                       config.objective_IDs,
                                       output)
     print(output)

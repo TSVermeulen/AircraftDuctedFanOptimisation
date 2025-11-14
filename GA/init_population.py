@@ -4,7 +4,7 @@ init_population
 
 Description
 -----------
-This module provides functionality to initialize populations for optimization 
+This module provides functionality to initialize populations for optimization
 problems by generating a biased population based on a reference design
 
 Classes
@@ -25,7 +25,7 @@ Examples
 
 Notes
 -----
-This module is designed to work with the pymoo optimization framework and 
+This module is designed to work with the pymoo optimization framework and
 assumes the design vector configuration is provided in the `config` module.
 
 References
@@ -39,18 +39,18 @@ Email: T.S.Vermeulen@tudelft.nl
 Version: 1.5
 
 Changelog:
-- V1.0: Initial version with tested biased population generation and basic 
+- V1.0: Initial version with tested biased population generation and basic
         random population generation functionality.
-- V1.1: Added support for configurable random seed for reproducibility and 
-        improved documentation. Reworked GenerateBiasedPopulation to improve 
+- V1.1: Added support for configurable random seed for reproducibility and
+        improved documentation. Reworked GenerateBiasedPopulation to improve
         speed using NumPy.
 - V1.2: Implemented perturbation for zero-valued real design parameters.
-- V1.3: Implemented optional variable pitch handling. 
-- V1.4: Added support for optional blade thickness distributions to reduce 
-        dimensionality of problem. Controlled through the 
+- V1.3: Implemented optional variable pitch handling.
+- V1.4: Added support for optional blade thickness distributions to reduce
+        dimensionality of problem. Controlled through the
         config.OPTIMIZE_BLADETHICKNESS boolean.
-- V1.5: Updated parameterisation to use root chord + taper distribution rather 
-        than chord distribution. Removed option to use random initialisation. 
+- V1.5: Updated parameterisation to use root chord + taper distribution rather
+        than chord distribution. Removed option to use random initialisation.
 """
 
 # Import standard libraries
@@ -68,7 +68,7 @@ import config # type: ignore
 
 class InitPopulation():
     """
-    Population generation class to handle generation of the starting point for 
+    Population generation class to handle generation of the starting point for
     the genetic algorithm optimisation.
     """
 
@@ -213,7 +213,7 @@ class InitPopulation():
 
     def GeneratePopulation(self) -> Population:
         """
-        Generate the initial population for the optimisation problem based on 
+        Generate the initial population for the optimisation problem based on
         an existing design vector.
 
         Parameters
@@ -223,7 +223,7 @@ class InitPopulation():
         Returns
         -------
         - pop : Population
-            The initial population for the optimisation problem as a pymoo 
+            The initial population for the optimisation problem as a pymoo
             Population object.
         """
 
@@ -241,18 +241,20 @@ class InitPopulation():
         # Verify the reference individual is within the bounds
         ref = np.clip(ref, lower_bounds, upper_bounds)
 
-        # Generate the initial population equal to the POPULATION_SIZE 
+        # Generate the initial population equal to the POPULATION_SIZE
         # reference_individuals
         pop_dict = [reference_individual.copy() for _ in range(config.INITIAL_POPULATION_SIZE)]
 
         # Compute masks for the floating point and integer design variables
-        real_mask = np.array([np.issubdtype(type(v), np.floating) for v in reference_individual.values()])
-        int_mask  = np.array([np.issubdtype(type(v), np.integer)  for v in reference_individual.values()])
+        real_mask = np.array([np.issubdtype(type(v),
+                                            np.floating) for v in reference_individual.values()])
+        int_mask  = np.array([np.issubdtype(type(v),
+                                            np.integer)  for v in reference_individual.values()])
         other_mask = ~(real_mask | int_mask)
         if other_mask.any():
             raise TypeError("Non-scalar design variables detected: update initial-population logic.")
 
-        # Compute masks to check which values of the floating point 
+        # Compute masks to check which values of the floating point
         # variables are zero
         zero_real_mask = real_mask & (ref == 0)
         nonzero_real_mask = real_mask & (ref != 0)
@@ -260,7 +262,7 @@ class InitPopulation():
 
         for i in range(1, len(pop_dict)):
             # Generate some noise for the floating point variables
-            # Use uniform noise to ensure an equal sampling across 
+            # Use uniform noise to ensure an equal sampling across
             # the design space.
             noise = self._np_rng.uniform(-1, 1, size=ref.shape)
 
@@ -268,17 +270,17 @@ class InitPopulation():
             # For nonzero real values, we use a simple noise perturbation
             perturbed_individual = ref.copy()
             perturbed_individual[nonzero_real_mask] += noise[nonzero_real_mask] * perturbed_individual[nonzero_real_mask] * config.SPREAD_CONTINUOUS
-            # For zero real values, we use a perturbation which is equal 
+            # For zero real values, we use a perturbation which is equal
             # to some constant value times the design variable span
             perturbed_individual[zero_real_mask] += noise[zero_real_mask] * span[zero_real_mask] * config.ZERO_NOISE * config.SPREAD_CONTINUOUS
             # For integer values, we use an integer noise function
             perturbed_individual[int_mask] += self._np_rng.integers(*config.SPREAD_DISCRETE, size=int_mask.sum())
 
-            # Ensure perturbed individual still falls within 
+            # Ensure perturbed individual still falls within
             # the design variable bounds
             perturbed_individual = np.clip(perturbed_individual, lower_bounds, upper_bounds)
 
-            # Convert to dicitonary while casting the discrete variable(s) 
+            # Convert to dicitonary while casting the discrete variable(s)
             # back to int
             pop_dict[i] = {key: (int(val) if isinstance(reference_individual[key], numbers.Integral) else val)
                            for key, val in zip(self.design_vector_keys, perturbed_individual)}

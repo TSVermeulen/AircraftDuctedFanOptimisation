@@ -4,12 +4,12 @@ config
 
 Description
 -----------
-This module defines the configuration settings and parameters for the optimization problem, including aerodynamic 
+This module defines the configuration settings and parameters for the optimization problem, including aerodynamic
 analysis, design variables, and constraints. It integrates with the MTFLOW executable for aerodynamic analysis.
 
 Notes
 -----
-Ensure that the MTFLOW executable and required input files are present in the appropriate directories. This module 
+Ensure that the MTFLOW executable and required input files are present in the appropriate directories. This module
 provides the necessary settings for optimization and analysis.
 
 References
@@ -24,11 +24,11 @@ Email: T.S.Vermeulen@tudelft.nl
 Version: 1.4
 
 Changelog:
-- V1.0: Initial implementation. 
-- V1.1: Removed need for context manager by using absolute paths. 
-- V1.2: Wrapped blading generation routine in LRU cache to avoid 
-        re-running the function at every GA worker import. 
-- V1.3: Updated single point operating condition to correspond to endurance cruise condition at approximate mid cruise weight and endurance speed of 125kts at 10000ft standard day. 
+- V1.0: Initial implementation.
+- V1.1: Removed need for context manager by using absolute paths.
+- V1.2: Wrapped blading generation routine in LRU cache to avoid
+        re-running the function at every GA worker import.
+- V1.3: Updated single point operating condition to correspond to endurance cruise condition at approximate mid cruise weight and endurance speed of 125kts at 10000ft standard day.
 - V1.4: Updated operating conditions. Improved consistency. Added additional inputs.
 """
 
@@ -68,7 +68,7 @@ class ObjectiveID(IntEnum):
     WETTED_AREA = auto()
     PRESSURE_RATIO = auto()
     ENERGY = auto()
-    
+
 # Define the (multi-point) operating conditions
 multi_oper = [#{"Inlet_Mach": 0.125,  # ~take-off condition
             #    "N_crit": 9,
@@ -97,7 +97,7 @@ for oper_dict in multi_oper:
 
 # Calculate the total number of objectives
 # Note: Some objectives like energy or frontal area are computed once across all operating points
-objective_IDs = [ObjectiveID.EFFICIENCY]  # Must be defined in order of which they exist in the enum! 
+objective_IDs = [ObjectiveID.EFFICIENCY]  # Must be defined in order of which they exist in the enum!
 _single_point_only = {ObjectiveID.FRONTAL_AREA, ObjectiveID.WETTED_AREA, ObjectiveID.ENERGY}
 n_objectives = len(objective_IDs) * len(multi_oper) \
                - sum(1 for obj in objective_IDs if obj in _single_point_only) * (len(multi_oper) - 1)
@@ -118,7 +118,7 @@ REF_FRONTAL_AREA = 5.172389364  # m^2
 # Controls for the optimisation vector - BLADES
 OPTIMIZE_STAGE = [True, False, False]
 ROTATING = [True, False, False]
-NUM_RADIALSECTIONS = [4, 2, 2]  # Define the number of radial sections at which the blade profiles for each stage will be defined. Note that we cannot use more than 16 radial sections due to limitations of MTFLOW. Advice from the user manual: ~5 or less is good. 
+NUM_RADIALSECTIONS = [4, 2, 2]  # Define the number of radial sections at which the blade profiles for each stage will be defined. Note that we cannot use more than 16 radial sections due to limitations of MTFLOW. Advice from the user manual: ~5 or less is good.
 NUM_STAGES = 3  # Define the number of stages (i.e. total count of rotors + stators)
 OPTIMIZE_BLADETHICKNESS = True  # Boolean to control if the blade thickness distributions should be optimised
 REFERENCE_BLADE_ANGLES = (float(np.deg2rad(14.5)))  # Reference angles at the reference section of the rotor, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
@@ -126,8 +126,8 @@ BLADE_DIAMETERS = [2.1336, 2.2098, 2.2098]
 tipGap = 0.01016  # 1.016 cm tip gap
 
 
-@functools.lru_cache(maxsize=None, typed=True)  # Unlimited - adjust if memory becomes a concern. 
-def _load_blading(RPS_lst: Sequence[float]|float,                      
+@functools.lru_cache(maxsize=None, typed=True)  # Unlimited - adjust if memory becomes a concern.
+def _load_blading(RPS_lst: Sequence[float]|float,
                   ref_blade_angle_lst: Sequence[float]|float) -> tuple[list[dict], list[list[dict]]]:
     """
     Generate MTFLO blading.
@@ -136,10 +136,10 @@ def _load_blading(RPS_lst: Sequence[float]|float,
     Parameters
     ----------
     - RPS_lst : Sequence[float] | float
-        The rotational rate of the rotor in rotations per second for each operating point considered. 
+        The rotational rate of the rotor in rotations per second for each operating point considered.
     - ref_blade_angle_lst : Sequence[float] | float
-        The blade set angle, in radians, for each operating point considered. 
-    
+        The blade set angle, in radians, for each operating point considered.
+
     Returns
     -------
     - (list, list):
@@ -158,53 +158,55 @@ def _load_blading(RPS_lst: Sequence[float]|float,
     # Start defining the MTFLO blading inputs
     radial_stations = np.array([0, 0.32004, 0.74676, 1.0668])  # 0, 0.3, 0.7, 1
     chord_length = np.array([0.3510, 0.3152, 0.2367, 0.2205])
-    taper_distribution = chord_length[1:] / chord_length[:-1] 
+    taper_distribution = chord_length[1:] / chord_length[:-1]
 
     blade_angle = np.array([np.deg2rad(38.1), np.deg2rad(30.9), np.deg2rad(16.8), np.deg2rad(0)])
-    propeller_parameters = {"root_LE_coordinate": 0.1495672948767407, 
+    propeller_parameters = {"root_LE_coordinate": 0.1495672948767407,
                             "rotational_rate": 0,  # Initialise to zero, will be updated by the UDC/Opti framework interface
                             "RPS": RPS_lst[0],  # Initialise to the first entry in the input list
                             "RPS_lst": RPS_lst,
-                            "ref_blade_angle": ref_blade_angle_lst[0], 
+                            "ref_blade_angle": ref_blade_angle_lst[0],
                             "ref_blade_angle_lst": ref_blade_angle_lst,
-                            "reference_section_blade_angle": 0, 
-                            "blade_count": 3, 
-                            "radial_stations": radial_stations, 
-                            "chord_length": chord_length, 
+                            "reference_section_blade_angle": 0,
+                            "blade_count": 3,
+                            "radial_stations": radial_stations,
+                            "chord_length": chord_length,
                             "root_chord": chord_length[0],
                             "taper_distribution": taper_distribution,
                             "blade_angle": blade_angle}
-    
-    horizontal_strut_parameters = {"root_LE_coordinate": 0.57785, 
-                                   "rotational_rate": 0, 
+
+    h_strut_chord = np.array([0.57658, 0.14224])
+    horizontal_strut_parameters = {"root_LE_coordinate": 0.57785,
+                                   "rotational_rate": 0,
                                    "RPS": 0,
                                    "RPS_lst": [0] * len(RPS_lst),
-                                   "ref_blade_angle": 0, 
-                                   "ref_blade_angle_lst": [0] * len(ref_blade_angle_lst), 
-                                   "reference_section_blade_angle": 0, 
-                                   "blade_count": 4, 
-                                   "radial_stations": np.array([0.0, 1.20968]), 
-                                   "chord_length": np.array([0.57658, 0.14224]), 
-                                   "root_chord": chord_length[0],
-                                   "taper_distribution": [chord_length[-1] / chord_length[0]],
+                                   "ref_blade_angle": 0,
+                                   "ref_blade_angle_lst": [0] * len(ref_blade_angle_lst),
+                                   "reference_section_blade_angle": 0,
+                                   "blade_count": 4,
+                                   "radial_stations": np.array([0.0, 1.20968]),
+                                   "chord_length": h_strut_chord,
+                                   "root_chord": h_strut_chord[0],
+                                   "taper_distribution": [h_strut_chord[-1] / h_strut_chord[0]],
                                    "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                    "sweep_angle": np.array([0, 0])}
-    
-    diagonal_strut_parameters = {"root_LE_coordinate": 0.577723, 
-                                 "rotational_rate": 0, 
+
+    d_strut_chord = np.array([0.10287, 0.10287])
+    diagonal_strut_parameters = {"root_LE_coordinate": 0.577723,
+                                 "rotational_rate": 0,
                                  "RPS": 0,
                                  "RPS_lst": [0] * len(RPS_lst),
-                                 "ref_blade_angle": 0, 
-                                 "ref_blade_angle_lst": [0] * len(ref_blade_angle_lst), 
-                                 "reference_section_blade_angle": 0, 
-                                 "blade_count": 2, 
-                                 "radial_stations": np.array([0.0, 1.20968]), 
-                                 "chord_length": np.array([0.10287, 0.10287]), 
-                                 "root_chord": chord_length[0],
-                                 "taper_distribution": [chord_length[-1] / chord_length[0]],
+                                 "ref_blade_angle": 0,
+                                 "ref_blade_angle_lst": [0] * len(ref_blade_angle_lst),
+                                 "reference_section_blade_angle": 0,
+                                 "blade_count": 2,
+                                 "radial_stations": np.array([0.0, 1.20968]),
+                                 "chord_length": d_strut_chord,
+                                 "root_chord": d_strut_chord[0],
+                                 "taper_distribution": [d_strut_chord[-1] / d_strut_chord[0]],
                                  "blade_angle": np.array([np.deg2rad(90), np.deg2rad(90)]),
                                  "sweep_angle": np.array([0, 0])}
-    
+
     # Construct blading list
     blading_parameters = [propeller_parameters,
                           horizontal_strut_parameters,
@@ -217,18 +219,18 @@ def _load_blading(RPS_lst: Sequence[float]|float,
     root_blade_angle = (blade_angle[0] + blading_parameters[0]["ref_blade_angle"] - blading_parameters[0]["reference_section_blade_angle"])
 
     root_LE = blading_parameters[0]["root_LE_coordinate"] # The location of the root LE is arbitrary for computing the sweep angles.
-    root_mid_chord = root_LE + (0.3510 / 2) * np.cos(np.pi / 2 - root_blade_angle)
+    root_mid_chord = root_LE + (chord_length[0] / 2) * np.cos(np.pi / 2 - root_blade_angle)
     rotation_angle = np.pi / 2 - (blade_angle + ref_blade_angle_lst[0] - propeller_parameters["reference_section_blade_angle"])
     local_LE = root_mid_chord - (chord_length / 2) * np.cos(rotation_angle)
     with np.errstate(divide="ignore", invalid="ignore"):
         sweep_angle = np.where(radial_stations != 0, np.arctan((local_LE - root_LE) / radial_stations), 0)
     blading_parameters[0]["sweep_angle"] = sweep_angle
 
-    # Obtain the parameterisations for the profile sections. 
+    # Obtain the parameterisations for the profile sections.
     profile_dir_path = Path(__file__).parent.parent / 'Validation/Profiles'
     file_names = ['X22_02R.dat', 'X22_03R.dat', 'X22_07R.dat', 'X22_10R.dat', 'Hstrut.dat', 'Dstrut.dat']
     filenames = [profile_dir_path / stem for stem in file_names]
-    
+
     # First check if all files are present
     missing_files = [f for f in filenames if not f.exists()]
     if missing_files:
@@ -284,12 +286,12 @@ class InEqConstraintID(IntEnum):
     @staticmethod
     def _generate_next_value_(name, start, count, last_values):
         return count  # This makes the first member 0 rather than the default 1.
-    
+
     EFFICIENCY_LEQ_THEOR_LIMIT = auto()
     THRUST_FEASIBILITY = auto()
     MAXIMUM_FRONTAL_AREA = auto()
     ENERGY_IMPROVEMENT = auto()
-    
+
 class EqConstraintID(IntEnum):
     """
     Enumeration of the equality constraint identifiers for the optimization problem.
@@ -298,7 +300,7 @@ class EqConstraintID(IntEnum):
     @staticmethod
     def _generate_next_value_(name, start, count, last_values):
         return count  # This makes the first member 0 rather than the default 1.
-    
+
     CONSTANT_POWER = auto()
 
 constraint_IDs = [[InEqConstraintID.EFFICIENCY_LEQ_THEOR_LIMIT, InEqConstraintID.THRUST_FEASIBILITY],
@@ -312,18 +314,18 @@ INITIAL_POPULATION_SIZE = 400
 MAX_GENERATIONS = 500
 SLIDING_WINDOW_SIZE = 25
 
-# Define the initial population parameter spreads, used to construct a biased initial population 
+# Define the initial population parameter spreads, used to construct a biased initial population
 SPREAD_CONTINUOUS = 0.5  # Relative spread (+/- %) applied to continous variables around their reference values
 ZERO_NOISE = 0.25  # % noise added to zero values to avoid stagnation
 SPREAD_DISCRETE = (0, 12)  # Absolute range for discrete variables (reference value to reference value + 12)
 
 # Repair operator controls
 PROFILE_FEASIBILITY_OFFSET = 0.05  # Offset value to avoid bezier control points lying on x_t/x_c
-MAX_ONE2ONE_ATTEMPTS = 200  # Maximum number of attempts to enforce one-to-one on the profile parameterisation. 
+MAX_ONE2ONE_ATTEMPTS = 200  # Maximum number of attempts to enforce one-to-one on the profile parameterisation.
 
 # Problem controls
-ARCHIVE_STATEFILES = False  # Bool to control if the statefiles should be archived after each evaluation. 
-PROBLEM_TYPE = "single_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file. 
+ARCHIVE_STATEFILES = False  # Bool to control if the statefiles should be archived after each evaluation.
+PROBLEM_TYPE = "single_point"  # Either "single_point" or "multi_point". Defines the type of problem loaded in the main file.
 RESERVED_THREADS = 0  # Threads reserved for the operating system and any other programs.
 THREADS_PER_EVALUATION = 1  # Number of threads per MTFLOW evaluation: one for running MTSET/MTSOL/MTFLO and one for polling outputs
 
