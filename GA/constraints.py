@@ -49,7 +49,7 @@ Changelog:
         actuator disk theory. Improved efficiency calculations.
 - V1.7: Added unified thrust bound constraint to replace the minimum and
         maximum thrust constraints. Removed deprecated constraints.
-- V1.8: Removed unneccesary rounding of constraint values.
+- V1.8: Removed unneccessary rounding of constraint values.
 """
 
 # Import standard libraries
@@ -463,7 +463,7 @@ class Constraints:
             - `config.constraint_IDs[1]` specifies the indices of equality
               constraints.
             - If no constraints are specified, the corresponding output
-              arrays ("G" or "H") will be empty 2D numpy arrays.
+              arrays ("G" or "H") will be empty.
         """
 
         # Copy the operating conditions
@@ -585,7 +585,7 @@ class Constraints:
             - `config.constraint_IDs[1]` specifies the indices of equality
               constraints.
             - If no constraints are specified, the corresponding output arrays
-              ("G" or "H") will be empty 2D numpy arrays.
+              ("G" or "H") will be empty.
         """
 
         # Copy the operating conditions

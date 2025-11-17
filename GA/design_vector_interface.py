@@ -526,8 +526,8 @@ class DesignVectorInterface:
 
             if factor <= 0:
                 raise ValueError(f"Invalid geometry for b_8_map: denominator<=0",
-                                 f" (r_LE={params["r_LE"]}, "
-                                 f"x_t={params["x_t"]}, y_t={params["y_t"]}).")
+                                 f" (r_LE={params['r_LE']}, "
+                                 f"x_t={params['x_t']}, y_t={params['y_t']}).")
 
             return float(params["b_8"] / factor)
 
@@ -629,11 +629,11 @@ class DesignVectorInterface:
 
 if __name__ == "__main__":
     # Create a reference vector for testing
-    from problem_definition import OptimizationProblem
+    from problem_definition import OptimisationProblem
     from init_population import InitPopulation  # type: ignore
     from repair import RepairIndividuals  # type: ignore
 
-    test = OptimizationProblem()
+    test = OptimisationProblem()
     ref_pop = InitPopulation().GeneratePopulation()
     ref_vectors = ref_pop.get("X")
     ref_vectors = RepairIndividuals()._do(test, ref_vectors)

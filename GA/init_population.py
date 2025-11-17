@@ -252,7 +252,7 @@ class InitPopulation():
                                             np.integer)  for v in reference_individual.values()])
         other_mask = ~(real_mask | int_mask)
         if other_mask.any():
-            raise TypeError("Non-scalar design variables detected: update initial-population logic.")
+            raise TypeError("Detected unsupported Non-scalar design variable(s)")
 
         # Compute masks to check which values of the floating point
         # variables are zero

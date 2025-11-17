@@ -273,8 +273,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         """
 
         if idx >= len(self.blade_blading_parameters[0]["RPS_lst"]):
-            raise IndexError(f"Expected at least {idx+1} RPS values, but got "
-                             f"{len(self.blade_blading_parameters[0]['RPS_lst'])}")
+            raise IndexError(f"Wrong number of operating RPS values")
 
         # Pre-calculate the common factor to avoid repeated computation
         omega_factor = -2 * np.pi * self.Lref / self.oper["Vinl"]
@@ -579,7 +578,6 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                 UDC_interface = self._UDC(operating_conditions=self.oper,
                                           ref_length=self.Lref,
                                           analysis_name=self.analysis_name,
-                                          grid_checked=valid_grid,
                                           run_viscous=True,
                                           **kwargs)
                 if design_okay:
@@ -588,7 +586,8 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                         # Run UDC
                         (exit_flag,
                          UDC_outputs[idx]) = UDC_interface.caller(external_inputs=True,
-                                                             output_type=OutputType.FORCES_ONLY)
+                                                                  output_type=OutputType.FORCES_ONLY,
+                                                                  grid_checked=valid_grid)
 
                         # Overwrite outputs in case of crashes
                         if exit_flag in (ExitFlag.CRASH, ExitFlag.CHOKING,

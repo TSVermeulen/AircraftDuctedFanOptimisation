@@ -30,14 +30,17 @@ Versioning
 ----------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version: 1.2
+Version: 1.3
 
 Changelog:
 - V1.0: Initial implementation. Extracted from the problem_definition.py file
         for better modularity and readability.
 - V1.1: Implemented optional variable pitch handling.
 - V1.2: Made blade thickness distributions optional in the design vector.
-        Controlled in config using the OPTIMIZE_BLADETHICKNESS boolean
+        Controlled in config using the OPTIMIZE_BLADETHICKNESS boolean. 
+- V1.3: Changed parameterisation to use blade root chord + taper distribution 
+        rather than blade chord distribution. This avoids needing to specify 
+        a chord repair operator. 
 """
 
 # Import standard libraries
