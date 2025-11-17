@@ -49,7 +49,7 @@ Changelog:
         actuator disk theory. Improved efficiency calculations.
 - V1.7: Added unified thrust bound constraint to replace the minimum and
         maximum thrust constraints. Removed deprecated constraints.
-- V1.8: Removed unneccessary rounding of constraint values.
+- V1.8: Removed unnecessary rounding of constraint values.
 """
 
 # Import standard libraries

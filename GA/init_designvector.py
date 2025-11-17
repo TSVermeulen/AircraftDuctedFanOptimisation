@@ -80,7 +80,7 @@ class DesignVector:
 
     # Indices for the thickness parameters for the centerbody parameters
     # We force the centerbody to be symmetric, so camber is not needed
-    CENTERBODY_VAR_INDICES = [2, 3, 5, 6, 10, 11, 12]
+    CENTERBODY_VAR_INDICES: ClassVar[list[int]] = [2, 3, 5, 6, 10, 11, 12]
 
 
     @classmethod
