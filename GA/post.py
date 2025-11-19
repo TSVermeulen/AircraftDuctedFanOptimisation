@@ -56,7 +56,7 @@ Changelog:
 # Import standard libraries
 import copy
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 # Import 3rd party libraries
 import dill
@@ -66,6 +66,7 @@ from matplotlib.ticker import PercentFormatter, FuncFormatter, MaxNLocator
 from pymoo.visualization.scatter import Scatter
 from pymoo.visualization.pcp import PCP
 from pymoo.util.running_metric import RunningMetric
+from pymoo.core.result import Result
 from scipy.spatial.distance import pdist
 
 # Ensure all paths are correctly setup
@@ -100,15 +101,38 @@ MINOR_GRID_ALPHA = 0.4
 
 class PostProcessing:
     """
-    Class to analyse all output data from the Pymoo optimisation.
+    A class to handle post-processing of optimization results.
+
+    This class provides comprehensive post-processing functionality for analyzing
+    and visualizing results from Pymoo optimizations. It supports single-analysis
+    and multi-analysis comparisons, including geometry visualization, convergence
+    analysis, and objective space plotting.
+
+    Attributes
+    ----------
+    - fname : Path
+        The filename or path of the .dill file to be loaded.
+    - base_dir : Path
+        The base directory for resolving relative file paths.
+
+    Examples
+    --------
+    >>> output = Path('res_pop20_gen20_250506220150593712.dill')
+    >>> processing = PostProcessing(fname=output)
+    >>> res = processing.load_res()
+    >>> processing.extract_population_data(res)
+    >>> processing.main()
     """
 
     _airfoil_param = AirfoilParameterisation()  # shared, read-only
+    _objectives_class = Objectives(duct_variables=config.DUCT_VALUES,
+                                   oper=config.multi_oper,
+                                   Lref=1)  # Initialized with dummy values
 
 
     def __init__(self,
                  fname: Path,
-                 base_dir: Optional[Path] = None) -> None:
+                 base_dir: Path | None = None) -> None:
         """
         Initialization of the PostProcessing class.
 
@@ -142,7 +166,7 @@ class PostProcessing:
             raise ValueError(f"Incorrect file extension: {self.results_path.suffix}")
 
 
-    def load_res(self) -> object:
+    def load_res(self) -> Result:
         """
         Load and return the optimization results from the specified .dill file.
 
@@ -152,7 +176,7 @@ class PostProcessing:
 
         Returns
         -------
-        - res : object
+        - res : Result
             The reconstructed pymoo optimisation results object
         """
 
@@ -207,14 +231,14 @@ class PostProcessing:
 
 
     def extract_population_data(self,
-                              res: object) -> None:
+                              res: Result) -> None:
         """
-        Extract all population data from the results object,
+        Extract all population data from the results,
         deconstruct the design vectors, and write all data to lists in self.
 
         Parameters
         ----------
-        - res : object
+        - res : Result
             The reconstructed pymoo results object.
 
         Returns
@@ -618,7 +642,7 @@ class PostProcessing:
     def _plot_sectional_blading_data(self,
                                      reference_blading: list[dict[str, Any]],
                                      optimised_blading: list[dict[str, Any]],
-                                     labels=None) -> None:
+                                     labels: list[str] | None = None) -> None:
         """
         Helper method to plot sectional blading data
         (chord length, sweep angle, blade angle).
@@ -921,9 +945,9 @@ class PostProcessing:
 
     def compare_blade_design_data(self,
                                reference_design: list[list[dict[str, Any]]],
-                               res: object,
+                               res: Result,
                                individual: int | str = "opt",
-                               optimised_design: Optional[list[list[dict[str, Any]]]]=None) -> None:
+                               optimised_design: list[list[dict[str, Any]]] | None = None) -> None:
         """
         Compares the blade design data of a reference design with an
         optimised design and generates plots for visual comparison at various
@@ -935,8 +959,8 @@ class PostProcessing:
             The reference blade design data, structured as a list of stages,
             where each stage contains a list of dictionaries representing
             radial sections.
-        - res : object
-            The optimization result object containing the design vector of the
+        - res : Result
+            The optimisation result containing the design vector of the
             optimised design.
         - individual : int | str, optional
             Specifies which individual design to compare against. If "opt",
@@ -1003,18 +1027,18 @@ class PostProcessing:
 
 
     def generate_convergence_statistics(self,
-                                        res: object) -> None:
+                                        res: Result) -> None:
         """
-        Generate some graphs to analyse the convergence behaviour of the optimisation.
-        Analyses:
+        Generate some graphs to analyse the convergence behaviour of the
+        optimisation. Analyses:
             - The convergence of the best and average objective values.
             - Diversity of the design vectors
             - Constraint violation
 
         Parameters
         ----------
-        - res : object
-            The optimization result object containing the history of the optimization.
+        - res : Result
+            The optimization result containing the history of the optimisation.
 
         Returns
         -------
@@ -1293,15 +1317,15 @@ class PostProcessing:
 
 
     def plot_objective_space(self,
-                           res: object) -> None:
+                           res: Result) -> None:
         """
         Visualise the objective space for all feasible solutions.
 
         Parameters
         ----------
-        - res : object
-            The optimization result object containing the design vector
-            of the optimised design.
+        - res : Result
+            The optimization result containing the design vector of
+            the optimised design.
 
         Returns
         -------
@@ -1324,8 +1348,8 @@ class PostProcessing:
         feasible_mask = np.all(CV_initial <= 0, axis=1)
         F_initial_feasible = F_initial[feasible_mask]
 
-        if len(F_initial[0]) > 0:
-            # Use pymoo built-in plotting in case more than 3 objectives are used
+        if len(F_initial[0]) > 2:
+            # Use pymoo built-in plotting in case more than 2 objectives are used
             plot = Scatter(title="Objective space for the feasible evaluated solution set")
             plot = Scatter(figsize=get_figsize(wf=0.75, hf=0.75))
             plot.add(F_initial_feasible[0],
@@ -1420,7 +1444,7 @@ class PostProcessing:
 
 
     def analyse_design_space(self,
-                             res: object,
+                             res: Result,
                              idx_list: list[int]
                              ) -> None:
         """
@@ -1429,8 +1453,8 @@ class PostProcessing:
 
         Parameters
         ----------
-        - res : object
-            The optimization result object containing the design vector of the
+        - res : Result
+            The optimisation result containing the design vector of the
             optimised design.
         - idx_list : list[int]
             A list of integers which correspond to the indices of the design
@@ -2387,17 +2411,15 @@ class PostProcessing:
 
             # Deconstruct the design vector
             vec_interface = DesignVectorInterface()
-            decomposed_data = vec_interface.DeconstructDesignVector(x,
-                                                                    compute_duct=True)
+            decomposed_data = vec_interface.DeconstructDesignVector(x)
 
             duct_data = decomposed_data[1]
 
             # Compute the area objective corresponding to the design vector.
-            # Use Lref=1 and an empty outputs dict as they are not used in
-            # the frontal area objective
-            area_objective = Objectives(duct_variables=duct_data,
-                                        oper=config.multi_oper,
-                                        Lref=1).FrontalArea({})
+            # Use the initialized objectives class to avoid repeated object
+            # creation and destruction
+            self._objectives_class.duct_variables = duct_data
+            area_objective = self._objectives_class.FrontalArea({})
 
             return area_objective
 
@@ -2505,7 +2527,7 @@ class PostProcessing:
         Parameters
         ----------
         - fnames : list[Path]
-            A list of the paths of the result objects for the runs which
+            A list of the paths of the results for the runs which
             are compared.
         - labels : list[str]
             A list of strings for the labels of each run in the plots.
