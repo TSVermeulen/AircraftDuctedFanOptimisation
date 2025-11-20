@@ -158,7 +158,8 @@ class DesignVectorInterface:
                 # Compute the LE and TE x-coordinates of the tip section
                 sweep = np.tan(blading["sweep_angle"][-1])
                 x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip_LE
-                chi = np.pi/2 - (blading["blade_angle"][-1] + angle - blading["reference_section_blade_angle"])
+                chi = np.pi/2 - (blading["blade_angle"][-1] + angle - \
+                                 blading["reference_section_blade_angle"])
                 projected_chord = blading["chord_length"][-1] * np.cos(chi)
                 x_tip_TE = x_tip_LE + projected_chord
 
@@ -173,8 +174,10 @@ class DesignVectorInterface:
                 # the LE y-coordinate of the duct to the local y-coordinate of
                 # the lower surface of the duct
                 # Sets to zero if the duct does not lie above the LE/TE.
-                LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else float(duct_interpolant(x_tip_LE))
-                TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else float(duct_interpolant(x_tip_TE))
+                LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else \
+                    float(duct_interpolant(x_tip_LE))
+                TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else \
+                    float(duct_interpolant(x_tip_TE))
 
                 # Compute the radial location of the duct for the current tip
                 # angle and overwrite the current guess if it is larger. Takes
@@ -198,21 +201,37 @@ class DesignVectorInterface:
         duct_variables["Leading Edge Coordinates"] = (duct_variables["Leading Edge Coordinates"][0],
                                                       LE_coordinate_duct)
 
-        # Set the radius of all stators equal to this y coordinate to avoid
-        # miss-matches in stator sizes.
+        # Set the radius of all stators
         for i in range(self.num_stages):
-            if not self.rotating[i]:
-                r_old = blade_blading_parameters[i]["radial_stations"][-1]
-                if r_old != 0:
-                    # Simple guard against r=0
-                    blade_blading_parameters[i]["radial_stations"] = blade_blading_parameters[i]["radial_stations"] / r_old * LE_coordinate_duct
-                else:
-                    # If the last entry of radial stations is 0, simply set it
-                    # to the LE coordinate of the duct. This avoids a
-                    # divide-by-zero error.
-                    blade_blading_parameters[i]["radial_stations"] = np.full_like(blade_blading_parameters[i]["radial_stations"],
-                                                                                  LE_coordinate_duct,
-                                                                                  dtype=float)
+            if self.rotating[i]:
+                continue
+            
+            blading = blade_blading_parameters[i]             
+            r = blading["radial_stations"][-1]
+                
+            # Set the stator diameter to enforce it to be inside of the duct. 
+            x_tip_LE = blading["root_LE_coordinate"] + np.tan(blading["sweep_angle"][-1]) * r
+            chi = np.pi/2 - (blading["blade_angle"][-1] + angle - blading["reference_section_blade_angle"])
+            projected_chord = blading["chord_length"][-1] * np.cos(chi)
+            x_tip_TE = x_tip_LE + projected_chord
+
+            delta_r = float(max(duct_interpolant(x_tip_LE), duct_interpolant(x_tip_TE)))
+            r = duct_variables["Leading Edge Coordinates"][1] + \
+                delta_r if delta_r > 0 else duct_variables["Leading Edge Coordinates"][1]
+            
+            # Scale all stator radial stations to match the new required radius
+            if r != 0:
+                # Simple guard against r=0
+                blade_blading_parameters[i]["radial_stations"] = \
+                    blade_blading_parameters[i]["radial_stations"] / r * LE_coordinate_duct
+            else:
+                # If the last entry of radial stations is 0, simply set it
+                # to the LE coordinate of the duct. This avoids a
+                # divide-by-zero error.
+                blade_blading_parameters[i]["radial_stations"] = np.full_like(blade_blading_parameters[i]["radial_stations"],
+                                                                              LE_coordinate_duct,
+                                                                              dtype=float)
+                
 
         # Return the updated data
         return duct_variables, blade_blading_parameters

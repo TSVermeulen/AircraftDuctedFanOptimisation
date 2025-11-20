@@ -1,6 +1,9 @@
 mtset.exe
 mtflo.exe
 mtsol.exe
+mtflo
+mtset
+mtsol
 forces.*
 flowfield.*
 boundary_layer.*
