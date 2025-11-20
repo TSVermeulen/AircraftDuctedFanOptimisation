@@ -100,8 +100,8 @@ class DesignVectorInterface:
         """
         Compute the y-coordinate of the LE of the duct based on the design
         variables. Accounts for the minimum duct y-coordinate influenced by the
-        blade angle at the tip. Does not account for the presence of skew. 
-        Note that the current implementation for the stator scaling assumes a 
+        blade angle at the tip. Does not account for the presence of skew.
+        Note that the current implementation for the stator scaling assumes a
         constant ref_blade_angle.
 
         Parameters
@@ -141,8 +141,8 @@ class DesignVectorInterface:
         mask = np.hstack([True, dx > 1e-12]) # keep first point, drop exact duplicates
         order = order[mask]
         duct_interpolant = interpolate.CubicSpline(lower_x[order],
-                                                   np.abs(lower_y)[order],
-                                                   extrapolate=False)  # Take absolute value of y-coordinates since we need the distance
+                                                   lower_y[order],
+                                                   extrapolate=False)
 
         x_min, x_max = lower_x[order[0]], lower_x[order[-1]]
         for i in range(self.num_stages):
@@ -161,8 +161,8 @@ class DesignVectorInterface:
                 sweep = np.tan(blading["sweep_angle"][-1])
                 x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip_LE
                 chi = np.pi/2 - (
-                    blading["blade_angle"][-1] 
-                    + angle - 
+                    blading["blade_angle"][-1]
+                    + angle -
                     blading["reference_section_blade_angle"]
                     )
                 projected_chord = blading["chord_length"][-1] * np.cos(chi)
@@ -180,9 +180,9 @@ class DesignVectorInterface:
                 # the lower surface of the duct
                 # Sets to zero if the duct does not lie above the LE/TE.
                 LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else \
-                    float(duct_interpolant(x_tip_LE))
+                    float(abs(duct_interpolant(x_tip_LE)))
                 TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else \
-                    float(duct_interpolant(x_tip_TE))
+                    float(abs(duct_interpolant(x_tip_TE)))
 
                 # Compute the radial location of the duct for the current tip
                 # angle and overwrite the current guess if it is larger. Takes
@@ -210,15 +210,15 @@ class DesignVectorInterface:
         for i in range(self.num_stages):
             if self.rotating[i]:
                 continue
-            
-            blading = blade_blading_parameters[i]             
-            r_tip = blading["radial_stations"][-1]
-                
-            # Set the stator diameter to enforce it to be inside of the duct. 
+
+            blading = blade_blading_parameters[i]
+            r_tip = duct_variables["Leading Edge Coordinates"][1]
+
+            # Set the stator diameter to enforce it to be inside of the duct.
             x_tip_LE = blading["root_LE_coordinate"] + np.tan(blading["sweep_angle"][-1]) * r_tip
             chi = np.pi/2 - (
-                blading["blade_angle"][-1] 
-                + blading["ref_blade_angle"] 
+                blading["blade_angle"][-1]
+                + blading["ref_blade_angle"]
                 - blading["reference_section_blade_angle"]
                 )
             projected_chord = blading["chord_length"][-1] * np.cos(chi)
@@ -231,11 +231,13 @@ class DesignVectorInterface:
                 float(duct_interpolant(x_tip_LE))
             TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else \
                 float(duct_interpolant(x_tip_TE))
-            
+
+            # Compute the required radius of the stator blade
+            # Takes the max value for the LE & TE since the offset must be
+            # maximised to ensure duct is fully clipped by stator
             delta_r = float(max(LE_offset, TE_offset))
-            r = duct_variables["Leading Edge Coordinates"][1] + \
-                delta_r if delta_r > 0 else duct_variables["Leading Edge Coordinates"][1]
-            
+            r = r_tip + delta_r if delta_r > 0 else r_tip
+
             # Scale all stator radial stations to match the new required radius
             if r_tip != 0:
                 # Simple guard against r=0
@@ -248,7 +250,6 @@ class DesignVectorInterface:
                 blade_blading_parameters[i]["radial_stations"] = np.full_like(blade_blading_parameters[i]["radial_stations"],
                                                                               r,
                                                                               dtype=float)
-                
 
         # Return the updated data
         return duct_variables, blade_blading_parameters
