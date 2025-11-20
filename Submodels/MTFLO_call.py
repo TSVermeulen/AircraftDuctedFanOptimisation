@@ -39,7 +39,7 @@ Versioning
 ------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version: 1.2
+Version: 1.2.1
 
 Changelog:
 - V1.0:   Initial working version
@@ -49,11 +49,13 @@ Changelog:
           interactions.
 - V1.2:   Updated documentation and removed self.process.returncode return
           from MTFLO_call().caller()
+- V1.2.1: Added cross-platform support for Linux and Windows.
 """
 
 # Import standard libraries
 import subprocess
 import time
+import sys
 from pathlib import Path
 
 
@@ -85,7 +87,10 @@ class MTFLO_call:
 
         # Define filepath of MTFLO as being in the same folder as
         # this Python file
-        self.process_path = self.submodels_path / 'mtflo.exe'
+        if sys.platform == "linux":
+            self.process_path = self.submodels_path / 'mtflo'
+        else:
+            self.process_path = self.submodels_path / 'mtflo.exe'
         if not self.process_path.exists():
             raise FileNotFoundError(f"MTFLO not found at {self.process_path}")
 

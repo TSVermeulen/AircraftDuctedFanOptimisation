@@ -44,7 +44,7 @@ Versioning
 ------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version: 2.0.5
+Version: 2.1
 
 Changelog:
 - V0.0:   File created with empty class as placeholder.
@@ -78,10 +78,11 @@ Changelog:
           refactoring for improved performance. Removed NumPy dependency.
 - V2.0.5: Replaced empty output generation with reading of default zeroed output
           for performance. Minor QoL improvements throughout. 
+- V2.1:   Added cross-platform support for Linux and Windows.
 """
 
 # Import standard libraries
-import subprocess, time, queue, threading
+import subprocess, time, queue, threading, sys
 from pathlib import Path
 from enum import Enum
 from typing import Any
@@ -192,7 +193,10 @@ class MTSOL_call:
 
         # Define filepath of MTSOL as being in the same folder as
         # this Python file
-        self.fpath = self.submodels_path / 'mtsol.exe'
+        if sys.platform == "linux":
+            self.fpath = self.submodels_path / 'mtsol'
+        else:
+            self.fpath = self.submodels_path / 'mtsol.exe'
         if not self.fpath.exists():
             raise FileNotFoundError("MTSOL executable not found at {}".format(self.fpath))
 
