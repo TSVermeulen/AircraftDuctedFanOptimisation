@@ -100,7 +100,9 @@ class DesignVectorInterface:
         """
         Compute the y-coordinate of the LE of the duct based on the design
         variables. Accounts for the minimum duct y-coordinate influenced by the
-        blade angle at the tip. Does not account for the presence of skew.
+        blade angle at the tip. Does not account for the presence of skew. 
+        Note that the current implementation for the stator scaling assumes a 
+        constant ref_blade_angle.
 
         Parameters
         ----------
@@ -158,8 +160,11 @@ class DesignVectorInterface:
                 # Compute the LE and TE x-coordinates of the tip section
                 sweep = np.tan(blading["sweep_angle"][-1])
                 x_tip_LE = blading["root_LE_coordinate"] + sweep * y_tip_LE
-                chi = np.pi/2 - (blading["blade_angle"][-1] + angle - \
-                                 blading["reference_section_blade_angle"])
+                chi = np.pi/2 - (
+                    blading["blade_angle"][-1] 
+                    + angle - 
+                    blading["reference_section_blade_angle"]
+                    )
                 projected_chord = blading["chord_length"][-1] * np.cos(chi)
                 x_tip_TE = x_tip_LE + projected_chord
 
@@ -207,29 +212,41 @@ class DesignVectorInterface:
                 continue
             
             blading = blade_blading_parameters[i]             
-            r = blading["radial_stations"][-1]
+            r_tip = blading["radial_stations"][-1]
                 
             # Set the stator diameter to enforce it to be inside of the duct. 
-            x_tip_LE = blading["root_LE_coordinate"] + np.tan(blading["sweep_angle"][-1]) * r
-            chi = np.pi/2 - (blading["blade_angle"][-1] + angle - blading["reference_section_blade_angle"])
+            x_tip_LE = blading["root_LE_coordinate"] + np.tan(blading["sweep_angle"][-1]) * r_tip
+            chi = np.pi/2 - (
+                blading["blade_angle"][-1] 
+                + blading["ref_blade_angle"] 
+                - blading["reference_section_blade_angle"]
+                )
             projected_chord = blading["chord_length"][-1] * np.cos(chi)
             x_tip_TE = x_tip_LE + projected_chord
 
-            delta_r = float(max(duct_interpolant(x_tip_LE), duct_interpolant(x_tip_TE)))
+            # Compute the offsets for the LE and TE of the stator tip from
+            # surface of the duct.
+            # Sets to zero if the duct does not lie above the LE/TE.
+            LE_offset = 0 if not (x_min <= x_tip_LE <= x_max) else \
+                float(duct_interpolant(x_tip_LE))
+            TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else \
+                float(duct_interpolant(x_tip_TE))
+            
+            delta_r = float(max(LE_offset, TE_offset))
             r = duct_variables["Leading Edge Coordinates"][1] + \
                 delta_r if delta_r > 0 else duct_variables["Leading Edge Coordinates"][1]
             
             # Scale all stator radial stations to match the new required radius
-            if r != 0:
+            if r_tip != 0:
                 # Simple guard against r=0
                 blade_blading_parameters[i]["radial_stations"] = \
-                    blade_blading_parameters[i]["radial_stations"] / r * LE_coordinate_duct
+                    blade_blading_parameters[i]["radial_stations"] / r_tip * r
             else:
                 # If the last entry of radial stations is 0, simply set it
-                # to the LE coordinate of the duct. This avoids a
-                # divide-by-zero error.
+                # to the radial coordinate locally of the duct lower surface.
+                # This avoids a divide-by-zero error.
                 blade_blading_parameters[i]["radial_stations"] = np.full_like(blade_blading_parameters[i]["radial_stations"],
-                                                                              LE_coordinate_duct,
+                                                                              r,
                                                                               dtype=float)
                 
 
@@ -642,11 +659,11 @@ class DesignVectorInterface:
 
 if __name__ == "__main__":
     # Create a reference vector for testing
-    from problem_definition import OptimizationProblem
+    from problem_definition import OptimisationProblem
     from init_population import InitPopulation  # type: ignore
     from repair import RepairIndividuals  # type: ignore
 
-    test = OptimizationProblem()
+    test = OptimisationProblem()
     ref_pop = InitPopulation().GeneratePopulation()
     ref_vectors = ref_pop.get("X")
     ref_vectors = RepairIndividuals()._do(test, ref_vectors)

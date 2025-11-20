@@ -235,7 +235,7 @@ class MTSOL_call:
         """
         Create MTSOL subprocess
 
-        Requires that the executable, mtsol.exe, and the input file, tdat.xxx
+        Requires that the executable, mtsol, and the input file, tdat.xxx
         are present in the same directory as this Python file.
 
         Parameters
