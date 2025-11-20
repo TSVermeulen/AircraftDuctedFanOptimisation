@@ -57,7 +57,7 @@ Changelog:
 """
 
 # Import standard libraries
-import subprocess, time
+import subprocess, time, sys
 from pathlib import Path
 
 
@@ -107,7 +107,10 @@ class MTSET_call:
         self.submodels_path = self.parent_dir / "Submodels"
 
         # Define constant filepath for the MTSET executable
-        self.process_path = self.submodels_path / 'mtset.exe'
+        if sys.platform == "linux":
+            self.process_path = self.submodels_path / 'mtset'
+        else:
+            self.process_path = self.submodels_path / 'mtset.exe'
         if not self.process_path.exists():
             raise FileNotFoundError(f"MTSET executable not found at {self.process_path}")
 

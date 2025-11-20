@@ -54,6 +54,7 @@ Changelog:
 # Import standard libraries
 import subprocess
 import time
+import sys
 from pathlib import Path
 
 
@@ -85,7 +86,10 @@ class MTFLO_call:
 
         # Define filepath of MTFLO as being in the same folder as
         # this Python file
-        self.process_path = self.submodels_path / 'mtflo.exe'
+        if sys.platform == "linux":
+            self.process_path = self.submodels_path / 'mtflo'
+        else:
+            self.process_path = self.submodels_path / 'mtflo.exe'
         if not self.process_path.exists():
             raise FileNotFoundError(f"MTFLO not found at {self.process_path}")
 

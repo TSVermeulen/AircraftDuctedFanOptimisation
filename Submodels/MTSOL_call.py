@@ -81,13 +81,13 @@ Changelog:
 """
 
 # Import standard libraries
-import subprocess, time, queue, threading
+import subprocess, time, queue, threading, sys
 from pathlib import Path
 from enum import Enum
 from typing import Any
 
 # Import custom libraries
-from output_handling import output_processing
+from output_handling import output_processing # type: ignore
 
 
 class ExitFlag(Enum):
@@ -192,7 +192,10 @@ class MTSOL_call:
 
         # Define filepath of MTSOL as being in the same folder as
         # this Python file
-        self.fpath = self.submodels_path / 'mtsol.exe'
+        if sys.platform == "linux":
+            self.fpath = self.submodels_path / 'mtsol'
+        else:
+            self.fpath = self.submodels_path / 'mtsol.exe'
         if not self.fpath.exists():
             raise FileNotFoundError("MTSOL executable not found at {}".format(self.fpath))
 
