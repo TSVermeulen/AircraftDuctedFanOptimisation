@@ -234,10 +234,8 @@ class DesignVectorInterface:
 
             # Compute the required radius of the stator blade to ensure duct 
             # is attached to stator.
-            delta_r_positive = float(max(LE_offset, TE_offset))
-            delta_r_negative = float(min(LE_offset, TE_offset))
-            delta_r = delta_r_positive if delta_r_positive > 0 else delta_r_negative
-            r = LE_coordinate_duct + delta_r 
+            delta_r = float(max(LE_offset, TE_offset))
+            r = LE_coordinate_duct + delta_r if delta_r >0 else LE_coordinate_duct
 
             # Scale all stator radial stations to match the new required radius
             if r_tip != 0:
