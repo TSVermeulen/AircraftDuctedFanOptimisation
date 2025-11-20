@@ -212,7 +212,7 @@ class DesignVectorInterface:
                 continue
 
             blading = blade_blading_parameters[i]
-            r_tip = duct_variables["Leading Edge Coordinates"][1]
+            r_tip = blading["radial_stations"][-1]
 
             # Set the stator diameter to enforce it to be inside of the duct.
             x_tip_LE = blading["root_LE_coordinate"] + np.tan(blading["sweep_angle"][-1]) * r_tip
@@ -232,11 +232,12 @@ class DesignVectorInterface:
             TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else \
                 float(duct_interpolant(x_tip_TE))
 
-            # Compute the required radius of the stator blade
-            # Takes the max value for the LE & TE since the offset must be
-            # maximised to ensure duct is fully clipped by stator
-            delta_r = float(max(LE_offset, TE_offset))
-            r = r_tip + delta_r if delta_r > 0 else r_tip
+            # Compute the required radius of the stator blade to ensure duct 
+            # is attached to stator.
+            delta_r_positive = float(max(LE_offset, TE_offset))
+            delta_r_negative = float(min(LE_offset, TE_offset))
+            delta_r = delta_r_positive if delta_r_positive > 0 else delta_r_negative
+            r = LE_coordinate_duct + delta_r 
 
             # Scale all stator radial stations to match the new required radius
             if r_tip != 0:
@@ -250,7 +251,7 @@ class DesignVectorInterface:
                 blade_blading_parameters[i]["radial_stations"] = np.full_like(blade_blading_parameters[i]["radial_stations"],
                                                                               r,
                                                                               dtype=float)
-
+        
         # Return the updated data
         return duct_variables, blade_blading_parameters
 
