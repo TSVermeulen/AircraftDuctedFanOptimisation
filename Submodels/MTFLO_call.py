@@ -119,7 +119,7 @@ class MTFLO_call:
         """
         Create MTFLO subprocess
 
-        Requires that the executable, mtflo.exe, and the input file, tflow.xxx
+        Requires that the executable, mtflo, and the input file, tflow.xxx
         are present in the same directory as this Python file.
 
         Parameters
@@ -224,7 +224,7 @@ class MTFLO_call:
         Full interfacing function between Python and MTFLO.
 
         Requires that the input file, tflow.xxx, has been made and is
-        available together with the mtflo.exe executable in the local directory.
+        available together with the mtflo executable in the local directory.
 
         Parameters
         ----------

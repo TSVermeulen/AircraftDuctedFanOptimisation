@@ -88,7 +88,7 @@ from enum import Enum
 from typing import Any
 
 # Import custom libraries
-from output_handling import output_processing
+from output_handling import output_processing # type: ignore
 
 
 class ExitFlag(Enum):
@@ -236,7 +236,7 @@ class MTSOL_call:
         """
         Create MTSOL subprocess
 
-        Requires that the executable, mtsol.exe, and the input file, tdat.xxx
+        Requires that the executable, mtsol, and the input file, tdat.xxx
         are present in the same directory as this Python file.
 
         Parameters
