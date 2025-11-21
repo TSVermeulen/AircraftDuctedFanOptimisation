@@ -10,7 +10,7 @@ herein is MTFLOW Software, © MIT 1997 used with permission. All Rights Reserved
 ## Description
 This code builds on the MTFLOW software developed by M. Drela to create a fast, robust, and accurate ducted fan analysis code. This code is implemented in the U-NSGA-III algorithm to enable design explorations for different operating conditions, objectives, and constraints. This repository also contains the validation data used to validate the implementation against experimental wind tunnel data of the X-22A ducted propulsor. This wind tunnel data is reported in NASA-TN-D-4142. The validation data is contained in the validation folder. 
 
-Currently, the UDC works on both Windows and Linux, and is capable of solving fixed- and variable pitch optimization problems for both single operating conditions (which, by nature are fixed-pitch) and flight profiles defined using multiple operating conditions. 
+Currently, the UDC works on both Windows and Linux, and is capable of solving fixed- and variable-pitch optimization problems for both single operating conditions (which, by nature are fixed-pitch) and flight profiles defined using multiple operating conditions. 
 For a detailed description of the developed methods and results, the reader is referred to the thesis, which is publicly available [here](https://repository.tudelft.nl/), and in the misc folder of this repository
 
 As per the license for MTFLOW, the MTFLOW codes cannot be freely distributed.
