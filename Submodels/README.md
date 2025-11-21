@@ -1,6 +1,6 @@
-# Unified Ducted Fan Design and Analysis Code - Submodels
+# Unified Ducted Fan Code - Submodels
 
-This folder contains all submodels used to interface with the MTFLOW software as part of the UDFDAC developed in this thesis.
+This folder contains all submodels used to interface with the MTFLOW software as part of the UDC developed in this thesis.
 
 The Test Airfoils subfolder contains a series of airfoils used to test the Bézier-Parsec 3434 parameterisation. These airfoils are:
 
