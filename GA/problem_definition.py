@@ -130,7 +130,7 @@ class OptimisationProblem(ElementwiseProblem):
 
 
     def __init__(self,
-                 verbose: bool = False,
+                 verbose: bool = True,
                  **kwargs) -> None:
         """
         Initialisation of the OptimisationProblem class.
@@ -512,13 +512,18 @@ if __name__ == "__main__":
     # Create a reference vector for testing
     from init_population import InitPopulation  # type: ignore
     from repair import RepairIndividuals  # type: ignore
+    import time
 
+    start_time = time.monotonic()
     ref_pop = InitPopulation().GeneratePopulation()
     ref_vectors = ref_pop.get("X")
     ref_vectors = RepairIndividuals()._do(test, ref_vectors)
     ref_vector = ref_vectors[0]  # Use the first vector for testing
+    print("generation of reference vector took:", time.monotonic() - start_time, "seconds")
 
     # Create an output dictionary to store the results
     output = {}
+    start_time = time.monotonic()
     test._evaluate(ref_vector, output)
     print(output)
+    print("evaluation took:", time.monotonic() - start_time, "seconds")

@@ -15,8 +15,6 @@ For a detailed description of the developed methods and results, the reader is r
 As per the license for MTFLOW, the MTFLOW codes cannot be freely distributed.
 Should the reader wish to use the developed frameworks in this thesis, they need to request a license for MTFLOW directly from the MIT Technology Licensing Office. This can be done here: https://tlo.mit.edu/industry-entrepreneurs/available-technologies/mtflow-software-multielement-through-flow
 
-The code in this repository is designed to work on Windows. For a Linux/Unix-like system, the MTFLOW executable filenames, filepaths, and file block checking need to be adjusted accordingly.
-
 For best performance, it is recommended to run the optimisation framework on a computer or server with as many CPU cores/threads as possible, since each thread can be used to run one analysis. Testing of the developer shows 16 analyses can be conducted simultaneously on an AMD Ryzen 5xxx 8-core/16-thread CPU. An average design takes between 10--45 seconds to evaluate in the UDC.
 
 
@@ -34,7 +32,7 @@ To run the UDC or the developed optimisation framework, the following dependenci
 
 The tools and frameworks developed in this thesis were written in Python 3.12.8 using a standard conda environment. Although the author sees no issues with usage at other Python versions, no guarantees are given.
 
-## The UDFDAC
+## The UDC
 
 The developed ducted fan analysis code, UDC, in this repository builds on and integrates the existing MTFLOW software in a wrapper to obtain a unified, robust ducted fan design and analysis tool. Simplified diagrams of the UDC are presented below, illustrating both the connections between the various Python modules and the sequential solving strategy employed in the UDC.
 

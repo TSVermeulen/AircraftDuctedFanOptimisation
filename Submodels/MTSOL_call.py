@@ -44,7 +44,7 @@ Versioning
 ------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version: 2.0.5
+Version: 2.1
 
 Changelog:
 - V0.0:   File created with empty class as placeholder.
@@ -77,17 +77,18 @@ Changelog:
           than file-based for significantly improved performance. General
           refactoring for improved performance. Removed NumPy dependency.
 - V2.0.5: Replaced empty output generation with reading of default zeroed output
-          for performance. Minor QoL improvements throughout. 
+          for performance. Minor QoL improvements throughout.
+- V2.1:   Added cross-platform support for Linux and Windows.
 """
 
 # Import standard libraries
-import subprocess, time, queue, threading
+import subprocess, time, queue, threading, sys
 from pathlib import Path
 from enum import Enum
 from typing import Any
 
 # Import custom libraries
-from output_handling import output_processing
+from output_handling import output_processing # type: ignore
 
 
 class ExitFlag(Enum):
@@ -192,7 +193,10 @@ class MTSOL_call:
 
         # Define filepath of MTSOL as being in the same folder as
         # this Python file
-        self.fpath = self.submodels_path / 'mtsol.exe'
+        if sys.platform == "linux":
+            self.fpath = self.submodels_path / 'mtsol'
+        else:
+            self.fpath = self.submodels_path / 'mtsol.exe'
         if not self.fpath.exists():
             raise FileNotFoundError("MTSOL executable not found at {}".format(self.fpath))
 
@@ -232,7 +236,7 @@ class MTSOL_call:
         """
         Create MTSOL subprocess
 
-        Requires that the executable, mtsol.exe, and the input file, tdat.xxx
+        Requires that the executable, mtsol, and the input file, tdat.xxx
         are present in the same directory as this Python file.
 
         Parameters
@@ -691,7 +695,7 @@ class MTSOL_call:
                                    output_file='boundary_layer')
 
 
-    def ExecuteSolver(self, 
+    def ExecuteSolver(self,
                       iter_limit: int) -> ExitFlag:
         """
         Execute the MTSOL solver for the current analysis.
