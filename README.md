@@ -32,7 +32,7 @@ To run the UDC or the developed optimisation framework, the following dependenci
 
 The tools and frameworks developed in this thesis were written in Python 3.12.8 using a standard conda environment. Although the author sees no issues with usage at other Python versions, no guarantees are given.
 
-## The UDFDAC
+## The UDC
 
 The developed ducted fan analysis code, UDC, in this repository builds on and integrates the existing MTFLOW software in a wrapper to obtain a unified, robust ducted fan design and analysis tool. Simplified diagrams of the UDC are presented below, illustrating both the connections between the various Python modules and the sequential solving strategy employed in the UDC.
 

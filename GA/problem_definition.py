@@ -55,8 +55,8 @@ Changelog:
           dump folder generation to avoid unnecessary folder creation.
 - V2.0:   Renamed MTFLOW_caller to UDC for consistency with written thesis.
           Updated imports to reflect new structure.
-- V2.1:   Updated documentation and formatting. Improved type hints. 
-          Cleaned up old imports. 
+- V2.1:   Updated documentation and formatting. Improved type hints.
+          Cleaned up old imports.
 """
 
 # Import standard libraries

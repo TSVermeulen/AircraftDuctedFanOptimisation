@@ -232,7 +232,7 @@ class DesignVectorInterface:
             TE_offset = 0 if not (x_min <= x_tip_TE <= x_max) else \
                 float(duct_interpolant(x_tip_TE))
 
-            # Compute the required radius of the stator blade to ensure duct 
+            # Compute the required radius of the stator blade to ensure duct
             # is attached to stator.
             delta_r = float(max(LE_offset, TE_offset))
             r = LE_coordinate_duct + delta_r
@@ -249,7 +249,7 @@ class DesignVectorInterface:
                 blade_blading_parameters[i]["radial_stations"] = np.full_like(blade_blading_parameters[i]["radial_stations"],
                                                                               r,
                                                                               dtype=float)
-        
+
         # Return the updated data
         return duct_variables, blade_blading_parameters
 
@@ -293,7 +293,8 @@ class DesignVectorInterface:
         sqrt_term = 0 if term <= 0 else np.sqrt(term)
         factor = min(y_t, sqrt_term)
         if factor <= 0:
-            raise ValueError(f"Invalid geometry for b_8_map: denominator<=0 (r_LE={r_le}, x_t={x_t}, y_t={y_t}).")
+            raise ValueError(f"Invalid geometry for b_8_map: denominator<=0 "
+                             f"(r_LE={r_le}, x_t={x_t}, y_t={y_t}).")
         return float(b_8_map * factor)
 
 
@@ -559,6 +560,12 @@ class DesignVectorInterface:
             term = -2 * params["r_LE"] * params["x_t"] / 3
             sqrt_term = 0 if term <= 0 else np.sqrt(term)
             factor = min(params["y_t"], sqrt_term)
+
+            if factor <= 0:
+                raise ValueError(f"Invalid geometry for b_8_map: denominator<=0"
+                                 f" (r_LE={params['r_LE']}, "
+                                 f"x_t={params['x_t']}, y_t={params['y_t']}).")
+
             return float(params["b_8"] / factor)
 
 

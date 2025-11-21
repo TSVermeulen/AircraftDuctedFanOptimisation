@@ -77,7 +77,7 @@ Changelog:
           than file-based for significantly improved performance. General
           refactoring for improved performance. Removed NumPy dependency.
 - V2.0.5: Replaced empty output generation with reading of default zeroed output
-          for performance. Minor QoL improvements throughout. 
+          for performance. Minor QoL improvements throughout.
 - V2.1:   Added cross-platform support for Linux and Windows.
 """
 
@@ -695,7 +695,7 @@ class MTSOL_call:
                                    output_file='boundary_layer')
 
 
-    def ExecuteSolver(self, 
+    def ExecuteSolver(self,
                       iter_limit: int) -> ExitFlag:
         """
         Execute the MTSOL solver for the current analysis.

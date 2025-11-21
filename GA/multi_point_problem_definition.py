@@ -4,9 +4,9 @@ multi_point_problem_definition
 
 Description
 -----------
-This module defines an optimization problem for a multi-point optimisation at n 
-operating points for the pymoo framework, based on the ElementwiseProblem 
-parent class. The model is based on the single-point optimisation routine in 
+This module defines an optimization problem for a multi-point optimisation at n
+operating points for the pymoo framework, based on the ElementwiseProblem
+parent class. The model is based on the single-point optimisation routine in
 the problem_definition.py file.
 
 Classes
@@ -22,14 +22,14 @@ Examples
 
 Notes
 -----
-This module integrates with the UDC for aerodynamic analysis. Ensure that the 
-executable and required input files are present in the appropriate directories. 
-The module is designed to handle mixed-variable optimization problems, 
+This module integrates with the UDC for aerodynamic analysis. Ensure that the
+executable and required input files are present in the appropriate directories.
+The module is designed to handle mixed-variable optimization problems,
 including real and integer variables.
 
 References
 ----------
-For more details on the MTFLOW solver integrated in the UDC and its 
+For more details on the MTFLOW solver integrated in the UDC and its
 input/output requirements, refer to the MTFLOW user manual:
 https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf
 
@@ -41,9 +41,9 @@ Version: 2.1
 
 Changelog:
 - V1.0: Initial implementation.
-- V2.0: Renamed MTFLOW_caller to UDC for consistency with written thesis. 
+- V2.0: Renamed MTFLOW_caller to UDC for consistency with written thesis.
         Updated imports to reflect new structure.
-- V2.1: Updated formatting. Implemented variable pitch. 
+- V2.1: Updated formatting. Implemented variable pitch.
 """
 
 # Import standard libraries
@@ -53,6 +53,7 @@ import datetime
 import copy
 import contextlib
 from pathlib import Path
+from typing import ClassVar, Any
 
 # Import 3rd party libraries
 import numpy as np
@@ -73,8 +74,8 @@ import config  # type: ignore
 
 class MultiPointOptimizationProblem(ElementwiseProblem):
     """
-    Class definition of the optimization problem to be solved using the genetic 
-    algorithm. Inherits from the ElementwiseProblem class from 
+    Class definition of the optimization problem to be solved using the genetic
+    algorithm. Inherits from the ElementwiseProblem class from
     pymoo.core.problem.
     """
 
@@ -87,31 +88,31 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                       "tdat": "tdat.{}"}
 
     # Initialize output dictionary to use in case of an infeasible design.
-    # This equals the outputs of the 
+    # This equals the outputs of the
     # output_handling.output_processing.GetAllVariables() method,
     # but is quicker as it does not involve reading a file.
-    CRASH_OUTPUTS = {'data':
-                     {'Total power CP': 0.00000,
-                     'EtaP': 0.00000,
-                     'Total force CT': 0.00000,
-                     'Element 2 top CTV': 0.00000,
-                     'Element 2 bot CTV': 0.00000,
-                     'Axis body CTV': 0.00000,
-                     'Viscous CTv': 0.00000,
-                     'Inviscid CTi': 0.00000,
-                     'Friction CTf': 0.00000,
-                     'Pressure CTp': 0.00000,
-                     'Pressure Ratio': 0.00000},
-                     'grouped_data':
-                     {'Element 2':
-                     {'CTf': 0.00000,
-                     'CTp': 0.00000,
-                     'top Xtr': 0.00000,
-                     'bot Xtr': 0.00000},
-                     'Axis Body':
-                     {'CTf': 0.00000,
-                     'CTp': 0.00000,
-                     'Xtr': 0.00000}}}
+    CRASH_OUTPUTS: ClassVar[dict[str, Any]] = {'data':
+                                               {'Total power CP': 0.00000,
+                                               'EtaP': 0.00000,
+                                               'Total force CT': 0.00000,
+                                               'Element 2 top CTV': 0.00000,
+                                               'Element 2 bot CTV': 0.00000,
+                                               'Axis body CTV': 0.00000,
+                                               'Viscous CTv': 0.00000,
+                                               'Inviscid CTi': 0.00000,
+                                               'Friction CTf': 0.00000,
+                                               'Pressure CTp': 0.00000,
+                                               'Pressure Ratio': 0.00000},
+                                               'grouped_data':
+                                               {'Element 2':
+                                               {'CTf': 0.00000,
+                                               'CTp': 0.00000,
+                                               'top Xtr': 0.00000,
+                                               'bot Xtr': 0.00000},
+                                               'Axis Body':
+                                               {'CTf': 0.00000,
+                                               'CTp': 0.00000,
+                                               'Xtr': 0.00000}}}
 
     _DESIGN_VARS = DesignVector.construct_vector(config)
 
@@ -127,7 +128,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         Parameters
         ----------
         - verbose : bool, optional
-            Bool to determine if error messages should be printed to the 
+            Bool to determine if error messages should be printed to the
             console while running.
         - **kwargs : dict[str, Any]
             Additional keyword arguments.
@@ -144,7 +145,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         self.num_stages = config.NUM_STAGES
         self.optimize_stages = config.OPTIMIZE_STAGE
 
-        # Calculate the number of objectives and constraints of the 
+        # Calculate the number of objectives and constraints of the
         # optimization problem
         n_objectives = config.n_objectives
         n_inequality_constraints = len(config.constraint_IDs[0]) * len(config.multi_oper) \
@@ -200,7 +201,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         """
         Generate a unique analysis name and write it to self.
         This is required to enable multi-threading of the optimization problem,
-        and log each state file, since each evaluation of UDC requires a 
+        and log each state file, since each evaluation of UDC requires a
         unique set of files.
 
         Returns
@@ -219,9 +220,9 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         # Add a process ID to the analysis name to ensure uniqueness.
         process_id = os.getpid() % 10000  # 4 chars max
 
-        # The analysis name is formatted as: 
+        # The analysis name is formatted as:
         # <MMDDHHMMSS>_<process_ID>_<unique_id>.
-        # Analysis name has a length of 28 characters, satisfying the maximum 
+        # Analysis name has a length of 28 characters, satisfying the maximum
         # length of 32 characters accepted by UDC.
         self.analysis_name = self.analysis_name_template.format(timestamp, process_id, unique_id)
 
@@ -273,13 +274,12 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         """
 
         if idx >= len(self.blade_blading_parameters[0]["RPS_lst"]):
-            raise IndexError(f"Expected at least {idx+1} RPS values, but got "
-                             f"{len(self.blade_blading_parameters[0]['RPS_lst'])}")
+            raise IndexError(f"Wrong number of operating RPS values")
 
         # Pre-calculate the common factor to avoid repeated computation
         omega_factor = -2 * np.pi * self.Lref / self.oper["Vinl"]
 
-        # Loop over all stages, and write the correct rotational ratefor
+        # Loop over all stages, and write the correct rotational rate for
         # the current stage.
         for blading_params in self.blade_blading_parameters:
             rps = blading_params["RPS_lst"][idx]
@@ -415,11 +415,8 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                                     analysis_name=self.analysis_name,
                                     ref_length=self.Lref).GenerateMTSETInput()
 
-            # Generate the MTFLO input file
-            self.ComputeMTFLOInputs(oper_idx=0)
-
-            # If both input generation routines succeeded, set output_generated
-            output_generated =  True
+            # Generate the MTFLO input file and capture the success flag
+            output_generated = self.ComputeMTFLOInputs(oper_idx=0)
 
         except ValueError as e:
             # Any value error will be caused by interpolation issues, so
@@ -464,26 +461,26 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
         Returns
         -------
         - input_generated : bool
-            - Bool to indicate if the MTFLO input generation was succesful.
+            - Bool to indicate if the MTFLO input generation was successful.
         """
 
-        # Detect global fixed-pitch multi-point: 
+        # Detect global fixed-pitch multi-point:
         all_fixed_pitch = all(len(blading_params["ref_blade_angle_lst"]) == 1
                               for blading_params in self.blade_blading_parameters
                               )
-        
-        # For globally fixed-pitch analyses beyond the first operating point, 
+
+        # For globally fixed-pitch analyses beyond the first operating point,
         # only update Omega in-place to avoid regenerating tflow.
         if all_fixed_pitch and oper_idx !=0:
             self.SetOmega(oper_idx)
             return True
-        
+
         # Otherwise, set the correct pitch angle per stage (variable or fixed)
         for blading_params in self.blade_blading_parameters:
             if len(blading_params["ref_blade_angle_lst"]) == len(self.multi_oper):
-                # Variable pitchL select angle for this operating condition
+                # Variable pitch - select angle for this operating condition
                 blading_params["ref_blade_angle"] = blading_params["ref_blade_angle_lst"][oper_idx]
-            # For fixed pitch stages we keep the single-angle as-is. 
+            # For fixed pitch stages we keep the single-angle as-is.
 
         # Overwrite the UDC input file to the correct inputs
         # First set the correct nondimensional rotational rate
@@ -531,7 +528,7 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                   *args,
                   **kwargs) -> None:
         """
-        Element-wise evaluation function for the multi-point optimisation 
+        Element-wise evaluation function for the multi-point optimisation
         problem.
 
         Parameters
@@ -582,7 +579,6 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                 UDC_interface = self._UDC(operating_conditions=self.oper,
                                           ref_length=self.Lref,
                                           analysis_name=self.analysis_name,
-                                          grid_checked=valid_grid,
                                           run_viscous=True,
                                           **kwargs)
                 if design_okay:
@@ -591,7 +587,8 @@ class MultiPointOptimizationProblem(ElementwiseProblem):
                         # Run UDC
                         (exit_flag,
                          UDC_outputs[idx]) = UDC_interface.caller(external_inputs=True,
-                                                             output_type=OutputType.FORCES_ONLY)
+                                                                  output_type=OutputType.FORCES_ONLY,
+                                                                  grid_checked=valid_grid)
 
                         # Overwrite outputs in case of crashes
                         if exit_flag in (ExitFlag.CRASH, ExitFlag.CHOKING,
