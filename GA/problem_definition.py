@@ -130,7 +130,7 @@ class OptimisationProblem(ElementwiseProblem):
 
 
     def __init__(self,
-                 verbose: bool = True,
+                 verbose: bool = False,
                  **kwargs) -> None:
         """
         Initialisation of the OptimisationProblem class.
