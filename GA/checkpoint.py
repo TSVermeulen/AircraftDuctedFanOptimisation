@@ -65,7 +65,13 @@ class CheckpointCallBack(Callback):
         interval : int
             The number of generations between each checkpoint save.
         """
+
         super().__init__()
+
+        # Validate the interval parameter
+        if interval <=0:
+            raise ValueError("Checkpoint interval must be a positive integer.")
+        
         self.interval = interval
 
 
@@ -93,5 +99,9 @@ class CheckpointCallBack(Callback):
                              parents=True)
 
             # Save the current state of the algorithm in a dill file
-            with open(chkpnt_dir / filename, 'wb') as f:
-                dill.dump(algorithm, f)
+            try:
+                with open(chkpnt_dir / filename, 'wb') as f:
+                    dill.dump(algorithm, f)
+            except Exception as e:
+                # Log the error message to avoid aborting the analysis
+                print(f"Error saving checkpoint at generation {gen}: {e}")
