@@ -69,8 +69,9 @@ class CheckpointCallBack(Callback):
         super().__init__()
 
         # Validate the interval parameter
-        if interval <0:
-            raise ValueError("Checkpoint interval must be a positive integer.")
+        if interval < 0:
+            raise ValueError("Checkpoint interval must be non-negative "
+            "(0 disables checkpoints).")
         
         self.interval = interval
 
