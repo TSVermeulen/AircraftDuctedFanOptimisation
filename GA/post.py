@@ -40,7 +40,7 @@ Versioning
 ----------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version 2.1
+Version 2.2
 
 Changelog:
 - V1.0: Initial implementation of plotting capabilities of outputs.
@@ -51,6 +51,7 @@ Changelog:
         linestyle/color/marker definitions.
 - V2.1: Expanded objective space plotting capabilities to enable cumilative
         objective space plotting from multiple analyses. Updated formatting.
+- V2.2: Updated formatting to work for double-column layouts.
 """
 
 # Import standard libraries
@@ -98,6 +99,7 @@ CLRS = ["tab:blue", "tab:orange", "tab:green",
 MS = 5
 MAJOR_GRID_ALPHA = 0.6
 MINOR_GRID_ALPHA = 0.4
+COLUMN_WIDTH = 256.5 # in points, for two-column layout
 
 class PostProcessing:
     """
@@ -592,7 +594,7 @@ class PostProcessing:
         base_bar_width = 0.8 / (num_indiv + 1)
 
         plt.figure("Bar Chart with blading parameters",
-                   figsize=get_figsize(wf=1))
+                   figsize=get_figsize(wf=1, columnwidth=COLUMN_WIDTH))
         for k, key in enumerate(keys):
             if key == "radial_stations":
                 self._plot_radial_stations_parameter(x,
@@ -665,7 +667,9 @@ class PostProcessing:
 
         fig, ax = plt.subplots(nrows=2, ncols=2,
                                constrained_layout=True,
-                               figsize=get_figsize(wf=0.95))
+                               figsize=get_figsize(wf=1,
+                                                   hf=0.7,         
+                                                   columnwidth=COLUMN_WIDTH))
 
         # Set cyclers and grids
         for row in range(2):
@@ -679,7 +683,7 @@ class PostProcessing:
                 ax[row, col].grid(which='minor',
                                   linewidth=0.25,
                                   alpha=MINOR_GRID_ALPHA)
-                ax[row, col].set_xlabel("Normalised radial coordinate [-]")
+                ax[row, col].set_xlabel("Normalised radius [-]")
                 ax[row, col].set_xlim([0,1])
 
         # Plot reference data
@@ -687,18 +691,18 @@ class PostProcessing:
         # to remove the effect of different diameters
         ax[0,0].plot(reference_blading[0]["radial_stations"] / reference_blading[0]["radial_stations"][-1],
                     reference_blading[0]["chord_length"],
-                    label="Reference", color='black', marker="x", ms=MS)
-        ax[0,0].set_title("Chord length distribution [m]")
+                    label="Reference design", color='black', marker="x", ms=MS)
+        ax[0,0].set_title("Chord length [m]")
 
         ax[0,1].plot(reference_blading[0]["radial_stations"] / reference_blading[0]["radial_stations"][-1],
                     np.rad2deg(reference_blading[0]["sweep_angle"]),
-                    label="Reference", color='black', marker="x", ms=MS)
-        ax[0,1].set_title("Sweep angle distribution [deg]")
+                    label="Reference design", color='black', marker="x", ms=MS)
+        ax[0,1].set_title("Sweep angle [deg]")
 
         ax[1,0].plot(reference_blading[0]["radial_stations"] / reference_blading[0]["radial_stations"][-1],
                     np.rad2deg(reference_blading[0]["blade_angle"]),
-                    label="Reference", color='black', marker="x", ms=MS)
-        ax[1,0].set_title("Blade angle distribution [deg]")
+                    label="Reference design", color='black', marker="x", ms=MS)
+        ax[1,0].set_title("Blade angle [deg]")
 
         # Plot optimised data
         # Use the radial location as fraction rather than absolute dimension
@@ -727,7 +731,7 @@ class PostProcessing:
         if len(optimised_blading) <= 40:
             # Avoid generating the legend if the population size is too big
             # to ensure plots remain somewhat clear
-            ax[1,1].legend(handles, labels, loc='center', ncol=2)
+            ax[1,1].legend(handles, labels, loc='center', ncol=1)
 
 
     def compare_blading_data(self,
@@ -1058,7 +1062,8 @@ class PostProcessing:
 
         if avg_objectives.shape[1] == 1:
             plt.figure("Objective value", figsize=get_figsize(wf=0.95,
-                                                              hf=0.75))
+                                                              hf=0.75,
+                                                              columnwidth=COLUMN_WIDTH))
             # For a single-objective problem, plot the best, avg, and worst generational values.
             avg_objectives = avg_objectives.squeeze()
             nadir_objectives = nadir_objectives.squeeze()
@@ -1094,7 +1099,8 @@ class PostProcessing:
             running_metric = RunningMetric(period=ngen)
 
             plt.figure("Running metric", figsize=get_figsize(wf=0.95,
-                                                             hf=0.75))
+                                                             hf=0.75,
+                                                             columnwidth=COLUMN_WIDTH))
             for e in res.history:
                 if e != res.history[-1]:
                     running_metric.update(e)
@@ -1210,7 +1216,8 @@ class PostProcessing:
 
         # Create a 2x2 grid of subplots
         fig = plt.figure(figsize=get_figsize(wf=0.75,
-                                             hf=0.9))
+                                             hf=0.9,
+                                             columnwidth=COLUMN_WIDTH))
         gs = fig.add_gridspec(2, 2, height_ratios=[1.25,1])
 
         ax_big = fig.add_subplot(gs[0, :])  # span top row
@@ -1351,7 +1358,7 @@ class PostProcessing:
         if len(F_initial[0]) > 2:
             # Use pymoo built-in plotting in case more than 2 objectives are used
             plot = Scatter(title="Objective space for the feasible evaluated solution set")
-            plot = Scatter(figsize=get_figsize(wf=0.75, hf=0.75))
+            plot = Scatter(figsize=get_figsize(wf=0.75, hf=0.75, columnwidth=COLUMN_WIDTH))
             plot.add(F_initial_feasible[0],
                      marker="x",
                      facecolor="tab:blue",
@@ -1388,7 +1395,8 @@ class PostProcessing:
         elif len(F_initial[0]) == 2:
             # For a 2-objective plot
             fig, ax = plt.subplots(figsize=get_figsize(wf=0.75,
-                                                       hf=0.6),
+                                                       hf=0.6,
+                                                       columnwidth=COLUMN_WIDTH),
                                    constrained_layout=True)
             ax.set_title("Objective space for the feasible evaluated solution set")
             ax.set_xlabel("Propulsive efficiency $\\eta_p$ [-]")
@@ -1938,7 +1946,8 @@ class PostProcessing:
         """
 
         plt.figure("Meridional plot of the ducted fan designs",
-                   figsize=get_figsize(wf=0.95, hf=0.6))
+                   figsize=get_figsize(wf=1, hf=0.8, columnwidth=COLUMN_WIDTH),
+                   constrained_layout=True)
         self._create_individual_meridional_plot(color="k",
                                                 linestyle="-",
                                                 label="Reference design",
@@ -1974,9 +1983,8 @@ class PostProcessing:
         plt.ylabel("Radial coordinate $z$ [m]")
         plt.minorticks_on()
         plt.grid(which="major", alpha=MAJOR_GRID_ALPHA)
-        plt.ylim(bottom=0)
-        plt.legend(bbox_to_anchor=(1,1))
-        plt.tight_layout()
+        plt.axis('equal')
+        plt.legend(bbox_to_anchor=(0.5, -0.2), loc="upper center", ncols=2)
 
 
     def create_multi_analysis_duct_plots(self,
@@ -2039,7 +2047,7 @@ class PostProcessing:
                         linestyle=STYLE[i])
 
         def create_profile_only_figure():
-            fig, ax = plt.subplots(figsize=get_figsize(wf=0.75))
+            fig, ax = plt.subplots(figsize=get_figsize(wf=0.75, columnwidth=COLUMN_WIDTH))
             plot_profiles(ax)
             ax.set_xlabel("Axial coordinate $x/c$ [-]")
             ax.set_ylabel("Vertical coordinate $y/c$ [-]")
@@ -2054,7 +2062,7 @@ class PostProcessing:
 
         def create_comparison_figure():
             fig, axs = plt.subplots(3, 1,
-                                    figsize=get_figsize(wf=0.75, hf=1),
+                                    figsize=get_figsize(wf=0.75, hf=1, columnwidth=COLUMN_WIDTH),
                                     gridspec_kw={'height_ratios': [1.75,
                                                                    1.125,
                                                                    1.125]})
@@ -2212,7 +2220,8 @@ class PostProcessing:
 
         fig, axes = plt.subplots(num_rows,
                                  num_cols,
-                                 figsize=get_figsize(wf=0.95),
+                                 figsize=get_figsize(wf=1,
+                                                     columnwidth=COLUMN_WIDTH),
                                  sharex=True)
         axes = axes.flatten()
 
@@ -2244,6 +2253,7 @@ class PostProcessing:
         fig.legend(handles,
                    legend_labels,
                    loc='lower center',
+                   bbox_to_anchor=(0.5, -0.01),
                    ncol=len(legend_labels),
                    frameon=True)
 
@@ -2258,12 +2268,12 @@ class PostProcessing:
                 ax.set_xlabel('')
 
         # Shared axis labels, subplot title, and formatting
-        fig.text(0.5, 0.1, 'Axial coordinate $x/c$ [-]',
+        fig.text(0.5, 0.15, 'Axial coordinate $x/c$ [-]',
                  ha='center')
-        fig.text(0.03, 0.5, 'Vertical coordinate $y/c$ [-]',
+        fig.text(0.02, 0.5, 'Vertical coordinate $y/c$ [-]',
                  va='center',
                  rotation='vertical')
-        fig.tight_layout(rect=[0.025, 0.1, 0.98, 1])
+        fig.tight_layout(rect=[0.025, 0.15, 0.98, 1])
 
 
     def create_multi_analysis_blading_bar_chart(self,
@@ -2424,11 +2434,12 @@ class PostProcessing:
             return area_objective
 
         # Format the objective space plot
-        fig, ax = plt.subplots(figsize=get_figsize(wf=0.75, hf=0.6),
+        fig, ax = plt.subplots(figsize=get_figsize(wf=1, hf=0.6,
+                                                   columnwidth=COLUMN_WIDTH),
                                constrained_layout=True)
-        ax.set_title("Objective space for the feasible solution sets")
+        # ax.set_title("Objective space for the feasible solution sets")
         ax.set_xlabel("Propulsor efficiency $\\eta_p$ [-]")
-        ax.set_ylabel("Normalised frontal area $A_{front} / A_{front_{ref}}$ [-]")
+        ax.set_ylabel("Normalised frontal area \n $A_{front} / A_{front_{ref}}$ [-]")
         ax.yaxis.set_major_formatter(PercentFormatter(xmax=1))
         ax.xaxis.set_major_formatter(PercentFormatter(xmax=1))
         for i, fname in enumerate(fnames):
@@ -2499,10 +2510,10 @@ class PostProcessing:
 
             ax.scatter(F_feasible[:,0] * -1, F_feasible[:,1],
                        marker=MARKERS[i], facecolor="none", s=20, alpha=0.5,
-                       color=CLRS[i], label=f"Evaluated {labels[i]} designs")
+                       color=CLRS[i], label=f"{labels[i]} designs")
             ax.scatter(F_opt[:,0] * -1, F_opt[:,1],
                        marker="X", color="tab:brown", s=50,
-                       label="Non-dominated front")
+                       label="Optimized design")
             ax.scatter(F_initial_feasible[0,0] * -1, F_initial_feasible[0,1],
                        s=50, marker="H", color="tab:pink",
                        label="Reference design")
@@ -2510,10 +2521,9 @@ class PostProcessing:
         # Legend below figure
         handles, legend_labels = ax.get_legend_handles_labels()
         by_label = dict(zip(legend_labels, handles))
-        plt.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(1,1))
+        ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(0.5, -0.3), loc="upper center", ncols=2)
 
         ax.minorticks_on()
-        plt.tight_layout()
 
 
     def compare_multiple_runs(self,
@@ -2682,29 +2692,11 @@ if __name__ == "__main__":
     output = Path('Results/res_pop100_eval11000_250628082743263171.dill')
     processing_class = PostProcessing(fname=output)
 
-    # Single-point single-objective results
-    # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop100_eval11000_250705064407811215.dill"),
-    #                                                Path("Results/res_pop100_eval11000_250707023034163319.dill"),
-    #                                                Path("Results/res_pop100_eval11000_250710094604110628.dill")],
-    #                                        labels=["Combat cruise",
-    #                                                "Endurance cruise",
-    #                                                "Take-off"])
-
-    # Single-point multi-objective results for the endurance cruise
-    # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop100_eval11000_250707023034163319.dill"),
-    #                                                Path("Results/res_pop100_eval11000_250709085717541182.dill"),
-    #                                                Path("Results/res_pop100_eval11000_250710215547430180.dill")],
-    #                                        labels=["SOO",
-    #                                                "SOO with $g_3$",
-    #                                                "MOO"])
-
     # Multi-point single-objective results for the endurance mission
-    # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop100_eval11000_250628082743263171.dill")],
-    #                                        labels=["Optimised"])
+    # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251124182952404967.dill")],
+    #                                        labels=["Optimized"])
 
-    processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251115023711414627.dill"),
-                                                   Path("Results/res_pop100_eval200_251110223328185402.dill"),
-                                                   Path("Results/res_pop200_eval500_251119042735540563.dill")],
-                                           labels=["test old param",
-                                                   "test 2 premature convergence new param",
-                                                   "test expanded diversity new param"])
+    # Single-point single-objective results for the endurance cruise condition. 
+    processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251119042735540563.dill")],
+                                           labels=["Optimized"])
+
