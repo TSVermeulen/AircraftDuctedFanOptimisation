@@ -1357,8 +1357,8 @@ class PostProcessing:
 
         if len(F_initial[0]) > 2:
             # Use pymoo built-in plotting in case more than 2 objectives are used
-            plot = Scatter(title="Objective space for the feasible evaluated solution set")
-            plot = Scatter(figsize=get_figsize(wf=0.75, hf=0.75, columnwidth=COLUMN_WIDTH))
+            plot = Scatter(figsize=get_figsize(wf=0.75, hf=0.75, columnwidth=COLUMN_WIDTH),
+                           title="Objective space for the feasible evaluated solution set")
             plot.add(F_initial_feasible[0],
                      marker="x",
                      facecolor="tab:blue",
