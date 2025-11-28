@@ -313,6 +313,7 @@ POPULATION_SIZE = 200
 INITIAL_POPULATION_SIZE = 400
 MAX_GENERATIONS = 500
 SLIDING_WINDOW_SIZE = 50
+CHECKPOINT_INTERVAL = 10  # Interval (in generations) at which to store checkpoints
 
 # Define the initial population parameter spreads, used to construct a biased initial population
 SPREAD_CONTINUOUS = 0.75  # Relative spread (+/- %) applied to continous variables around their reference values

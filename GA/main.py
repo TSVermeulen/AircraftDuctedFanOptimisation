@@ -61,6 +61,7 @@ from problem_definition import OptimisationProblem #type: ignore
 from init_population import InitPopulation #type: ignore
 from termination_conditions import GetTerminationConditions #type: ignore
 from repair import RepairIndividuals #type: ignore
+from checkpoint import CheckpointCallBack # type: ignore
 
 
 if __name__ == "__main__":
@@ -95,6 +96,7 @@ if __name__ == "__main__":
     res = minimize(problem,
                    algorithm,
                    termination=GetTerminationConditions(),
+                   callback=CheckpointCallBack(interval=config.CHECKPOINT_INTERVAL),
                    seed=config.GLOBAL_SEED,
                    verbose=True,
                    save_history=True,
