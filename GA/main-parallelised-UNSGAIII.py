@@ -68,7 +68,7 @@ from problem_definition import OptimisationProblem # type: ignore
 from init_population import InitPopulation # type: ignore
 from termination_conditions import GetTerminationConditions # type: ignore
 from repair import RepairIndividuals # type: ignore
-
+from checkpoint import CheckpointCallBack # type: ignore
 
 if __name__ == "__main__":
     # Required for Windows compatibility when using multiprocessing
@@ -138,6 +138,7 @@ if __name__ == "__main__":
         res = minimize(problem,
                        algorithm,
                        termination=GetTerminationConditions(),
+                       callback=CheckpointCallBack(interval=config.CHECKPOINT_INTERVAL),
                        seed=config.GLOBAL_SEED,
                        verbose=True,
                        save_history=True,
@@ -155,7 +156,7 @@ if __name__ == "__main__":
         # First generate the results folder if it does not exist already
         results_dir = Path(__file__).resolve().parent / "results"
         results_dir.mkdir(exist_ok=True,
-                        parents=True)
+                          parents=True)
 
         now = datetime.datetime.now()
         timestamp = f"{now:%y%m%d%H%M%S%f}"
