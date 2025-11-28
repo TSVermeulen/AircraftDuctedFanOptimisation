@@ -70,8 +70,10 @@ class CheckpointCallBack(Callback):
 
         # Validate the interval parameter
         if interval < 0:
-            raise ValueError("Checkpoint interval must be non-negative "
-            "(0 disables checkpoints).")
+            raise ValueError(
+                "Checkpoint interval must be non-negative "
+                "(0 disables checkpoints)."
+                )
         
         self.interval = interval
 
