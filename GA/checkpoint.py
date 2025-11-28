@@ -69,7 +69,7 @@ class CheckpointCallBack(Callback):
         super().__init__()
 
         # Validate the interval parameter
-        if interval <=0:
+        if interval <0:
             raise ValueError("Checkpoint interval must be a positive integer.")
         
         self.interval = interval
@@ -87,7 +87,10 @@ class CheckpointCallBack(Callback):
         """
 
         gen = algorithm.n_gen
-        if gen % self.interval == 0:
+        if self.interval == 0:
+            # If interval is set to 0, do not save any checkpoints
+            return
+        elif gen % self.interval == 0:
             # Define the filename for the checkpoint based on the
             # current generation
             filename = f"checkpoint_gen{gen}.dill"
