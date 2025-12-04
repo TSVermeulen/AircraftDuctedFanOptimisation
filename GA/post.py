@@ -2509,13 +2509,13 @@ class PostProcessing:
                 F_opt = res.opt.get("F")
 
             ax.scatter(F_feasible[:,0] * -1, F_feasible[:,1],
-                       marker=MARKERS[i], facecolor="none", s=20, alpha=0.5,
-                       color=CLRS[i], label=f"{labels[i]} designs")
+                       marker='o', facecolor="none", s=20, alpha=0.3,
+                       edgecolors=CLRS[i], label=f"Evaluated designs")
             ax.scatter(F_opt[:,0] * -1, F_opt[:,1],
-                       marker="X", color="tab:brown", s=50,
+                       marker="X", color="tab:orange", s=100,
                        label="Optimized design")
             ax.scatter(F_initial_feasible[0,0] * -1, F_initial_feasible[0,1],
-                       s=50, marker="H", color="tab:pink",
+                       s=50, marker="H", color="tab:red",
                        label="Reference design")
 
         # Legend below figure
