@@ -85,22 +85,19 @@ class Analyzer:
     def __init__(self,
                  beta_tip: list[float] | np.typing.NDArray[np.floating],
                  rps_range: list[float] | np.typing.NDArray[np.floating],
-                 verbose: bool = True,
-                 **kwargs) -> None:
+                 verbose: bool = True) -> None:
         """
         Initialisation of the Analyzer class.
 
         Parameters
         ----------
-        - beta_tip : flist[float] | np.typing.NDArray[np.floating]
+        - beta_tip : list[float] | np.typing.NDArray[np.floating]
             The blade tip angles in radians.
         - rps_range : list[float] | np.typing.NDArray[np.floating]
             The range of RPS values to analyse.
         - verbose : bool, optional
             Bool to determine if error messages should be printed to the
             console while running.
-        - **kwargs : dict[str, Any]
-            Additional keyword arguments.
 
         Returns
         -------
@@ -247,7 +244,7 @@ class Analyzer:
             self.blade_blading_parameters[0]["RPS"] = RPS
             self.blade_blading_parameters[0]["RPS_lst"] = [RPS] * len(config.multi_oper)
             self.blade_blading_parameters[0]["ref_blade_angle"] = self.tip_angle
-            self.blade_blading_parameters[0]["ref_blade_angle_lst"] = [self.tip_angle] * len(config.REFERENCE_BLADE_ANGLES) if hasattr(config.REFERENCE_BLADE_ANGLES, 'len') else [self.tip_angle]
+            self.blade_blading_parameters[0]["ref_blade_angle_lst"] = [self.tip_angle]
 
             # Set the non-dimensional omega rates
             self.ComputeOmega()
@@ -452,7 +449,7 @@ class Analyzer:
         # Collect the output dataframe
         if x is not None:
             output = self._evaluate(x,
-                                    kwargs)
+                                    **kwargs)
 
             # Store the dataframe to a csv file if desired
             if store_to_csv:
@@ -487,4 +484,4 @@ if __name__ == "__main__":
              beta_tip=tip_angles,
              rps_range=rps_values).analyse_performance(ref_vector,
                                                        store_to_csv=True,
-                                                       kwargs={'viscous':True})
+                                                       viscous=False)
