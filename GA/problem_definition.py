@@ -150,11 +150,6 @@ class OptimisationProblem(ElementwiseProblem):
 
         self.verbose = verbose
 
-        # Import control variables
-        self.num_radial = config.NUM_RADIALSECTIONS
-        self.num_stages = config.NUM_STAGES
-        self.optimize_stages = config.OPTIMIZE_STAGE
-
         # Calculate the number of objectives and constraints of the
         # optimisation problem
         n_objectives = config.n_objectives
