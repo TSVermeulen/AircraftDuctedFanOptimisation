@@ -20,3 +20,4 @@ venv/
 .mypy_cache/
 .ipynb_checkpoints/
 .python-version
+*.csv
