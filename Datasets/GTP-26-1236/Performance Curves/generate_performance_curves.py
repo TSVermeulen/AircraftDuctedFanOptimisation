@@ -483,6 +483,6 @@ if __name__ == "__main__":
 
     Analyzer(verbose=True,
              beta_tip=tip_angles,
-             rps_range=rps_values).analyse_performance(ref_vector,
+             rps_range=rps_values).analyse_performance(None,
                                                        store_to_csv=True,
                                                        viscous=False)
