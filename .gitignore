@@ -11,7 +11,7 @@ boundary_layer.*
 tdat.*
 tflow.*
 walls.*
-*.dill
+Results/*
 *.pyc
 __pycache__/
 /.venv/
