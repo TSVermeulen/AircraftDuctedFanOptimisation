@@ -39,7 +39,8 @@ The developed ducted fan analysis code, UDC, in this repository builds on and in
 
 <img width="625" height="467" alt="UDC_filediagram" src="https://github.com/user-attachments/assets/6de1bdb7-ba54-4368-bcac-01f99c6120f4" />
 
-<img width="935" height="507" alt="UDC_flowdiagram" src="https://github.com/user-attachments/assets/42adb0ba-d46e-4328-8185-132a23d8eda9" />
+<img width="1177" height="637" alt="UDC_flowdiagram" src="https://github.com/user-attachments/assets/7f9f31ba-0df9-4ce7-9711-ffdcdbd4d6e0" />
+
 
 <img width="1255" height="395" alt="MTSOL_flowdiagram" src="https://github.com/user-attachments/assets/2b932ffa-78a9-431c-85c8-e7f440e4db9b" />
 
@@ -49,7 +50,9 @@ For more details on the different (sub-)modules of the UDC, please refer to Appe
 
 The developed modular ducted fan optimisation framework in this repository integrates the UDC into a customised, mixed-variable (continuous + integer) U-NSGA-III genetic algorithm. A pipeline diagram of the developed optimisation framework is shown below:
 
-<img width="1049" height="681" alt="OptimisationFramework" src="https://github.com/user-attachments/assets/5b679ff5-89d8-4027-bc02-ab6e10ab5329" />
-
+<img width="1042" height="625" alt="OptimisationFramework" src="https://github.com/user-attachments/assets/1723ee1a-166a-46c8-b4a4-3846485d613e" />
 
 For more details on the different (sub-)modules of the optimisation framework, please refer to Appendix C.2 of the written thesis, or the numerous documentation present within each file in this repository.
+
+## Funding
+This research was conducted by DASAL (Dutch Aviation Systems Analysis Lab), which is a project within the research and innovation program ‘Luchtvaart in Transitie’. Luchtvaart in Transitie is co-funded by the National Growth Fund. 
