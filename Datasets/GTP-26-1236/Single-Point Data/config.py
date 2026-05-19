@@ -120,7 +120,7 @@ ROTATING = [True, False, False]
 NUM_RADIALSECTIONS = [4, 2, 2]  # Define the number of radial sections at which the blade profiles for each stage will be defined. Note that we cannot use more than 16 radial sections due to limitations of MTFLOW. Advice from the user manual: ~5 or less is good.
 NUM_STAGES = 3  # Define the number of stages (i.e. total count of rotors + stators)
 OPTIMIZE_BLADETHICKNESS = True  # Boolean to control if the blade thickness distributions should be optimised
-REFERENCE_BLADE_ANGLES = (float(np.deg2rad(14.5)))  # Reference angles at the reference section of the rotor, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
+REFERENCE_BLADE_ANGLES = float(np.deg2rad(14.5))  # Reference angles at the reference section of the rotor, measured at the blade tip. The 14.5 degree angle is equivalent to a 19deg angle at the 75% span location.
 BLADE_DIAMETERS = [2.1336, 2.2098, 2.2098]
 tipGap = 0.01016  # 1.016 cm tip gap
 
@@ -330,7 +330,7 @@ RESERVED_THREADS = 0  # Threads reserved for the operating system and any other 
 THREADS_PER_EVALUATION = 1  # Number of threads per MTFLOW evaluation: one for running MTSET/MTSOL/MTFLO and one for polling outputs
 
 # Postprocessing visualisation controls
-# ref_objectives = np.array([-0.74376, 1])  # ref objective values for endurance cruise condition
-# ref_objectives = np.array([-0.66469])  # ref objective values for take-off condition
+ref_objectives = np.array([-0.796])  # ref objective value for endurance cruise condition
+# ref_objectives = np.array([-0.711])  # ref objective values for climb condition
 # ref_objectives = np.array([-0.7645])  # ref objective values for combat condition
-ref_objectives = np.array([1])  # reference energy objective value for a multi-point problem
+# ref_objectives = np.array([1])  # reference energy objective value for a multi-point problem
