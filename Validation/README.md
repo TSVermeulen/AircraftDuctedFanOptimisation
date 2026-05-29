@@ -25,9 +25,9 @@ The structure of this folder is the following:
     │   ├── beta_145.case                            # input case file for 14.5 degrees blade angle
     │   ├── beta_245.case                            # input case file for 24.5 degrees blade angle
     │   ├── dfdc_beta145.csv                         # DFDC results for 14.5 degrees
-    │   └── dfdc_beta245.csv                         # DFDC results for 24.5 degrees
-    |   └── dfdc.exe                                 # DFDC executable
-    |   └── DFDC_run_J.py                            # Python DFDC wrapper
+    │   ├── dfdc_beta245.csv                         # DFDC results for 24.5 degrees
+    │   ├── dfdc.exe                                 # DFDC executable
+    │   └── DFDC_run_J.py                            # Python DFDC wrapper
     └── X22A Propeller Design Data.xlsx               # X-22A design parameters
 
 - `Validation Data.xlsx`: contains the NASA wind tunnel experimental data taken from NASA-TN-D-4142, for the X-22A at 14.5 and 24.5 degree blade tip angles. This corresponds to blade angles of 19 and 29 degrees at the 75% span station, which is the reference datum used in the experimental data. It also contains the output data obtained from the UDC for the same two blade tip angles considered. The comparison shows:
@@ -38,7 +38,7 @@ The structure of this folder is the following:
   - J: Advance ratio
   - CT: Thrust Coefficient, normalised using the rotational rate
   - CP: Power Coefficient, normalised using the rotational rate
-  - EtaP: Propulsor Efficiency, TC/PC
+  - EtaP: Propulsor Efficiency, CT/CP * J
 
 - `X22A Propeller Design Data.xlsx`: The chord, geometric parameters, and collective blade angle distributions for the X-22A blade.
 

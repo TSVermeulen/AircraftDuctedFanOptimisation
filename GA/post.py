@@ -47,7 +47,7 @@ Changelog:
 - V2.0:     Significantly expanded functionality. Implemented multi-analysis
             comparison. Updated formatting of graphs. Implemented uniform
             linestyle/color/marker definitions.
-- V2.1:     Expanded objective space plotting capabilities to enable cumilative
+- V2.1:     Expanded objective space plotting capabilities to enable cumulative
             objective space plotting from multiple analyses. Updated formatting.
 - V2.2:     Updated formatting to work for double-column layouts.
 - V2.2.1:   Removed fname as class attribute and instead added it as an argument 
@@ -112,18 +112,14 @@ class PostProcessing:
 
     Attributes
     ----------
-    - fname : Path
-        The filename or path of the .dill file to be loaded.
     - base_dir : Path
         The base directory for resolving relative file paths.
 
     Examples
     --------
-    >>> output = Path('res_pop20_gen20_250506220150593712.dill')
-    >>> processing = PostProcessing(fname=output)
-    >>> res = processing.load_res()
-    >>> processing.extract_population_data(res)
-    >>> processing.main()
+    >>> output = Path('results.dill')
+    >>> processing = PostProcessing()
+    >>> processing.main(fname=output)
     """
 
     _airfoil_param = AirfoilParameterisation()  # shared, read-only
@@ -138,7 +134,7 @@ class PostProcessing:
         Initialization of the PostProcessing class.
 
         - base_dir : Path, optional
-            The base directory to use if fname is not an absolute path.
+            The base directory to use when resolving relative result file paths.
             Defaults to the directory containing this script.
 
         Returns
@@ -150,7 +146,7 @@ class PostProcessing:
         if base_dir is None:
             self.base_dir = Path(__file__).resolve().parent
         else:
-            self.base_dir = base_dir
+            self.base_dir = Path(base_dir)
 
 
     def load_res(self) -> Result:
