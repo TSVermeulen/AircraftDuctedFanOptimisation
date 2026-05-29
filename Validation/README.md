@@ -5,7 +5,7 @@ The validation has been done against the X-22A 3-bladed ducted propeller, for wh
 
 The structure of this folder is the following:
 
-.
+```bash
 └── Validation
     ├── README.md
     ├── Validation Data.xlsx                          # main validation results
@@ -29,6 +29,7 @@ The structure of this folder is the following:
     |   └── dfdc.exe                                 # DFDC executable
     |   └── DFDC_run_J.py                            # Python DFDC wrapper
     └── X22A Propeller Design Data.xlsx               # X-22A design parameters
+```
 
 - `Validation Data.xlsx`: contains the NASA wind tunnel experimental data taken from NASA-TN-D-4142, for the X-22A at 14.5 and 24.5 degree blade tip angles. This corresponds to blade angles of 19 and 29 degrees at the 75% span station, which is the reference datum used in the experimental data. It also contains the output data obtained from the UDC for the same two blade tip angles considered. The comparison shows:
 
