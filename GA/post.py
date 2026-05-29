@@ -18,11 +18,9 @@ PostProcessing
 
 Examples
 --------
->>> output = Path('res_pop20_gen20_250506220150593712.dill')
->>> processing_class = PostProcessing(fname=output)
->>> res = processing_class.load_res()
->>> processing_class.ExtractPopulationData(res)
->>> processing_class.main()
+>>> output = Path('outputfile.dill')
+>>> processing_class = PostProcessing()
+>>> processing_class.main(fname=output)
 
 Notes
 -----
@@ -40,18 +38,20 @@ Versioning
 ----------
 Author: T.S. Vermeulen
 Email: T.S.Vermeulen@tudelft.nl
-Version 2.2
+Version 2.2.1
 
 Changelog:
-- V1.0: Initial implementation of plotting capabilities of outputs.
-- V1.1: Added convergence property plotter. Added 3D blade geometry plotting
-        capability.
-- V2.0: Significantly expanded functionality. Implemented multi-analysis
-        comparison. Updated formatting of graphs. Implemented uniform
-        linestyle/color/marker definitions.
-- V2.1: Expanded objective space plotting capabilities to enable cumilative
-        objective space plotting from multiple analyses. Updated formatting.
-- V2.2: Updated formatting to work for double-column layouts.
+- V1.0:     Initial implementation of plotting capabilities of outputs.
+- V1.1:     Added convergence property plotter. Added 3D blade geometry plotting
+            capability.
+- V2.0:     Significantly expanded functionality. Implemented multi-analysis
+            comparison. Updated formatting of graphs. Implemented uniform
+            linestyle/color/marker definitions.
+- V2.1:     Expanded objective space plotting capabilities to enable cumilative
+            objective space plotting from multiple analyses. Updated formatting.
+- V2.2:     Updated formatting to work for double-column layouts.
+- V2.2.1:   Removed fname as class attribute and instead added it as an argument 
+            to the main method. 
 """
 
 # Import standard libraries
@@ -133,16 +133,10 @@ class PostProcessing:
 
 
     def __init__(self,
-                 fname: Path,
                  base_dir: Path | None = None) -> None:
         """
         Initialization of the PostProcessing class.
 
-        Parameters
-        ----------
-        - fname : Path
-            The filename or path of the .dill file to be loaded.
-            If not an absolute path it will be relative to base_dir.
         - base_dir : Path, optional
             The base directory to use if fname is not an absolute path.
             Defaults to the directory containing this script.
@@ -157,15 +151,6 @@ class PostProcessing:
             self.base_dir = Path(__file__).resolve().parent
         else:
             self.base_dir = base_dir
-
-        # Coerce fname to Path and resolve it if it's not already absolute
-        fname = Path(fname)
-        self.results_path = fname if fname.is_absolute() else \
-            (self.base_dir / fname).resolve()
-
-        # Validate file extension
-        if self.results_path.suffix.lower() != '.dill':
-            raise ValueError(f"Incorrect file extension: {self.results_path.suffix}")
 
 
     def load_res(self) -> Result:
@@ -2521,7 +2506,11 @@ class PostProcessing:
         # Legend below figure
         handles, legend_labels = ax.get_legend_handles_labels()
         by_label = dict(zip(legend_labels, handles))
-        ax.legend(by_label.values(), by_label.keys(), bbox_to_anchor=(0.5, -0.3), loc="upper center", ncols=2)
+        ax.legend(by_label.values(), 
+                  by_label.keys(), 
+                  bbox_to_anchor=(0.5, -0.3), 
+                  loc="upper center", 
+                  ncols=2)
 
         ax.minorticks_on()
 
@@ -2588,18 +2577,30 @@ class PostProcessing:
         plt.close('all')
 
 
-    def main(self) -> None:
+    def main(self,
+             fname: Path) -> None:
         """
         Main post-processing method. Only for single-analysis post-processing.
 
         Parameters
         ----------
-        None
+        - fname : Path
+            The filename or path of the .dill file to be loaded.
+            If not an absolute path it will be relative to base_dir.
 
         Returns
         -------
         None
         """
+
+        # Coerce fname to Path and resolve it if it's not already absolute        
+        fname = Path(fname)
+        self.results_path = fname if fname.is_absolute() else \
+            (self.base_dir / fname).resolve()
+
+        # Validate file extension
+        if self.results_path.suffix.lower() != '.dill':
+            raise ValueError(f"Incorrect file extension: {self.results_path.suffix}")
 
         # Load in the results object and extract the population data to self
         res = self.load_res()
@@ -2687,16 +2688,27 @@ class PostProcessing:
 
 
 if __name__ == "__main__":
-    # Initialize the post-processing class with an initial results file
-    # This file is overwritten when using the compare_multiple_runs method
-    output = Path('Results/res_pop100_eval11000_250628082743263171.dill')
-    processing_class = PostProcessing(fname=output)
+    # Below are sample applications of the PostProcessing class. 
+    # Make sure to adjust the filenames and labels appropriately.
+    # Note that the correct configuration file (config.py) must be used for the 
+    # results files which are post-processed, as the post-processing 
+    # relies on the configuration for correct data extraction and plotting.
+    
+    # Initialize the post-processing class
+    processing_class = PostProcessing()
 
     # Multi-point single-objective results for the endurance mission
+    # print("Post-processing the multi-point single-objective results for the endurance mission...")
     # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251124182952404967.dill")],
     #                                        labels=["Optimized"])
 
     # Single-point single-objective results for the endurance cruise condition. 
-    processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251119042735540563.dill")],
-                                           labels=["Optimized"])
-
+    # print("Post-processing the single-point single-objective results for the endurance cruise condition...")
+    # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251119042735540563.dill")],
+    #                                        labels=["Optimized"])
+    
+    # Note how the "normal" main method can also be used to generate more 
+    # in-depth results. compare_multiple_runs() does not analyse the 
+    # performance/convergence of the analysis, which main() does.
+    # print("Post-processing the single-point single-objective results for the endurance cruise condition with the main method...")
+    # processing_class.main(fname=Path("Results/res_pop200_eval500_251119042735540563.dill"))
