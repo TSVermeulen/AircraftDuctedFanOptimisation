@@ -34,7 +34,7 @@ The structure of this folder is the following:
 - `Validation Data.xlsx`: contains the NASA wind tunnel experimental data taken from NASA-TN-D-4142, for the X-22A at 14.5 and 24.5 degree blade tip angles. This corresponds to blade angles of 19 and 29 degrees at the 75% span station, which is the reference datum used in the experimental data. It also contains the output data obtained from the UDC for the same two blade tip angles considered. The comparison shows:
 
   - OMEGA: Nondimensionalised rotational rate used internally in the UDC/MTFLOW. Defined as RPS * 2 * PI * D / V
-  - V: Freestream velocity
+  - V: Freestream velocity in m/s
   - RPS: The rotational rate of the blade row in Hz
   - J: Advance ratio
   - CT: Thrust Coefficient, normalised using the rotational rate
