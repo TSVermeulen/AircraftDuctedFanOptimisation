@@ -9,8 +9,8 @@ Four sets of data are included in this dataset:
 - validation data used to validate the UDC implementation against experimental wind tunnel data of the X-22A ducted propulsor (`Validation`). See `Validation/README.md` for further details.
 
 - Configuration files and UDC output for the optimisations performed in support of the mentioned publications [1] and [2] (`Single-Point Data/` and `Multi-Point Data/`). The optimisation configuration files for the framework (`config.py`) are provided for:
-        - The single-point endurance cruise operating condition, where the propulsor efficiency is to be maximized (see more information on the associated operating conditions in `Single-Point Data/config.py`).  
-        - The multi-point simplified endurance mission. This mission consists of a climb condition combined with the endurance cruise condition. Here, the total mission energy is to be minimized (see more information on the associated operating conditions in `Multi-Point Data/config.py`).  
+        - The single-point endurance cruise operating condition, where the propulsor efficiency is to be maximised (see more information on the associated operating conditions in `Single-Point Data/config.py`).  
+        - The multi-point simplified endurance mission. This mission consists of a climb condition combined with the endurance cruise condition. Here, the total mission energy is to be minimised (see more information on the associated operating conditions in `Multi-Point Data/config.py`).  
 
 - Performance analysis code and results for the multi-point optimised Bell X-22A design presented in the abovementioned papers [1] and [2] (`Performance Curves/`). The code performs a parameter sweep of the rotational rate and tip set angle at a given operating condition, to create curves of the propulsor efficiency as function of the thrust coefficient for different blade tip set angles. The code must be used together with the UDC code, see also the 'Related Code' section of this readme. The `data.csv` contains the performance data with columns:
         - beta_tip: blade tip angle (degrees)
@@ -22,7 +22,7 @@ Four sets of data are included in this dataset:
 
 ## Disclaimer
 
-The optimisation result objects, stored as .dill files, are not included in this repository due to their size. Instead, they are available from the dataset on the [4TU database](https://doi.org/10.4121/02e861af-4062-49ac-a481-32f9e4659b14). These optimisation objects contain both the optimization history and the final optimized population of designs. To load the objects and analyse them in Python, the dill package must be installed together with a copy of the UDC. See also the requirements for the UDC in the parent directory of the UDC codebase. The objects can be loaded using the PostProcessing class of the UDC, part of the GA folder of the UDC. Note that the single- and multi- point optimizations have different configuration files, which must be used appropriately to ensure correct processing of the results objects.
+The optimisation result objects, stored as .dill files, are not included in this repository due to their size. Instead, they are available from the dataset on the [4TU database](https://doi.org/10.4121/02e861af-4062-49ac-a481-32f9e4659b14). These optimisation objects contain both the optimisation history and the final optimised population of designs. To load the objects and analyse them in Python, the dill package must be installed together with a copy of the UDC. See also the requirements for the UDC in the parent directory of the UDC codebase. The objects can be loaded using the PostProcessing class of the UDC, part of the GA folder of the UDC. Note that the single- and multi- point optimisations have different configuration files, which must be used appropriately to ensure correct processing of the results objects.
 
 ## Dataset Structure
 
