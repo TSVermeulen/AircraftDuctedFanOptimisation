@@ -6,15 +6,19 @@ The developed UDC and optimisation framework have been improved and updated by t
 
 ## License
 
+Two different licenses apply for the UDC and MTFLOW. The MTFLOW software has the following license:
+
 Copyright Notice and Disclaimer. The software [or “portions of the software”] incorporated
 herein is MTFLOW Software, © MIT 1997 used with permission. All Rights Reserved.
+
+For the developed UDC, a standard MIT license holds. See also the dedicated LICENSE file in the repository for further details.
 
 ## Description
 
 This code builds on the MTFLOW software developed by M. Drela to create a fast, robust, and accurate ducted fan analysis code. This code is implemented in the U-NSGA-III algorithm to enable design explorations for different operating conditions, objectives, and constraints. This repository also contains the validation data used to validate the implementation against experimental wind tunnel data of the X-22A ducted propulsor. This wind tunnel data is reported in NASA-TN-D-4142. The validation data is contained in the validation folder.
 
 Currently, the UDC works on both Windows and Linux, and is capable of solving fixed- and variable-pitch optimisation problems for both single operating conditions (which, by nature are fixed-pitch) and flight profiles defined using multiple operating conditions.
-For a detailed description of the developed methods and results, the reader is referred to the thesis, which is publicly in the [TU Delft Repository](https://repository.tudelft.nl/record/uuid:21c8fb7b-f2d5-4c79-a43c-367cc1537764), and in the misc folder of this repository.
+For a detailed description of the developed methods and results, the reader is referred to the thesis, which is publicly in the [TU Delft Repository](https://repository.tudelft.nl/record/uuid:21c8fb7b-f2d5-4c79-a43c-367cc1537764).
 
 As per the license for MTFLOW, the MTFLOW codes cannot be freely distributed.
 Should the reader wish to use the developed frameworks in this thesis, they need to request a license for MTFLOW directly from the [MIT Technology Licensing Office](https://tlo.mit.edu/industry-entrepreneurs/available-technologies/mtflow-software-multielement-through-flow).
@@ -61,4 +65,4 @@ For more details on the different (sub-)modules of the optimisation framework, p
 
 ## Funding
 
-This research was conducted by DASAL (Dutch Aviation Systems Analysis Lab), which is a project within the research and innovation program ‘Luchtvaart in Transitie’. Luchtvaart in Transitie is co-funded by the National Growth Fund.
+This research was partially conducted by DASAL (Dutch Aviation Systems Analysis Lab), which is a project within the research and innovation program ‘Luchtvaart in Transitie’. Luchtvaart in Transitie is co-funded by the National Growth Fund.
