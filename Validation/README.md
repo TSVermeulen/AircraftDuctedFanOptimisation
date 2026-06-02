@@ -26,7 +26,6 @@ The structure of this folder is the following:
     │   ├── beta_245.case                            # input case file for 24.5 degrees blade angle
     │   ├── dfdc_beta145.csv                         # DFDC results for 14.5 degrees
     │   ├── dfdc_beta245.csv                         # DFDC results for 24.5 degrees
-    │   ├── dfdc.exe                                 # DFDC executable
     │   └── DFDC_run_J.py                            # Python DFDC wrapper
     └── X22A Propeller Design Data.xlsx               # X-22A design parameters
 ```
@@ -47,4 +46,4 @@ Additionally, there are 2 subfolders:
 
 - `Profiles`: contains the blade profiles for the X-22A propeller used to evaluate the UDC. There are 9 profiles at different radii. These profiles are provided as input for MTFLOW analysis. The subfolder also contains the diagonal and horizontal strut airfoil profiles.
 
-- `DFDC`: contains the input files, python wrapper, executable, and results to compare DFDC vs MTFLOW.
+- `DFDC`: contains the input files, python wrapper, and results to compare DFDC vs MTFLOW.
