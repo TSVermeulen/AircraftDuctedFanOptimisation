@@ -51,7 +51,7 @@ The developed ducted fan analysis code, UDC, in this repository builds on and in
 
 <img width="1177" height="637" alt="UDC_flowdiagram" src="https://github.com/user-attachments/assets/7f9f31ba-0df9-4ce7-9711-ffdcdbd4d6e0" />
 
-<img width="1255" height="395" alt="MTSOL_flowdiagram" src="https://github.com/user-attachments/assets/2b932ffa-78a9-431c-85c8-e7f440e4db9b" />
+<img width="1255" height="395" alt="MTSOL_flowdiagram" src="https://github.com/user-attachments/assets/171b42dc-8db0-4ad0-9e3e-db6c266d2ac7" />
 
 For more details on the different (sub-)modules of the UDC, please refer to Appendix C.1 of the written thesis, or the numerous documentation present within each file in this repository.
 
