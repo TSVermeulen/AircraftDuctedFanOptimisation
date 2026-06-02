@@ -99,17 +99,17 @@ For more details on the different (sub-)modules of the optimisation framework, p
 │   │   ├── X22_09R.dat
 │   │   └── X22_10R.dat
 │   ├── README.md
-│   ├── ValidationData.xlsx
-│   └── X22A propeller blading data.xlsx
+│   ├── Validation Data.xlsx
+│   └── X22A Propeller Design Data.xlsx
 ├── X22A_validator.py
 ├── __init__.py
 ├── analyse_performance.py
 └── requirements.txt
 ```
 
-Tha `./GA/` folder contains the developed **ducted fan optimisation framework**. To execute an optimisation, the configuration needs to be set in `./GA/config.py`. An interface may then be chosen from `main.py`, `main-parallelised.py`, or `main-parallelised-UNSGAIII.py`, where the first and last implement the U-NSGA-III algorithm, while `main-parallelised.py` implements a basic "plain" genetic algorithm. For more details on the genetic algorithm implementation, see the dedicated README.
+The `./GA/` folder contains the developed **ducted fan optimisation framework**. To execute an optimisation, the configuration needs to be set in `./GA/config.py`. An interface may then be chosen from `main.py`, `main-parallelised.py`, or `main-parallelised-UNSGAIII.py`, where the first and last implement the U-NSGA-III algorithm, while `main-parallelised.py` implements a basic "plain" genetic algorithm. For more details on the genetic algorithm implementation, see the dedicated README.
 
-The `./Submodules/` folder contains 3 MTFLOW subprocess wrappers (MTSET, MTFLO and MTSOL), and processing scripts. For a description of the different programs within MTFLOW, the reader is referred to the [MTFLOW user manual](https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf).
+The `./Submodels/` folder contains 3 MTFLOW subprocess wrappers (MTSET, MTFLO and MTSOL), and processing scripts. For a description of the different programs within MTFLOW, the reader is referred to the [MTFLOW user manual](https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf).
 
 The `./Validation/` folder contains the data and summarised results used to validate the implementation of the UDC against experimental wind tunnel data of the **X-22A 3-bladed ducted propeller** (see details in the related [MSc thesis](https://repository.tudelft.nl/record/uuid:21c8fb7b-f2d5-4c79-a43c-367cc1537764)). The geometry and experimental test results for the propeller are given in [NASA-TN-D-4142](https://ntrs.nasa.gov/citations/19670025554). Part of the validation is made with the **Ducted Fan Design Code (DFDC)**, using a Python wrapper written by Bram Meijerink. DFDC is free and open-source software distributed under the GNU General Public License (GPL). See more in [https://web.mit.edu/drela/Public/web/dfdc/](https://web.mit.edu/drela/Public/web/dfdc/). The validation data is included in this repository as the geometry was is used in the test-cases present within the code, and in [1,2], to run the UDC and optimisation framework.
 
@@ -131,7 +131,7 @@ pip install -U pymoo==0.6.1.5
 - Dill 0.4.0 (Optimisation framework only)
 - Pandas 2.3.3
 
-Use the `./requirements.txt` file to install al dependencies and the corresponding versions. To take as a referece, the tools and frameworks were developed using Python 3.12.8.  Although the author sees no issues with usage at other Python versions, no guarantees are given.
+Use the `./requirements.txt` file to install all dependencies and the corresponding versions. As a reference, the tools and frameworks were developed using Python 3.12.8. Although the author sees no issues with usage at other Python versions, no guarantees are given.
 
 ### Usage
 
