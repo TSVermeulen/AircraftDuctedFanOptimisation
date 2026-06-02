@@ -51,7 +51,8 @@ Changelog:
             objective space plotting from multiple analyses. Updated formatting.
 - V2.2:     Updated formatting to work for double-column layouts.
 - V2.2.1:   Removed fname as class attribute and instead added it as an argument 
-            to the main method. 
+            to the main method. Made plots interactive to stop code from waiting 
+            until plots are closed.
 """
 
 # Import standard libraries
@@ -85,10 +86,13 @@ from objectives import Objectives # type: ignore
 
 # Adjust open figure warning
 plt.rcParams['figure.max_open_warning'] = 50
+
+# Set figure formatting parameters, and enable interactive mode
 plt.rcParams.update({'font.size': 9,
                      "pgf.texsystem": "xelatex",
                      "text.usetex":  True,
                      "pgf.rcfonts": False})
+plt.ion()
 
 # Define linestyles, markers, and colors
 # Linestyles: dash-dot, dashed, dash dot dot
@@ -96,6 +100,7 @@ STYLE = ["-.", "--", (0, (3, 5, 1, 5, 1, 5)), ":", (0, (3, 1, 1, 1, 1, 1))]
 MARKERS = ["^", "*", "o", "+", "d", "s", "h", "p"]
 CLRS = ["tab:blue", "tab:orange", "tab:green",
         "tab:red", "tab:purple", "tab:olive", "tab:cyan"]
+
 MS = 5
 MAJOR_GRID_ALPHA = 0.6
 MINOR_GRID_ALPHA = 0.4
@@ -331,7 +336,6 @@ class PostProcessing:
                 plt.ylabel("Normalised perpendicular coordinate $y/c$ [-]")
                 # plt.axis('equal')
                 plt.show()
-                plt.close()
 
         ax1.grid(which='both')
         ax1.minorticks_on()
@@ -2539,38 +2543,32 @@ class PostProcessing:
         self.create_multi_analysis_objective_space_plot(fnames,
                                                         labels)
         plt.show()
-        plt.close('all')
 
         # Create meridional plots of the designs
         self.create_multi_analysis_meridional_plots(fnames,
                                                     labels)
         plt.show()
-        plt.close('all')
 
         # Create a comparison plot of the optimised duct designs
         self.create_multi_analysis_duct_plots(fnames,
                                               labels)
         plt.show()
-        plt.close('all')
 
         # Create blade profile plots for the optimised designs
         self.create_multi_analysis_blade_profile_plots(fnames,
                                                        labels,
                                                        stage_idx)
         plt.show()
-        plt.close('all')
 
         # Create bar chart comparisons of key blading parameters
         self.create_multi_analysis_blading_bar_chart(fnames,
                                                      labels)
         plt.show()
-        plt.close('all')
 
         # Create sectional blading parameter comparison plots
         self.create_multi_analysis_sectional_blading_plot(fnames,
                                                           labels)
-        plt.show()
-        plt.close('all')
+        plt.show(block=True)
 
 
     def main(self,
@@ -2615,12 +2613,10 @@ class PostProcessing:
         # Visualise the convergence behavior of the solution
         self.generate_convergence_statistics(res)
         plt.show()
-        plt.close('all')
 
         # Visualise the objective space
         self.plot_objective_space(res)
         plt.show()
-        plt.close('all')
 
         # Plot the centerbody designs
         if config.OPTIMIZE_CENTERBODY:
@@ -2628,13 +2624,11 @@ class PostProcessing:
             self.compare_axisymmetric_geometry(config.CENTERBODY_VALUES,
                                                self.CB_data)
             plt.show()
-            plt.close('all')
 
             # Plot the optimum solution set
             self.compare_axisymmetric_geometry(config.CENTERBODY_VALUES,
                                                self.CB_data_opt)
             plt.show()
-            plt.close('all')
 
         # Plot the duct designs
         if config.OPTIMIZE_DUCT:
@@ -2642,13 +2636,11 @@ class PostProcessing:
             self.compare_axisymmetric_geometry(config.DUCT_VALUES,
                                                self.duct_data)
             plt.show()
-            plt.close('all')
 
             # Plot the optimum solution set
             self.compare_axisymmetric_geometry(config.DUCT_VALUES,
                                                self.duct_data_opt)
             plt.show()
-            plt.close('all')
 
         # Plot the optimised stage designs
         for i in range(len(config.OPTIMIZE_STAGE)):
@@ -2658,20 +2650,17 @@ class PostProcessing:
                 self.compare_blading_data(config.STAGE_BLADING_PARAMETERS,
                                           self.blading_data)
                 plt.show()
-                plt.close('all')
 
                 # Plot the optimum solution set
                 self.compare_blading_data(config.STAGE_BLADING_PARAMETERS,
                                           self.blading_data_opt)
                 plt.show()
-                plt.close('all')
 
                 # Plot the optimum solution set
                 self.compare_blade_design_data(reference_design=config.STAGE_DESIGN_VARIABLES,
                                                res=res,
                                                individual="opt")
                 plt.show()
-                plt.close('all')
 
                 # Plot the optimum solution set
                 for j in range(len(self.blading_data_opt)):
@@ -2680,7 +2669,7 @@ class PostProcessing:
                                                      config.STAGE_BLADING_PARAMETERS,
                                                      config.STAGE_DESIGN_VARIABLES)
                     plt.show()
-                    plt.close('all')
+        plt.show(block=True)
 
 
 if __name__ == "__main__":
@@ -2700,8 +2689,8 @@ if __name__ == "__main__":
 
     # Single-point single-objective results for the endurance cruise condition. 
     # print("Post-processing the single-point single-objective results for the endurance cruise condition...")
-    # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251119042735540563.dill")],
-    #                                        labels=["Optimized"])
+    processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251119042735540563.dill")],
+                                           labels=["Optimized"])
     
     # Note how the "normal" main method can also be used to generate more 
     # in-depth results. compare_multiple_runs() does not analyse the 
