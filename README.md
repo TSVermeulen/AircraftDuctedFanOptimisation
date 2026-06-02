@@ -111,13 +111,13 @@ The `./GA/` folder contains the developed **ducted fan optimisation framework**.
 
 The `./Submodels/` folder contains 3 MTFLOW subprocess wrappers (MTSET, MTFLO and MTSOL), and processing scripts. For a description of the different programs within MTFLOW, the reader is referred to the [MTFLOW user manual](https://web.mit.edu/drela/Public/web/mtflow/mtflow.pdf).
 
-The `./Validation/` folder contains the data and summarised results used to validate the implementation of the UDC against experimental wind tunnel data of the **X-22A 3-bladed ducted propeller** (see details in the related [MSc thesis](https://repository.tudelft.nl/record/uuid:21c8fb7b-f2d5-4c79-a43c-367cc1537764)). The geometry and experimental test results for the propeller are given in [NASA-TN-D-4142](https://ntrs.nasa.gov/citations/19670025554). Part of the validation is made with the **Ducted Fan Design Code (DFDC)**, using a Python wrapper written by Bram Meijerink. DFDC is free and open-source software distributed under the GNU General Public License (GPL). See more in [https://web.mit.edu/drela/Public/web/dfdc/](https://web.mit.edu/drela/Public/web/dfdc/). The validation data is included in this repository as the geometry was is used in the test-cases present within the code, and in [1,2], to run the UDC and optimisation framework.
+The `./Validation/` folder contains the data and summarised results used to validate the implementation of the UDC against experimental wind tunnel data of the **X-22A 3-bladed ducted propeller** (see details in the related [MSc thesis](https://repository.tudelft.nl/record/uuid:21c8fb7b-f2d5-4c79-a43c-367cc1537764)). The geometry and experimental test results for the propeller are given in [NASA-TN-D-4142](https://ntrs.nasa.gov/citations/19670025554). Part of the validation is made with the **Ducted Fan Design Code (DFDC)**, using a Python wrapper written by Bram Meijerink. DFDC is free and open-source software distributed under the GNU General Public License (GPL). See more in [https://web.mit.edu/drela/Public/web/dfdc/](https://web.mit.edu/drela/Public/web/dfdc/). The validation data is included in this repository as the geometry is used in the test-cases present within the code, and in [1,2], to run the UDC and optimisation framework.
 
 ## Installation
 
 ### Requirements
 
-To run the UDC or the developed optimisation framework, the dependencies listed below must be satisfied. A requirements.txt file is provided as part of this repository. To improve performance, it is suggested to install pymoo last during the installation process, using following the command, as per the instructions in the pymoo documentation. This attempts to install some of the Pymoo dependencies in compiled form, which may speed up analyses.
+To run the UDC or the developed optimisation framework, the dependencies listed below must be satisfied. A requirements.txt file is provided as part of this repository. To improve performance, it is suggested to install pymoo last during the installation process, using the following command, as per the instructions in the pymoo documentation. This attempts to install some of the Pymoo dependencies in compiled form, which may speed up analyses.
 
 ```console
 pip install -U pymoo==0.6.1.5
@@ -142,7 +142,7 @@ To **load and visualise optimisation results**, users can run `./GA/post.py` (do
 **Keep in mind**
 
 - The UDC and optimisation framework have been designed to work on Windows. Since version 2.0, support has been added for Linux/Unix-like systems, which offer significant computational performance improvements.
-- For best performance, it is recommended to run the optimisation framework on a computer or server with as many CPU cores/threads as possible, since each thread can be used to run one analysis. Testing of the developer shows 16 analyses can be conducted simultaneously on an AMD Ryzen 5xxx 8-core/16-thread CPU. An average design takes between 3--45 seconds to evaluate in the UDC, depending on the design, operating conditions, hardware used, and operating system.  
+- For best performance, it is recommended to run the optimisation framework on a computer or server with as many CPU cores/threads as possible, since each thread can be used to run one analysis. Testing of the developer shows 16 analyses can be conducted simultaneously on an AMD Ryzen 5xxx 8-core/16-thread CPU. An average design takes between 3-45 seconds to evaluate in the UDC, depending on the design, operating conditions, hardware used, and operating system.  
 
 ## Author(s)
 

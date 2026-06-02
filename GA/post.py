@@ -1755,9 +1755,9 @@ class PostProcessing:
                                            color: str,
                                            linestyle: str,
                                            label: str,
-                                           fname: Path = None,
+                                           fname: Path | None = None,
                                            reference: bool = False,
-                                           individual_idx: int = None) -> None:
+                                           individual_idx: int | None = None) -> None:
         """
         Create a meridional view of the optimised ducted fan.
 
@@ -2689,8 +2689,8 @@ if __name__ == "__main__":
 
     # Single-point single-objective results for the endurance cruise condition. 
     # print("Post-processing the single-point single-objective results for the endurance cruise condition...")
-    processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251119042735540563.dill")],
-                                           labels=["Optimized"])
+    # processing_class.compare_multiple_runs(fnames=[Path("Results/res_pop200_eval500_251119042735540563.dill")],
+    #                                        labels=["Optimized"])
     
     # Note how the "normal" main method can also be used to generate more 
     # in-depth results. compare_multiple_runs() does not analyse the 
